@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import Link, { useLinkStatus } from "next/link";
 
 type Tab = "home" | "samples" | "scan" | "notif" | "profile";
 
@@ -53,44 +55,64 @@ function ProfileIcon({ color }: { color: string }) {
   );
 }
 
+/** Renders inside a Link — dims the tab instantly on tap, before the new page arrives. */
+function TapFeedback({ children }: { children: React.ReactNode }) {
+  const { pending } = useLinkStatus();
+  return (
+    <div className={`flex flex-col items-center transition-opacity duration-150 ${pending ? "opacity-40" : "opacity-100"}`}>
+      {children}
+    </div>
+  );
+}
+
 export default function BottomNav({ active, hasUnread }: { active: Tab; hasUnread: boolean }) {
   const c = (tab: Tab) => (active === tab ? ON : OFF);
   return (
     <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-border flex items-start justify-around pt-2 px-1 pb-[max(env(safe-area-inset-bottom),14px)] z-10">
       <Link href="/dashboard" className="flex flex-col items-center gap-[3px] w-14">
-        <HomeIcon color={c("home")} />
-        <span className="text-[10px] font-semibold" style={{ color: c("home") }}>
-          Home
-        </span>
+        <TapFeedback>
+          <HomeIcon color={c("home")} />
+          <span className="text-[10px] font-semibold" style={{ color: c("home") }}>
+            Home
+          </span>
+        </TapFeedback>
       </Link>
       <Link href="/samples" className="flex flex-col items-center gap-[3px] w-14">
-        <SamplesIcon color={c("samples")} />
-        <span className="text-[10px] font-semibold" style={{ color: c("samples") }}>
-          Samples
-        </span>
+        <TapFeedback>
+          <SamplesIcon color={c("samples")} />
+          <span className="text-[10px] font-semibold" style={{ color: c("samples") }}>
+            Samples
+          </span>
+        </TapFeedback>
       </Link>
       <Link href="/scan" className="flex flex-col items-center gap-0.5 w-14 -mt-3.5">
-        <div className="w-[46px] h-[46px] rounded-full bg-primary flex items-center justify-center shadow-[0_4px_10px_rgba(43,141,184,0.35)]">
-          <ScanIcon color="#fff" />
-        </div>
-        <span className="text-[10px] font-semibold text-primary mt-0.5">Scan</span>
+        <TapFeedback>
+          <div className="w-[46px] h-[46px] rounded-full bg-primary flex items-center justify-center shadow-[0_4px_10px_rgba(43,141,184,0.35)]">
+            <ScanIcon color="#fff" />
+          </div>
+          <span className="text-[10px] font-semibold text-primary mt-0.5">Scan</span>
+        </TapFeedback>
       </Link>
       <Link href="/notifications" className="flex flex-col items-center gap-[3px] w-14">
-        <div className="relative">
-          <BellIcon color={c("notif")} />
-          {hasUnread && (
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-danger border-[1.5px] border-white" />
-          )}
-        </div>
-        <span className="text-[10px] font-semibold" style={{ color: c("notif") }}>
-          Alerts
-        </span>
+        <TapFeedback>
+          <div className="relative">
+            <BellIcon color={c("notif")} />
+            {hasUnread && (
+              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-danger border-[1.5px] border-white" />
+            )}
+          </div>
+          <span className="text-[10px] font-semibold" style={{ color: c("notif") }}>
+            Alerts
+          </span>
+        </TapFeedback>
       </Link>
       <Link href="/profile" className="flex flex-col items-center gap-[3px] w-14">
-        <ProfileIcon color={c("profile")} />
-        <span className="text-[10px] font-semibold" style={{ color: c("profile") }}>
-          Profile
-        </span>
+        <TapFeedback>
+          <ProfileIcon color={c("profile")} />
+          <span className="text-[10px] font-semibold" style={{ color: c("profile") }}>
+            Profile
+          </span>
+        </TapFeedback>
       </Link>
     </div>
   );

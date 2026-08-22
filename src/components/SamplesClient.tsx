@@ -11,9 +11,32 @@ type SampleRow = {
   type: string;
   source: string;
   status: string;
+  collectedBy: string;
+  receivedDate: Date;
 };
 
 const STATUS_OPTIONS = ["All", ...SAMPLE_STATUSES];
+
+function toCsv(rows: SampleRow[]) {
+  const header = ["Sample ID", "Type", "Source", "Status", "Collected By", "Received"];
+  const lines = rows.map((s) =>
+    [s.id, s.type, s.source, s.status, s.collectedBy, s.receivedDate.toISOString()]
+      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+      .join(",")
+  );
+  return [header.join(","), ...lines].join("\n");
+}
+
+function downloadCsv(rows: SampleRow[]) {
+  const csv = toCsv(rows);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `samples-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function SamplesClient({
   samples,
@@ -24,24 +47,42 @@ export default function SamplesClient({
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [showFilters, setShowFilters] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const from = dateFrom ? new Date(dateFrom + "T00:00:00") : null;
+    const to = dateTo ? new Date(dateTo + "T23:59:59") : null;
     return samples.filter((s) => {
       if (statusFilter !== "All" && s.status !== statusFilter) return false;
+      if (from && s.receivedDate < from) return false;
+      if (to && s.receivedDate > to) return false;
       if (!q) return true;
       return (
         s.id.toLowerCase().includes(q) ||
         s.type.toLowerCase().includes(q) ||
-        s.source.toLowerCase().includes(q)
+        s.source.toLowerCase().includes(q) ||
+        s.collectedBy.toLowerCase().includes(q)
       );
     });
-  }, [samples, query, statusFilter]);
+  }, [samples, query, statusFilter, dateFrom, dateTo]);
+
+  const hasDateFilter = dateFrom || dateTo;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <div className="sticky top-0 bg-white border-b border-border px-5 pt-6 pb-3 z-10 flex flex-col gap-3">
-        <div className="text-xl font-bold text-text">Samples</div>
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-bold text-text">Samples</div>
+          <button
+            onClick={() => downloadCsv(filtered)}
+            className="text-xs font-semibold text-primary cursor-pointer"
+          >
+            Export CSV
+          </button>
+        </div>
         <div className="flex items-center gap-2 bg-chip-bg rounded-full px-3.5 py-2.5">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888888" strokeWidth="2">
             <circle cx="11" cy="11" r="7" />
@@ -51,7 +92,7 @@ export default function SamplesClient({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by ID, type, source…"
+            placeholder="Search by ID, type, source, collector…"
             className="border-none bg-transparent text-[13px] text-text flex-1 outline-none"
           />
         </div>
@@ -73,6 +114,30 @@ export default function SamplesClient({
             );
           })}
         </div>
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className="text-xs font-semibold text-primary self-start cursor-pointer"
+        >
+          {showFilters ? "Hide date filter" : "Filter by received date"}
+          {hasDateFilter && !showFilters && " •"}
+        </button>
+        {showFilters && (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="flex-1 text-xs px-2.5 py-2 border-[1.5px] border-border-soft rounded-lg text-text bg-white"
+            />
+            <span className="text-xs text-muted">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="flex-1 text-xs px-2.5 py-2 border-[1.5px] border-border-soft rounded-lg text-text bg-white"
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex-1 px-5 pt-3.5 pb-5 flex flex-col gap-2.5">

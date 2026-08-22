@@ -37,15 +37,3 @@ export const TEST_STATUS_STYLES: Record<
   awaiting: { label: "Awaiting Review", bg: "#FEF3E0", color: "#a36a00" },
   complete: { label: "Complete", bg: "#E6F4EA", color: "#1e7a34" },
 };
-
-// Fallback seed list — real sample types are managed via SampleTypeCatalog (see /admin/catalog).
-export const SAMPLE_TYPE_OPTIONS = [
-  "Total Plate Count",
-  "Coliform / E. coli",
-  "Yeast & Mold",
-  "Sterility Test",
-  "Environmental Swab",
-  "Water Activity",
-  "Endotoxin (LAL)",
-  "Bioburden",
-];

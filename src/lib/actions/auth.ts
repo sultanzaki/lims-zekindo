@@ -3,7 +3,7 @@
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { createSession, destroySession } from "@/lib/auth";
+import { createSession, destroySession, requireUser } from "@/lib/auth";
 
 export type LoginState = { error?: string };
 
@@ -36,6 +36,10 @@ export async function loginAction(
     return { error: "Incorrect password." };
   }
 
+  if (!user.active) {
+    return { error: "This account has been deactivated. Contact your Lab Manager." };
+  }
+
   await createSession(user.id);
   redirect("/dashboard");
 }
@@ -43,4 +47,37 @@ export async function loginAction(
 export async function signOutAction() {
   await destroySession();
   redirect("/login");
+}
+
+export type ChangePasswordState = { error?: string; success?: boolean };
+
+export async function changePasswordAction(
+  _prevState: ChangePasswordState,
+  formData: FormData
+): Promise<ChangePasswordState> {
+  const user = await requireUser();
+
+  const currentPassword = String(formData.get("currentPassword") || "");
+  const newPassword = String(formData.get("newPassword") || "");
+  const confirmPassword = String(formData.get("confirmPassword") || "");
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return { error: "Fill in all fields." };
+  }
+  if (newPassword.length < 6) {
+    return { error: "New password must be at least 6 characters." };
+  }
+  if (newPassword !== confirmPassword) {
+    return { error: "New password and confirmation don't match." };
+  }
+
+  const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!ok) {
+    return { error: "Current password is incorrect." };
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+
+  return { success: true };
 }

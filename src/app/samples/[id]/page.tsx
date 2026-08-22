@@ -16,6 +16,7 @@ import {
   markDisposedAction,
 } from "@/lib/actions/samples";
 import StorageLocationForm from "@/components/StorageLocationForm";
+import ReviewPanel from "@/components/ReviewPanel";
 
 export default async function SampleDetailPage({
   params,
@@ -238,51 +239,6 @@ export default async function SampleDetailPage({
           </Link>
         )}
       </div>
-    </div>
-  );
-}
-
-function ReviewPanel({
-  title,
-  body,
-  canAct,
-  approveAction,
-  rejectAction,
-  approveLabel,
-}: {
-  title: string;
-  body: string;
-  canAct: boolean;
-  approveAction: () => Promise<void>;
-  rejectAction: () => Promise<void>;
-  approveLabel: string;
-}) {
-  return (
-    <div className="flex flex-col gap-2.5 bg-warning-bg border border-[#F5A623] rounded-xl p-4">
-      <div className="text-[13px] font-semibold text-[#a36a00]">{title}</div>
-      <div className="text-xs text-[#a36a00]">{body}</div>
-      {canAct ? (
-        <div className="flex gap-2.5">
-          <form action={rejectAction} className="flex-1">
-            <button
-              type="submit"
-              className="w-full bg-white text-danger border border-danger rounded-full py-3 text-[13px] font-semibold cursor-pointer"
-            >
-              Reject
-            </button>
-          </form>
-          <form action={approveAction} className="flex-1">
-            <button
-              type="submit"
-              className="w-full bg-success text-white rounded-full py-3 text-[13px] font-semibold cursor-pointer"
-            >
-              {approveLabel}
-            </button>
-          </form>
-        </div>
-      ) : (
-        <div className="text-xs text-[#a36a00] italic">Waiting on a reviewer with permission to act.</div>
-      )}
     </div>
   );
 }

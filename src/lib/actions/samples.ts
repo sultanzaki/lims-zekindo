@@ -1,5 +1,6 @@
 "use server";
 
+import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
@@ -153,10 +154,31 @@ async function openDeviationForRejection(sampleId: string, sampleType: string, u
   });
 }
 
-export async function supervisorApproveAction(sampleId: string) {
-  const user = await requireRole(canReviewAsSupervisor);
+async function verifySignature(userId: string, formData: FormData): Promise<{ user: Awaited<ReturnType<typeof requireUser>> } | { error: string }> {
+  const password = String(formData.get("password") || "");
+  if (!password) return { error: "Enter your password to sign this action." };
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: "User not found." };
+
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if (!ok) return { error: "Incorrect password — signature not applied." };
+
+  return { user };
+}
+
+export async function supervisorApproveAction(
+  sampleId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const reviewer = await requireRole(canReviewAsSupervisor);
+  const verified = await verifySignature(reviewer.id, formData);
+  if ("error" in verified) return verified;
+  const user = verified.user;
+
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
-  if (!sample || sample.status !== "Awaiting Supervisor Review") return;
+  if (!sample || sample.status !== "Awaiting Supervisor Review") return { error: "This sample is no longer awaiting supervisor review." };
 
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
   await prisma.sample.update({
@@ -169,17 +191,26 @@ export async function supervisorApproveAction(sampleId: string) {
     },
   });
 
-  await logAudit({ userId: user.id, action: "sample.supervisor_approved", entityType: "Sample", entityId: sampleId });
+  await logAudit({ userId: user.id, action: "sample.supervisor_approved", entityType: "Sample", entityId: sampleId, detail: `e-signed by ${user.email}` });
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
   revalidatePath(`/samples/${sampleId}`);
+  return {};
 }
 
-export async function supervisorRejectAction(sampleId: string) {
-  const user = await requireRole(canReviewAsSupervisor);
+export async function supervisorRejectAction(
+  sampleId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const reviewer = await requireRole(canReviewAsSupervisor);
+  const verified = await verifySignature(reviewer.id, formData);
+  if ("error" in verified) return verified;
+  const user = verified.user;
+
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
-  if (!sample || sample.status !== "Awaiting Supervisor Review") return;
+  if (!sample || sample.status !== "Awaiting Supervisor Review") return { error: "This sample is no longer awaiting supervisor review." };
 
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
   await prisma.sample.update({
@@ -201,19 +232,28 @@ export async function supervisorRejectAction(sampleId: string) {
   });
 
   await openDeviationForRejection(sampleId, sample.type, user.id, "supervisor");
-  await logAudit({ userId: user.id, action: "sample.supervisor_rejected", entityType: "Sample", entityId: sampleId });
+  await logAudit({ userId: user.id, action: "sample.supervisor_rejected", entityType: "Sample", entityId: sampleId, detail: `e-signed by ${user.email}` });
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
   revalidatePath(`/samples/${sampleId}`);
   revalidatePath("/notifications");
   revalidatePath("/deviations");
+  return {};
 }
 
-export async function qaApproveAction(sampleId: string) {
-  const user = await requireRole(canApproveAsQa);
+export async function qaApproveAction(
+  sampleId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const reviewer = await requireRole(canApproveAsQa);
+  const verified = await verifySignature(reviewer.id, formData);
+  if ("error" in verified) return verified;
+  const user = verified.user;
+
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
-  if (!sample || sample.status !== "Awaiting QA Approval") return;
+  if (!sample || sample.status !== "Awaiting QA Approval") return { error: "This sample is no longer awaiting QA approval." };
 
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
   await prisma.sample.update({
@@ -234,18 +274,27 @@ export async function qaApproveAction(sampleId: string) {
     },
   });
 
-  await logAudit({ userId: user.id, action: "sample.qa_approved", entityType: "Sample", entityId: sampleId });
+  await logAudit({ userId: user.id, action: "sample.qa_approved", entityType: "Sample", entityId: sampleId, detail: `e-signed by ${user.email}` });
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
   revalidatePath(`/samples/${sampleId}`);
   revalidatePath("/notifications");
+  return {};
 }
 
-export async function qaRejectAction(sampleId: string) {
-  const user = await requireRole(canApproveAsQa);
+export async function qaRejectAction(
+  sampleId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const reviewer = await requireRole(canApproveAsQa);
+  const verified = await verifySignature(reviewer.id, formData);
+  if ("error" in verified) return verified;
+  const user = verified.user;
+
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
-  if (!sample || sample.status !== "Awaiting QA Approval") return;
+  if (!sample || sample.status !== "Awaiting QA Approval") return { error: "This sample is no longer awaiting QA approval." };
 
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
   await prisma.sample.update({
@@ -265,13 +314,14 @@ export async function qaRejectAction(sampleId: string) {
   });
 
   await openDeviationForRejection(sampleId, sample.type, user.id, "QA");
-  await logAudit({ userId: user.id, action: "sample.qa_rejected", entityType: "Sample", entityId: sampleId });
+  await logAudit({ userId: user.id, action: "sample.qa_rejected", entityType: "Sample", entityId: sampleId, detail: `e-signed by ${user.email}` });
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
   revalidatePath(`/samples/${sampleId}`);
   revalidatePath("/notifications");
   revalidatePath("/deviations");
+  return {};
 }
 
 export async function retestSampleAction(originalSampleId: string) {

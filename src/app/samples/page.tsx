@@ -9,7 +9,14 @@ export default async function SamplesPage() {
   const [samples, unread] = await Promise.all([
     prisma.sample.findMany({
       orderBy: { createdAt: "desc" },
-      select: { id: true, type: true, source: true, status: true },
+      select: {
+        id: true,
+        type: true,
+        source: true,
+        status: true,
+        collectedBy: true,
+        receivedDate: true,
+      },
     }),
     getUnreadCount(userId),
   ]);

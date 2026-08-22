@@ -49,5 +49,6 @@ export const config = {
     "/admin/:path*",
     "/inventory/:path*",
     "/deviations/:path*",
+    "/help/:path*",
   ],
 };

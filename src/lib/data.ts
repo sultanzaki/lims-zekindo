@@ -7,7 +7,18 @@ export async function getUnreadCount(userId: string) {
 }
 
 export async function getDashboardData(userId: string) {
-  const [pendingLogin, inTesting, awaitingReview, overdueRows, alerts, recentSamples] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const [
+    pendingLogin,
+    inTesting,
+    awaitingReview,
+    overdueRows,
+    alerts,
+    recentSamples,
+    approvedLast7,
+    rejectedLast7,
+  ] = await Promise.all([
     prisma.sample.count({ where: { status: "Pending Login" } }),
     prisma.sample.count({ where: { status: "In Testing" } }),
     prisma.sample.count({ where: { status: { in: ["Awaiting Supervisor Review", "Awaiting QA Approval"] } } }),
@@ -23,7 +34,12 @@ export async function getDashboardData(userId: string) {
       take: 3,
     }),
     prisma.sample.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
+    prisma.sample.count({ where: { status: "Complete", approvedAt: { gte: sevenDaysAgo } } }),
+    prisma.custodyEvent.count({ where: { label: { contains: "Rejected" }, time: { gte: sevenDaysAgo } } }),
   ]);
+
+  const reviewedLast7 = approvedLast7 + rejectedLast7;
+  const passRate = reviewedLast7 > 0 ? Math.round((approvedLast7 / reviewedLast7) * 100) : null;
 
   return {
     pendingLogin,
@@ -32,6 +48,9 @@ export async function getDashboardData(userId: string) {
     overdueCount: Number(overdueRows[0]?.count ?? 0),
     alerts,
     recentSamples,
+    approvedLast7,
+    rejectedLast7,
+    passRate,
   };
 }
 

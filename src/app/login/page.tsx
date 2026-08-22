@@ -77,16 +77,13 @@ export default function LoginPage() {
           >
             {pending ? "Signing in…" : "Sign In"}
           </button>
-          <div className="text-center text-xs text-primary font-semibold cursor-pointer">
-            Forgot password?
+          <div className="text-center text-xs text-muted">
+            Forgot your password? Ask your Lab Manager to reset it.
           </div>
         </form>
 
         <div className="text-center text-[11px] text-muted">
           General Testing Laboratory · Microbiology Section
-        </div>
-        <div className="text-center text-[11px] text-faint">
-          Demo login: a.wijaya@lab.local / lab1234
         </div>
       </div>
     </div>

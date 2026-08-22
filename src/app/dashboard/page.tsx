@@ -20,8 +20,10 @@ function alertAccent(title: string) {
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  const [{ pendingLogin, inTesting, awaitingReview, overdueCount, alerts, recentSamples }, unread] =
-    await Promise.all([getDashboardData(user.id), getUnreadCount(user.id)]);
+  const [
+    { pendingLogin, inTesting, awaitingReview, overdueCount, alerts, recentSamples, approvedLast7, rejectedLast7, passRate },
+    unread,
+  ] = await Promise.all([getDashboardData(user.id), getUnreadCount(user.id)]);
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">
@@ -86,6 +88,18 @@ export default async function DashboardPage() {
               {overdueCount} sample{overdueCount > 1 ? "s" : ""} past target turnaround time
             </div>
           </Link>
+        )}
+
+        {passRate !== null && (
+          <div className="bg-white border border-border rounded-xl p-3.5 flex items-center gap-3.5">
+            <div className="text-[22px] font-bold text-success-dark shrink-0">{passRate}%</div>
+            <div className="flex-1">
+              <div className="text-xs font-semibold text-text">Pass rate, last 7 days</div>
+              <div className="text-[11px] text-muted mt-0.5">
+                {approvedLast7} approved · {rejectedLast7} rejected
+              </div>
+            </div>
+          </div>
         )}
 
         <div>

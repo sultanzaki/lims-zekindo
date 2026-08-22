@@ -66,9 +66,8 @@ export default async function ProfilePage() {
         <div>
           <div className="text-[11px] font-semibold text-muted tracking-wider uppercase mb-2 px-1">Settings</div>
           <div className="bg-white border border-border rounded-2xl overflow-hidden">
-            <SettingsRow label="Notification Preferences" />
-            <SettingsRow label="Change Password" />
-            <SettingsRow label="Help & Support" last />
+            <SettingsRow label="Change Password" href="/profile/change-password" />
+            <SettingsRow label="Help & Support" href="/help" last />
           </div>
         </div>
 
