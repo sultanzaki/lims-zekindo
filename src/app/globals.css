@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #2b8db8;
+  --color-primary-dark: #1a5f7a;
+  --color-page-bg: #edf2f5;
+  --color-surface: #f7fbfd;
+  --color-surface-alt: #e8f4fa;
+  --color-border: #e0e0e0;
+  --color-border-soft: #e0e8ee;
+  --color-chip-bg: #f0f4f8;
+  --color-text: #111111;
+  --color-muted: #888888;
+  --color-faint: #a0b4bf;
+  --color-success: #28a745;
+  --color-success-dark: #1e7a34;
+  --color-success-bg: #e6f4ea;
+  --color-warning: #f5a623;
+  --color-warning-dark: #a36a00;
+  --color-warning-bg: #fef3e0;
+  --color-danger: #d0021b;
+  --color-danger-bg: #fdecea;
+  --color-scanner-bg: #0c1418;
+}
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-page-bg: var(--color-page-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-alt: var(--color-surface-alt);
+  --color-border: var(--color-border);
+  --color-border-soft: var(--color-border-soft);
+  --color-chip-bg: var(--color-chip-bg);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-muted);
+  --color-faint: var(--color-faint);
+  --color-success: var(--color-success);
+  --color-success-dark: var(--color-success-dark);
+  --color-success-bg: var(--color-success-bg);
+  --color-warning: var(--color-warning);
+  --color-warning-dark: var(--color-warning-dark);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-danger: var(--color-danger);
+  --color-danger-bg: var(--color-danger-bg);
+  --color-scanner-bg: var(--color-scanner-bg);
+  --font-sans: var(--font-poppins);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-page-bg);
+  color: var(--color-text);
+  font-family: var(--font-poppins), system-ui, sans-serif;
+}
+
+a {
+  color: var(--color-primary);
+}
+a:hover {
+  color: var(--color-primary-dark);
+}
+
+input,
+select,
+textarea {
+  font-family: var(--font-poppins), sans-serif;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary) !important;
+}
+
+/* Print styles for Certificate of Analysis */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

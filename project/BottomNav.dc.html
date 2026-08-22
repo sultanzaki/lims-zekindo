@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="position:sticky;bottom:0;left:0;right:0;background:#ffffff;border-top:1px solid #E0E0E0;display:flex;align-items:flex-start;justify-content:space-around;padding:8px 4px 22px;z-index:5;box-sizing:border-box;">
+  <div onclick="{{ onHome }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;width:56px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ homeColor }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+    <span style="font-size:10px;font-weight:600;color:{{ homeColor }};">Home</span>
+  </div>
+  <div onclick="{{ onSamples }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;width:56px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ samplesColor }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M9 3v6l-4 9h14l-4-9V3"/></svg>
+    <span style="font-size:10px;font-weight:600;color:{{ samplesColor }};">Samples</span>
+  </div>
+  <div onclick="{{ onScan }}" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;width:56px;margin-top:-14px;">
+    <div style="width:46px;height:46px;border-radius:9999px;background:#2B8DB8;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(43,141,184,0.35);">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 011-1h3"/><path d="M20 8V5a1 1 0 00-1-1h-3"/><path d="M4 16v3a1 1 0 001 1h3"/><path d="M20 16v3a1 1 0 01-1 1h-3"/></svg>
+    </div>
+    <span style="font-size:10px;font-weight:600;color:#2B8DB8;margin-top:2px;">Scan</span>
+  </div>
+  <div onclick="{{ onNotif }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;width:56px;">
+    <div style="position:relative;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ notifColor }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:9999px;background:#D0021B;border:1.5px solid #fff;"></div>
+      </sc-if>
+    </div>
+    <span style="font-size:10px;font-weight:600;color:{{ notifColor }};">Alerts</span>
+  </div>
+  <div onclick="{{ onProfile }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;width:56px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ profileColor }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+    <span style="font-size:10px;font-weight:600;color:{{ profileColor }};">Profile</span>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;activeTab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;samples&quot;,&quot;scan&quot;,&quot;notif&quot;,&quot;profile&quot;]},&quot;hasUnread&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;onHome&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onSamples&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onScan&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onNotif&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onProfile&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.activeTab;
+    const on = '#2B8DB8', off = '#A0B4BF';
+    return {
+      homeColor: active === 'home' ? on : off,
+      samplesColor: active === 'samples' ? on : off,
+      notifColor: active === 'notif' ? on : off,
+      profileColor: active === 'profile' ? on : off,
+      hasUnread: !!this.props.hasUnread,
+      onHome: this.props.onHome,
+      onSamples: this.props.onSamples,
+      onScan: this.props.onScan,
+      onNotif: this.props.onNotif,
+      onProfile: this.props.onProfile,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  employeeId    String   @unique
+  email         String   @unique
+  passwordHash  String
+  name          String
+  initials      String
+  role          String
+  section       String
+  createdAt     DateTime @default(now())
+
+  notifications Notification[]
+}
+
+// Sample status values (plain string, kept in sync with src/lib/status.ts):
+// "Pending Login" | "In Testing" | "Awaiting Approval" | "Complete" | "Rejected"
+model Sample {
+  id            String   @id
+  type          String
+  source        String
+  status        String
+  collectedBy   String
+  collectedDate DateTime
+  receivedDate  DateTime
+  container     String
+  createdAt     DateTime @default(now())
+  approvedBy    String?
+  approvedAt    DateTime?
+
+  tests         Test[]
+  custodyEvents CustodyEvent[]
+  notifications Notification[]
+}
+
+// Test status values: "pending" | "awaiting" | "complete"
+model Test {
+  id        String  @id @default(cuid())
+  sampleId  String
+  sample    Sample  @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  name      String
+  status    String
+  result    String?
+  unit      String
+  spec      String
+  notes     String?
+  order     Int     @default(0)
+}
+
+model CustodyEvent {
+  id        String   @id @default(cuid())
+  sampleId  String
+  sample    Sample   @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  label     String
+  detail    String?
+  time      DateTime @default(now())
+  order     Int      @default(0)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  sampleId  String?
+  sample    Sample?  @relation(fields: [sampleId], references: [id], onDelete: SetNull)
+  unread    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

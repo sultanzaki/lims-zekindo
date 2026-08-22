@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Poppins',system-ui,sans-serif;background:#EDF2F5;}
+a{color:#2B8DB8;}
+a:hover{color:#1A5F7A;text-decoration:underline;}
+input,select,textarea{font-family:'Poppins',sans-serif;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#2B8DB8 !important;}
+</style>
+</helmet>
+<div style="min-height:960px;display:flex;align-items:center;justify-content:center;padding:56px 20px;box-sizing:border-box;">
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+
+<sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:linear-gradient(160deg,#E8F4FA 0%,#ffffff 55%);padding:0 26px;box-sizing:border-box;">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:26px;padding:40px 0;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <img src="./assets/zekindo-logo.png" alt="Zekindo Chemicals" style="height:32px;object-fit:contain;" />
+      <div style="font-size:11px;font-weight:600;color:#2B8DB8;letter-spacing:0.06em;text-transform:uppercase;text-align:center;">Laboratory Information Management System</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;background:#fff;border-radius:16px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,0.08);border:1px solid #E0E0E0;">
+      <div>
+        <div style="font-size:20px;font-weight:700;color:#111111;margin-bottom:4px;">Sign in</div>
+        <div style="font-size:13px;color:#888888;">Use your lab credentials to continue</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:12px;font-weight:600;color:#111111;">Email or Employee ID</label>
+        <input type="text" value="{{ email }}" oninput="{{ onEmailChange }}" placeholder="a.wijaya@lab.local" style="font-size:14px;padding:12px 14px;border:1.5px solid #E0E8EE;border-radius:8px;color:#111;background:#fff;box-sizing:border-box;" />
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:12px;font-weight:600;color:#111111;">Password</label>
+        <input type="password" value="{{ password }}" oninput="{{ onPasswordChange }}" placeholder="••••••••" style="font-size:14px;padding:12px 14px;border:1.5px solid #E0E8EE;border-radius:8px;color:#111;background:#fff;box-sizing:border-box;" />
+      </div>
+      <button onclick="{{ login }}" style="background:#2B8DB8;color:#fff;border:none;border-radius:9999px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;">Sign In</button>
+      <div style="text-align:center;font-size:12px;color:#2B8DB8;font-weight:600;cursor:pointer;">Forgot password?</div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:#888888;">General Testing Laboratory · Microbiology Section</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#F7FBFD;">
+  <div style="padding:58px 20px 14px;display:flex;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #E0E0E0;">
+    <div>
+      <div style="font-size:12px;color:#888888;">Good morning</div>
+      <div style="font-size:18px;font-weight:700;color:#111111;">A. Wijaya</div>
+    </div>
+    <div onclick="{{ goNotifTab }}" style="position:relative;width:40px;height:40px;border-radius:9999px;background:#E8F4FA;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:9999px;background:#D0021B;border:1.5px solid #E8F4FA;"></div>
+      </sc-if>
+    </div>
+  </div>
+  <div style="flex:1;padding:20px;display:flex;flex-direction:column;gap:22px;">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+      <div style="background:#fff;border:1px solid #E0E0E0;border-radius:12px;padding:14px 8px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#6B8A96;">{{ pendingLoginCount }}</div>
+        <div style="font-size:10px;color:#888888;margin-top:2px;line-height:1.3;">Pending<br/>Login</div>
+      </div>
+      <div style="background:#fff;border:1px solid #E0E0E0;border-radius:12px;padding:14px 8px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#2B8DB8;">{{ inTestingCount }}</div>
+        <div style="font-size:10px;color:#888888;margin-top:2px;line-height:1.3;">In<br/>Testing</div>
+      </div>
+      <div style="background:#fff;border:1px solid #E0E0E0;border-radius:12px;padding:14px 8px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#a36a00;">{{ awaitingApprovalCount }}</div>
+        <div style="font-size:10px;color:#888888;margin-top:2px;line-height:1.3;">Awaiting<br/>Approval</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#111111;margin-bottom:10px;">Quick Actions</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div onclick="{{ goNewSample }}" style="background:#fff;border:1px solid #E0E0E0;border-radius:12px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:9999px;background:#E8F4FA;display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+          <span style="font-size:11px;font-weight:600;color:#444444;">New Sample</span>
+        </div>
+        <div onclick="{{ goScannerTab }}" style="background:#fff;border:1px solid #E0E0E0;border-radius:12px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:9999px;background:#E8F4FA;display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" stroke-width="1.9" stroke-linecap="round"><path d="M4 8V5a1 1 0 011-1h3"/><path d="M20 8V5a1 1 0 00-1-1h-3"/><path d="M4 16v3a1 1 0 001 1h3"/><path d="M20 16v3a1 1 0 01-1 1h-3"/></svg></div>
+          <span style="font-size:11px;font-weight:600;color:#444444;">Scan</span>
+        </div>
+        <div onclick="{{ goSamplesTab }}" style="background:#fff;border:1px solid #E0E0E0;border-radius:12px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:9999px;background:#E8F4FA;display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/></svg></div>
+          <span style="font-size:11px;font-weight:600;color:#444444;">My Tasks</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#111111;margin-bottom:10px;">Alerts</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <sc-for list="{{ dashboardAlerts }}" as="n" hint-placeholder-count="3">
+          <div onclick="{{ n.onClick }}" style="display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #E0E0E0;border-radius:10px;padding:12px;cursor:pointer;">
+            <div style="width:8px;height:8px;border-radius:9999px;background:{{ n.accentColor }};margin-top:5px;flex-shrink:0;"></div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;color:#111111;">{{ n.title }}</div>
+              <div style="font-size:12px;color:#888888;margin-top:2px;line-height:1.4;">{{ n.body }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:600;color:#111111;">Recent Samples</div>
+        <div onclick="{{ goSamplesTab }}" style="font-size:12px;font-weight:600;color:#2B8DB8;cursor:pointer;">See all</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <sc-for list="{{ recentSamples }}" as="sample" hint-placeholder-count="4">
+          <div onclick="{{ sample.onClick }}" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E0E0E0;border-radius:10px;padding:12px;cursor:pointer;">
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;color:#111111;">{{ sample.id }}</div>
+              <div style="font-size:11px;color:#888888;margin-top:2px;">{{ sample.subtitle }}</div>
+            </div>
+            <div style="font-size:10px;font-weight:600;padding:4px 10px;border-radius:9999px;background:{{ sample.statusBg }};color:{{ sample.statusColor }};white-space:nowrap;">{{ sample.status }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  <dc-import name="BottomNav" active-tab="home" has-unread="{{ hasUnread }}" on-home="{{ goHome }}" on-samples="{{ goSamplesTab }}" on-scan="{{ goScannerTab }}" on-notif="{{ goNotifTab }}" on-profile="{{ goProfileTab }}" hint-size="100%,80px"></dc-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSamples }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#ffffff;">
+  <div style="position:sticky;top:0;background:#ffffff;border-bottom:1px solid #E0E0E0;padding:58px 20px 12px;z-index:5;display:flex;flex-direction:column;gap:12px;">
+    <div style="font-size:20px;font-weight:700;color:#111111;">Samples</div>
+    <div style="display:flex;align-items:center;gap:8px;background:#F0F4F8;border-radius:9999px;padding:9px 14px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888888" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" value="{{ searchQuery }}" oninput="{{ onSearchChange }}" placeholder="Search by ID, type, source…" style="border:none;background:transparent;font-size:13px;color:#111;flex:1;" />
+    </div>
+    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;">
+      <sc-for list="{{ statusOptions }}" as="opt" hint-placeholder-count="6">
+        <div onclick="{{ opt.onClick }}" style="font-size:12px;font-weight:600;padding:7px 14px;border-radius:9999px;background:{{ opt.bg }};color:{{ opt.color }};cursor:pointer;white-space:nowrap;flex-shrink:0;">{{ opt.label }}</div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="flex:1;padding:14px 20px 20px;display:flex;flex-direction:column;gap:10px;">
+    <sc-for list="{{ filteredSamples }}" as="sample" hint-placeholder-count="6">
+      <div onclick="{{ sample.onClick }}" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E0E0E0;border-radius:12px;padding:14px;cursor:pointer;">
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:#111111;">{{ sample.id }}</div>
+          <div style="font-size:12px;color:#888888;margin-top:2px;">{{ sample.subtitle }}</div>
+        </div>
+        <div style="font-size:10px;font-weight:600;padding:4px 10px;border-radius:9999px;background:{{ sample.statusBg }};color:{{ sample.statusColor }};white-space:nowrap;">{{ sample.status }}</div>
+        <svg width="8" height="14" viewBox="0 0 8 14" style="flex-shrink:0;"><path d="M1 1l6 6-6 6" stroke="#C8D6DF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </sc-for>
+    <sc-if value="{{ hasNoResults }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;padding:40px 20px;color:#888888;font-size:13px;">No samples match your search.</div>
+    </sc-if>
+  </div>
+  <dc-import name="BottomNav" active-tab="samples" has-unread="{{ hasUnread }}" on-home="{{ goHome }}" on-samples="{{ goSamplesTab }}" on-scan="{{ goScannerTab }}" on-notif="{{ goNotifTab }}" on-profile="{{ goProfileTab }}" hint-size="100%,80px"></dc-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSampleDetail }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#ffffff;">
+  <div style="position:sticky;top:0;background:#ffffff;border-bottom:1px solid #E0E0E0;display:flex;align-items:center;gap:12px;padding:58px 16px 14px;z-index:5;">
+    <div onclick="{{ goBack }}" style="width:32px;height:32px;border-radius:9999px;background:#F0F4F8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div style="font-size:17px;font-weight:700;color:#111111;">{{ selectedSample.id }}</div>
+  </div>
+  <div style="flex:1;padding:18px 20px 28px;display:flex;flex-direction:column;gap:20px;">
+    <div>
+      <div style="font-size:16px;font-weight:600;color:#111111;margin-bottom:6px;">{{ selectedSample.type }}</div>
+      <div style="font-size:13px;color:#888888;margin-bottom:10px;">{{ selectedSample.source }}</div>
+      <div style="display:inline-block;font-size:11px;font-weight:600;padding:5px 12px;border-radius:9999px;background:{{ selectedSample.statusBg }};color:{{ selectedSample.statusColor }};">{{ selectedSample.status }}</div>
+    </div>
+    <div style="background:#F7FBFD;border:1px solid #E0E8EE;border-radius:12px;padding:16px;">
+      <div style="font-size:11px;font-weight:600;color:#888888;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;">Sample Information</div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #E0E8EE;"><span style="font-size:12px;color:#888888;">Collected By</span><span style="font-size:12px;font-weight:600;color:#111111;">{{ selectedSample.collectedBy }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #E0E8EE;"><span style="font-size:12px;color:#888888;">Collected</span><span style="font-size:12px;font-weight:600;color:#111111;">{{ selectedSample.collectedDate }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #E0E8EE;"><span style="font-size:12px;color:#888888;">Received</span><span style="font-size:12px;font-weight:600;color:#111111;">{{ selectedSample.receivedDate }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;"><span style="font-size:12px;color:#888888;">Container</span><span style="font-size:12px;font-weight:600;color:#111111;">{{ selectedSample.container }}</span></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#888888;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;">Chain of Custody</div>
+      <div style="display:flex;flex-direction:column;gap:0;">
+        <sc-for list="{{ selectedSample.custodySteps }}" as="step" hint-placeholder-count="4">
+          <div style="display:flex;gap:10px;">
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <div style="width:10px;height:10px;border-radius:9999px;background:{{ step.dotColor }};flex-shrink:0;margin-top:3px;"></div>
+              <div style="width:1.5px;flex:1;background:#E0E8EE;"></div>
+            </div>
+            <div style="padding-bottom:16px;">
+              <div style="font-size:13px;font-weight:600;color:#111111;">{{ step.label }}</div>
+              <div style="font-size:11px;color:#888888;margin-top:2px;">{{ step.time }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#888888;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;">Tests Requested</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <sc-for list="{{ selectedSample.testsView }}" as="test" hint-placeholder-count="2">
+          <div style="background:#fff;border:1px solid #E0E0E0;border-radius:12px;padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;">
+              <div style="font-size:13px;font-weight:600;color:#111111;flex:1;">{{ test.name }}</div>
+              <div style="font-size:10px;font-weight:600;padding:4px 9px;border-radius:9999px;background:{{ test.bg }};color:{{ test.color }};white-space:nowrap;flex-shrink:0;">{{ test.label }}</div>
+            </div>
+            <sc-if value="{{ test.isPending }}" hint-placeholder-val="{{ false }}">
+              <button onclick="{{ test.onEnter }}" style="width:100%;background:#E8F4FA;color:#2B8DB8;border:none;border-radius:9999px;padding:9px;font-size:12px;font-weight:600;cursor:pointer;">Enter Result</button>
+            </sc-if>
+            <sc-if value="{{ test.isAwaiting }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:12px;color:#888888;">Result <strong style="color:#111111;">{{ test.result }} {{ test.unit }}</strong> submitted — pending QA review.</div>
+            </sc-if>
+            <sc-if value="{{ test.isComplete }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:#444444;"><span>Result: <strong style="color:#111111;">{{ test.result }} {{ test.unit }}</strong></span><span>Spec: {{ test.spec }}</span></div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <sc-if value="{{ selectedSample.canViewCertificate }}" hint-placeholder-val="{{ false }}">
+      <button onclick="{{ goCertificate }}" style="background:#2B8DB8;color:#fff;border:none;border-radius:9999px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">View Certificate of Analysis</button>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+
+<sc-if value="{{ isNewSample }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#ffffff;">
+  <div style="position:sticky;top:0;background:#ffffff;border-bottom:1px solid #E0E0E0;display:flex;align-items:center;gap:12px;padding:58px 16px 14px;z-index:5;">
+    <div onclick="{{ goBack }}" style="width:32px;height:32px;border-radius:9999px;background:#F0F4F8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div style="font-size:17px;font-weight:700;color:#111111;">New Sample</div>
+  </div>
+  <div style="flex:1;padding:18px 20px 28px;display:flex;flex-direction:column;gap:16px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-size:12px;font-weight:600;color:#111111;">Sample ID</label>
+      <div style="font-size:14px;padding:11px 14px;border:1.5px solid #E0E8EE;border-radius:8px;color:#888888;background:#F7FBFD;">{{ nextSampleIdDisplay }} (auto-assigned)</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-size:12px;font-weight:600;color:#111111;">Sample Type</label>
+      <select value="{{ newSample.type }}" onchange="{{ onNewSampleTypeChange }}" style="font-size:14px;padding:11px 14px;border:1.5px solid #E0E8EE;border-radius:8px;color:#111;background:#fff;">
+        <option value="">Select type…</option>
+        <sc-for list="{{ sampleTypeOptions }}" as="opt" hint-placeholder-count="8">
+          <option value="{{ opt }}">{{ opt }}</option>
+        </sc-for>
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-size:12px;font-weight:600;color:#111111;">Source / Location</label>
+      <input type="text" value="{{ newSample.source }}" oninput="{{ onNewSampleSourceChange }}" placeholder="e.g. Production Line 2" style="font-size:14px;padding:11px 14px;border:1.5px solid #E0E8EE;border-radius:8px;color:#111;background:#fff;box-sizing:border-box;" />
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-size:12px;font-weight:600;color:#111111;">Collected By</label>
+      <input type="text" value="{{ newSample.collectedBy }}" oninput="{{ onNewSampleCollectedByChange }}" style="font-size:14px;padding:11px 14px;border:1.5px solid #E0E8EE;border-radius:8px;color:#111;background:#fff;box-sizing:border-box;" />
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-size:12px;font-weight:600;color:#111111;">Collection Date &amp; Time</label>
+      <input type="text" value="{{ newSample.collectedDate }}" oninput="{{ onNewSampleCollectedDateChange }}" placeholder="e.g. Aug 21, 2026 · 09:00" style="font-size:14px;padding:11px 14px;border:1.5px solid #E0E8EE;border-radius:8px;color:#111;background:#fff;box-sizing:border-box;" />
+    </div>
+    <button onclick="{{ submitNewSample }}" style="margin-top:8px;background:#2B8DB8;color:#fff;border:none;border-radius:9999px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">Log Sample In</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTestEntry }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#ffffff;">
+  <div style="position:sticky;top:0;background:#ffffff;border-bottom:1px solid #E0E0E0;display:flex;align-items:center;gap:12px;padding:58px 16px 14px;z-index:5;">
+    <div onclick="{{ goBack }}" style="width:32px;height:32px;border-radius:9999px;background:#F0F4F8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div style="font-size:17px;font-weight:700;color:#111111;">Enter Result</div>
+  </div>
+  <div style="flex:1;padding:18px 20px 28px;display:flex;flex-direction:column;gap:18px;">
+    <div style="background:#F7FBFD;border:1px solid #E0E8EE;border-radius:12px;padding:14px;">
+      <div style="font-size:11px;font-weight:600;color:#888888;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">{{ testEntrySample.id }}</div>
+      <div style="font-size:15px;font-weight:600;color:#111111;">{{ testEntryTest.name }}</div>
+      <div style="font-size:12px;color:#888888;margin-top:4px;">Spec: {{ testEntryTest.spec }}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-size:12px;font-weight:600;color:#111111;">Result{{ testEntryTest.unit }}</label>
+      <input type="text" value="{{ testEntryResult }}" oninput="{{ onTestResultChange }}" placeholder="e.g. 42" style="font-size:16px;padding:12px 14px;border:1.5px solid #E0E8EE;border-radius:8px;color:#111;background:#fff;box-sizing:border-box;" />
+      <div style="font-size:11px;color:#888888;">Unit: {{ testEntryTest.unit }}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-size:12px;font-weight:600;color:#111111;">Notes (optional)</label>
+      <textarea value="{{ testEntryNotes }}" oninput="{{ onTestNotesChange }}" placeholder="Observations, deviations…" rows="3" style="font-size:14px;padding:12px 14px;border:1.5px solid #E0E8EE;border-radius:8px;color:#111;background:#fff;box-sizing:border-box;resize:none;font-family:'Poppins',sans-serif;"></textarea>
+    </div>
+    <button onclick="{{ submitTestResult }}" style="margin-top:8px;background:#2B8DB8;color:#fff;border:none;border-radius:9999px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">Submit for QA Review</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCertificate }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#ffffff;">
+  <div style="position:sticky;top:0;background:#ffffff;border-bottom:1px solid #E0E0E0;display:flex;align-items:center;gap:12px;padding:58px 16px 14px;z-index:5;">
+    <div onclick="{{ goBack }}" style="width:32px;height:32px;border-radius:9999px;background:#F0F4F8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div style="font-size:17px;font-weight:700;color:#111111;">Certificate of Analysis</div>
+  </div>
+  <div style="flex:1;padding:20px 20px 28px;display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding-bottom:8px;border-bottom:1.5px solid #111111;">
+      <img src="./assets/zekindo-logo.png" alt="lab logo" style="height:24px;object-fit:contain;margin-bottom:4px;" />
+      <div style="font-size:15px;font-weight:700;color:#111111;">Certificate of Analysis</div>
+      <div style="font-size:11px;color:#888888;">Microbiology Section · General Testing Laboratory</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:#888888;">Sample ID</span><span style="font-weight:600;color:#111111;">{{ selectedSample.id }}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:#888888;">Sample Type</span><span style="font-weight:600;color:#111111;">{{ selectedSample.type }}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:#888888;">Source</span><span style="font-weight:600;color:#111111;">{{ selectedSample.source }}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:#888888;">Collected</span><span style="font-weight:600;color:#111111;">{{ selectedSample.collectedDate }}</span></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#888888;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Results</div>
+      <sc-for list="{{ selectedSample.testsView }}" as="test" hint-placeholder-count="2">
+        <div style="border-top:1px solid #E0E8EE;padding:10px 0;">
+          <div style="font-size:13px;font-weight:600;color:#111111;margin-bottom:4px;">{{ test.name }}</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#444444;"><span>Result: <strong style="color:#111111;">{{ test.result }} {{ test.unit }}</strong></span><span>Spec: {{ test.spec }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:#E6F4EA;border:1px solid #28A745;border-radius:10px;padding:12px;text-align:center;font-size:13px;font-weight:600;color:#1e7a34;">Approved for Release</div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:#888888;">Approved By</span><span style="font-weight:600;color:#111111;">Dr. R. Kusuma, QA Manager</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:#888888;">Approval Date</span><span style="font-weight:600;color:#111111;">Aug 21, 2026</span></div>
+    </div>
+    <button style="margin-top:8px;background:#2B8DB8;color:#fff;border:none;border-radius:9999px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">Share / Export PDF</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isScanner }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#0C1418;">
+  <div style="padding:58px 20px 16px;background:#ffffff;border-bottom:1px solid #E0E0E0;">
+    <div style="font-size:17px;font-weight:700;color:#111111;">Scan Sample</div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:0 30px;">
+    <div style="position:relative;width:220px;height:220px;">
+      <div style="position:absolute;top:0;left:0;width:34px;height:34px;border-top:3px solid #2B8DB8;border-left:3px solid #2B8DB8;border-radius:6px 0 0 0;"></div>
+      <div style="position:absolute;top:0;right:0;width:34px;height:34px;border-top:3px solid #2B8DB8;border-right:3px solid #2B8DB8;border-radius:0 6px 0 0;"></div>
+      <div style="position:absolute;bottom:0;left:0;width:34px;height:34px;border-bottom:3px solid #2B8DB8;border-left:3px solid #2B8DB8;border-radius:0 0 0 6px;"></div>
+      <div style="position:absolute;bottom:0;right:0;width:34px;height:34px;border-bottom:3px solid #2B8DB8;border-right:3px solid #2B8DB8;border-radius:0 0 6px 0;"></div>
+    </div>
+    <div style="text-align:center;color:#A0B4BF;font-size:13px;line-height:1.5;">Align the sample barcode or QR label within the frame</div>
+    <button onclick="{{ simulateScan }}" style="background:#2B8DB8;color:#fff;border:none;border-radius:9999px;padding:13px 26px;font-size:14px;font-weight:600;cursor:pointer;">Simulate Scan</button>
+  </div>
+  <dc-import name="BottomNav" active-tab="scan" has-unread="{{ hasUnread }}" on-home="{{ goHome }}" on-samples="{{ goSamplesTab }}" on-scan="{{ goScannerTab }}" on-notif="{{ goNotifTab }}" on-profile="{{ goProfileTab }}" hint-size="100%,80px"></dc-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ isNotifications }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#ffffff;">
+  <div style="position:sticky;top:0;background:#ffffff;border-bottom:1px solid #E0E0E0;padding:58px 20px 12px;z-index:5;display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-size:20px;font-weight:700;color:#111111;">Alerts</div>
+    <div onclick="{{ markNotificationsRead }}" style="font-size:12px;font-weight:600;color:#2B8DB8;cursor:pointer;">Mark all read</div>
+  </div>
+  <div style="flex:1;padding:14px 20px 20px;display:flex;flex-direction:column;gap:8px;">
+    <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="4">
+      <div onclick="{{ n.onClick }}" style="display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #E0E0E0;border-radius:12px;padding:14px;cursor:pointer;">
+        <div style="width:8px;height:8px;border-radius:9999px;background:{{ n.unreadColor }};margin-top:5px;flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:#111111;">{{ n.title }}</div>
+          <div style="font-size:12px;color:#888888;margin-top:3px;line-height:1.4;">{{ n.body }}</div>
+          <div style="font-size:11px;color:#A0B4BF;margin-top:6px;">{{ n.time }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <dc-import name="BottomNav" active-tab="notif" has-unread="{{ hasUnread }}" on-home="{{ goHome }}" on-samples="{{ goSamplesTab }}" on-scan="{{ goScannerTab }}" on-notif="{{ goNotifTab }}" on-profile="{{ goProfileTab }}" hint-size="100%,80px"></dc-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#F7FBFD;">
+  <div style="padding:58px 20px 12px;background:#fff;border-bottom:1px solid #E0E0E0;">
+    <div style="font-size:20px;font-weight:700;color:#111111;">Profile</div>
+  </div>
+  <div style="flex:1;padding:20px;display:flex;flex-direction:column;gap:20px;">
+    <div style="background:#fff;border:1px solid #E0E0E0;border-radius:14px;padding:18px;display:flex;align-items:center;gap:14px;">
+      <div style="width:52px;height:52px;border-radius:9999px;background:#E8F4FA;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#2B8DB8;flex-shrink:0;">AW</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#111111;">Andi Wijaya</div>
+        <div style="font-size:12px;color:#888888;margin-top:2px;">Lab Technician · Microbiology</div>
+        <div style="font-size:11px;color:#A0B4BF;margin-top:2px;">Employee ID: EMP-2087</div>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid #E0E0E0;border-radius:14px;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #E0E8EE;cursor:pointer;">
+        <span style="font-size:13px;font-weight:500;color:#111111;">Notification Preferences</span>
+        <svg width="8" height="14" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="#C8D6DF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #E0E8EE;cursor:pointer;">
+        <span style="font-size:13px;font-weight:500;color:#111111;">Change Password</span>
+        <svg width="8" height="14" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="#C8D6DF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;">
+        <span style="font-size:13px;font-weight:500;color:#111111;">Help &amp; Support</span>
+        <svg width="8" height="14" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="#C8D6DF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+    <div onclick="{{ signOut }}" style="text-align:center;font-size:13px;font-weight:600;color:#D0021B;padding:14px;cursor:pointer;">Sign Out</div>
+    <div style="text-align:center;font-size:11px;color:#A0B4BF;margin-top:auto;">LIMS Mobile · v1.4.2</div>
+  </div>
+  <dc-import name="BottomNav" active-tab="profile" has-unread="{{ hasUnread }}" on-home="{{ goHome }}" on-samples="{{ goSamplesTab }}" on-scan="{{ goScannerTab }}" on-notif="{{ goNotifTab }}" on-profile="{{ goProfileTab }}" hint-size="100%,80px"></dc-import>
+</div>
+</sc-if>
+
+</x-import>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;login&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;login&quot;,&quot;dashboard&quot;],&quot;section&quot;:&quot;Behavior&quot;},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#2B8DB8&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#2B8DB8&quot;,&quot;#1A5F7A&quot;,&quot;#28A745&quot;,&quot;#F5A623&quot;],&quot;section&quot;:&quot;Behavior&quot;}}">
+const STATUS_STYLES = {
+  'Pending Login': { bg: '#F0F4F8', color: '#6B8A96' },
+  'In Testing': { bg: '#E8F4FA', color: '#2B8DB8' },
+  'Awaiting Approval': { bg: '#FEF3E0', color: '#a36a00' },
+  'Complete': { bg: '#E6F4EA', color: '#1e7a34' },
+  'Rejected': { bg: '#FDECEA', color: '#D0021B' },
+};
+const DOT_COLOR_FOR_FINAL = {
+  'Pending Login': '#2B8DB8', 'In Testing': '#2B8DB8',
+  'Awaiting Approval': '#F5A623', 'Complete': '#28A745', 'Rejected': '#D0021B',
+};
+
+function initialSamples() {
+  return [
+    { id: 'LAB-24-0142', type: 'Total Plate Count', source: 'Production Line 2', status: 'In Testing',
+      collectedBy: 'B. Santoso', collectedDate: 'Aug 19, 2026 · 08:10', receivedDate: 'Aug 19, 2026 · 10:40', container: 'Sterile bag, 200g',
+      tests: [{ name: 'Total Plate Count (TPC)', status: 'pending', unit: 'CFU/g', spec: '≤10,000 CFU/g' }] },
+    { id: 'LAB-24-0141', type: 'Coliform / E. coli', source: 'Utility Water Loop', status: 'Awaiting Approval',
+      collectedBy: 'A. Wijaya', collectedDate: 'Aug 18, 2026 · 14:00', receivedDate: 'Aug 18, 2026 · 15:20', container: 'Sterile bottle, 250mL',
+      tests: [
+        { name: 'Coliform Count', status: 'awaiting', result: '<10', unit: 'MPN/g', spec: '≤10 MPN/g' },
+        { name: 'E. coli Confirmation', status: 'awaiting', result: 'Negative', unit: '', spec: 'Negative' },
+      ] },
+    { id: 'LAB-24-0140', type: 'Yeast & Mold', source: 'Raw Material — Batch RM-2291', status: 'Complete',
+      collectedBy: 'B. Santoso', collectedDate: 'Aug 15, 2026 · 09:30', receivedDate: 'Aug 15, 2026 · 11:00', container: 'Sterile bag, 100g',
+      tests: [{ name: 'Yeast & Mold Count', status: 'complete', result: '85', unit: 'CFU/g', spec: '≤100 CFU/g' }] },
+    { id: 'LAB-24-0139', type: 'Sterility Test', source: 'Finished Goods — FG-1187', status: 'Complete',
+      collectedBy: 'D. Prasetyo', collectedDate: 'Aug 4, 2026 · 13:00', receivedDate: 'Aug 4, 2026 · 13:45', container: 'Sealed vial ×3',
+      tests: [{ name: 'Sterility Test (14-day)', status: 'complete', result: 'No Growth', unit: '', spec: 'No Growth' }] },
+    { id: 'LAB-24-0138', type: 'Environmental Swab', source: 'Cleanroom Grade B — Point 4', status: 'Rejected',
+      collectedBy: 'A. Wijaya', collectedDate: 'Aug 12, 2026 · 07:50', receivedDate: 'Aug 12, 2026 · 09:00', container: 'Contact plate',
+      tests: [{ name: 'Aerobic Plate Count — Surface Swab', status: 'complete', result: '220', unit: 'CFU/plate', spec: '≤50 CFU/plate' }] },
+    { id: 'LAB-24-0143', type: 'Water Activity', source: 'Incoming QC — Batch IQ-3342', status: 'Pending Login',
+      collectedBy: 'D. Prasetyo', collectedDate: 'Aug 20, 2026 · 16:15', receivedDate: 'Aug 20, 2026 · 16:15', container: 'Sample cup, 20g',
+      tests: [{ name: 'Water Activity (aw)', status: 'pending', unit: 'aw', spec: '≤0.85 aw' }] },
+    { id: 'LAB-24-0137', type: 'Endotoxin (LAL)', source: 'Finished Goods — FG-1180', status: 'Complete',
+      collectedBy: 'B. Santoso', collectedDate: 'Jul 30, 2026 · 10:00', receivedDate: 'Jul 30, 2026 · 10:30', container: 'Depyrogenated vial',
+      tests: [{ name: 'Bacterial Endotoxin (LAL)', status: 'complete', result: '0.08', unit: 'EU/mL', spec: '≤0.5 EU/mL' }] },
+    { id: 'LAB-24-0144', type: 'Bioburden', source: 'Raw Material — Batch RM-2295', status: 'In Testing',
+      collectedBy: 'A. Wijaya', collectedDate: 'Aug 20, 2026 · 11:20', receivedDate: 'Aug 20, 2026 · 13:00', container: 'Sterile bottle, 100mL',
+      tests: [{ name: 'Bioburden Count', status: 'pending', unit: 'CFU/mL', spec: '≤100 CFU/mL' }] },
+  ];
+}
+
+function initialNotifications() {
+  return [
+    { id: 'n1', title: 'QA rejected LAB-24-0138', body: 'Environmental swab exceeded spec (220 CFU/plate vs ≤50). Recollection requested.', time: '2h ago', sampleId: 'LAB-24-0138', unread: true },
+    { id: 'n2', title: 'Result approved — LAB-24-0140', body: 'Yeast & Mold Count passed QA review and is ready for release.', time: '5h ago', sampleId: 'LAB-24-0140', unread: true },
+    { id: 'n3', title: 'New sample assigned', body: 'LAB-24-0144 (Bioburden) was logged in and assigned to your queue.', time: '1d ago', sampleId: 'LAB-24-0144', unread: false },
+    { id: 'n4', title: 'Reminder: pending login', body: 'LAB-24-0143 (Water Activity) has been waiting for login for 4 hours.', time: '1d ago', sampleId: 'LAB-24-0143', unread: false },
+  ];
+}
+
+class Component extends DCLogic {
+  state = {
+    stack: ['login'],
+    email: '', password: '',
+    searchQuery: '', statusFilter: 'All',
+    selectedSampleId: null,
+    testEntry: { sampleId: null, testIndex: null, result: '', notes: '' },
+    newSample: { type: '', source: '', collectedBy: 'A. Wijaya', collectedDate: '' },
+    samples: initialSamples(),
+    notifications: initialNotifications(),
+    nextIdNum: 145,
+  };
+
+  componentDidMount() {
+    if (this.props.startScreen === 'dashboard') this.setState({ stack: ['dashboard'] });
+  }
+
+  push(screen) { this.setState(s => ({ stack: [...s.stack, screen] })); }
+  goBack = () => { this.setState(s => (s.stack.length > 1 ? { stack: s.stack.slice(0, -1) } : s)); };
+  goTab(tab) { this.setState({ stack: [tab] }); }
+
+  login = () => { this.setState({ stack: ['dashboard'] }); };
+  signOut = () => { this.setState({ stack: ['login'], email: '', password: '' }); };
+
+  onEmailChange = (e) => this.setState({ email: e.target.value });
+  onPasswordChange = (e) => this.setState({ password: e.target.value });
+
+  goHome = () => this.goTab('dashboard');
+  goSamplesTab = () => this.goTab('samples');
+  goScannerTab = () => this.goTab('scanner');
+  goNotifTab = () => this.goTab('notifications');
+  goProfileTab = () => this.goTab('profile');
+  goNewSample = () => { this.setState({ newSample: { type: '', source: '', collectedBy: 'A. Wijaya', collectedDate: '' } }); this.push('newSample'); };
+  goCertificate = () => this.push('certificate');
+
+  selectSample = (id) => { this.setState({ selectedSampleId: id }); this.push('sampleDetail'); };
+
+  onSearchChange = (e) => this.setState({ searchQuery: e.target.value });
+  setStatusFilter(f) { this.setState({ statusFilter: f }); }
+
+  onNewSampleField(field, val) { this.setState(s => ({ newSample: { ...s.newSample, [field]: val } })); }
+
+  submitNewSample = () => {
+    const s = this.state;
+    if (!s.newSample.type) return;
+    const id = `LAB-24-0${s.nextIdNum}`;
+    const rec = {
+      id, type: s.newSample.type, source: s.newSample.source || '—', status: 'Pending Login',
+      collectedBy: s.newSample.collectedBy || 'A. Wijaya',
+      collectedDate: s.newSample.collectedDate || 'Just now', receivedDate: 'Just now', container: 'Sterile bag',
+      tests: [{ name: `${s.newSample.type} — Screening`, status: 'pending', unit: '', spec: 'Per SOP' }],
+    };
+    this.setState(prev => ({ samples: [rec, ...prev.samples], nextIdNum: prev.nextIdNum + 1, selectedSampleId: id, stack: ['samples', 'sampleDetail'] }));
+  };
+
+  openTestEntry = (sampleId, testIndex) => { this.setState({ testEntry: { sampleId, testIndex, result: '', notes: '' } }); this.push('testEntry'); };
+  onTestResultChange = (e) => this.setState(s => ({ testEntry: { ...s.testEntry, result: e.target.value } }));
+  onTestNotesChange = (e) => this.setState(s => ({ testEntry: { ...s.testEntry, notes: e.target.value } }));
+
+  submitTestResult = () => {
+    const { sampleId, testIndex, result } = this.state.testEntry;
+    if (!result) return;
+    this.setState(s => ({
+      samples: s.samples.map(sample => {
+        if (sample.id !== sampleId) return sample;
+        const tests = sample.tests.map((t, i) => i === testIndex ? { ...t, status: 'awaiting', result } : t);
+        const allDone = tests.every(t => t.status !== 'pending');
+        return { ...sample, tests, status: allDone ? 'Awaiting Approval' : sample.status };
+      }),
+      stack: s.stack.slice(0, -1),
+    }));
+  };
+
+  simulateScan = () => { this.setState({ selectedSampleId: 'LAB-24-0143' }); this.push('sampleDetail'); };
+
+  markNotificationsRead = () => this.setState(s => ({ notifications: s.notifications.map(n => ({ ...n, unread: false })) }));
+  openNotification(sampleId) {
+    if (!sampleId) return;
+    this.setState({ selectedSampleId: sampleId, stack: ['notifications', 'sampleDetail'] });
+  }
+
+  buildCustody(sample) {
+    const steps = [
+      { label: 'Collected', time: sample.collectedDate },
+      { label: 'Received at Lab', time: sample.receivedDate },
+      { label: 'Logged In', time: sample.receivedDate },
+    ];
+    if (sample.status !== 'Pending Login') steps.push({ label: 'Testing Started', time: sample.receivedDate });
+    if (['Awaiting Approval', 'Complete', 'Rejected'].includes(sample.status)) steps.push({ label: 'Result Submitted', time: 'Pending QA' });
+    if (sample.status === 'Complete') steps.push({ label: 'QA Approved', time: 'Released' });
+    if (sample.status === 'Rejected') steps.push({ label: 'QA Rejected', time: 'Recollection requested' });
+    return steps.map((step, i) => ({ ...step, dotColor: i === steps.length - 1 ? DOT_COLOR_FOR_FINAL[sample.status] : '#2B8DB8' }));
+  }
+
+  buildTestsView(sample) {
+    return sample.tests.map((t, i) => {
+      let label = 'Not Started', bg = '#F0F4F8', color = '#6B8A96';
+      if (t.status === 'awaiting') { label = 'Awaiting QA'; bg = '#FEF3E0'; color = '#a36a00'; }
+      if (t.status === 'complete') { label = 'Complete'; bg = '#E6F4EA'; color = '#1e7a34'; }
+      return { ...t, label, bg, color, isPending: t.status === 'pending', isAwaiting: t.status === 'awaiting', isComplete: t.status === 'complete',
+        onEnter: () => this.openTestEntry(sample.id, i) };
+    });
+  }
+
+  toSampleRow(sample) {
+    const st = STATUS_STYLES[sample.status];
+    return { id: sample.id, subtitle: `${sample.type} · ${sample.source}`, status: sample.status, statusBg: st.bg, statusColor: st.color, onClick: () => this.selectSample(sample.id) };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const screen = s.stack[s.stack.length - 1];
+    const unread = s.notifications.filter(n => n.unread).length;
+    const samples = s.samples;
+
+    const selectedSample = (() => {
+      const sample = samples.find(x => x.id === s.selectedSampleId);
+      if (!sample) return null;
+      const st = STATUS_STYLES[sample.status];
+      return { ...sample, statusBg: st.bg, statusColor: st.color, custodySteps: this.buildCustody(sample), testsView: this.buildTestsView(sample), canViewCertificate: sample.status === 'Complete' };
+    })();
+
+    const q = s.searchQuery.trim().toLowerCase();
+    const filteredSamples = samples
+      .filter(x => s.statusFilter === 'All' || x.status === s.statusFilter)
+      .filter(x => !q || x.id.toLowerCase().includes(q) || x.type.toLowerCase().includes(q) || x.source.toLowerCase().includes(q))
+      .map(x => this.toSampleRow(x));
+
+    const statusNames = ['All', 'Pending Login', 'In Testing', 'Awaiting Approval', 'Complete', 'Rejected'];
+    const statusOptions = statusNames.map(name => ({
+      label: name, onClick: () => this.setStatusFilter(name),
+      bg: s.statusFilter === name ? '#2B8DB8' : '#F0F4F8',
+      color: s.statusFilter === name ? '#ffffff' : '#444444',
+    }));
+
+    const dashboardAlerts = s.notifications.slice(0, 3).map(n => ({
+      title: n.title, body: n.body, accentColor: n.title.includes('rejected') ? '#D0021B' : (n.title.includes('approved') ? '#28A745' : '#2B8DB8'),
+      onClick: () => this.openNotification(n.sampleId),
+    }));
+
+    const testEntrySample = samples.find(x => x.id === s.testEntry.sampleId);
+    const testEntryTest = testEntrySample ? testEntrySample.tests[s.testEntry.testIndex] : null;
+
+    const notifications = s.notifications.map(n => ({
+      ...n, unreadColor: n.unread ? '#2B8DB8' : 'transparent', onClick: () => this.openNotification(n.sampleId),
+    }));
+
+    return {
+      isLogin: screen === 'login', isDashboard: screen === 'dashboard', isSamples: screen === 'samples',
+      isSampleDetail: screen === 'sampleDetail', isNewSample: screen === 'newSample', isTestEntry: screen === 'testEntry',
+      isCertificate: screen === 'certificate', isScanner: screen === 'scanner', isNotifications: screen === 'notifications', isProfile: screen === 'profile',
+      email: s.email, password: s.password, onEmailChange: this.onEmailChange, onPasswordChange: this.onPasswordChange, login: this.login,
+      hasUnread: unread > 0,
+      pendingLoginCount: samples.filter(x => x.status === 'Pending Login').length,
+      inTestingCount: samples.filter(x => x.status === 'In Testing').length,
+      awaitingApprovalCount: samples.filter(x => x.status === 'Awaiting Approval').length,
+      dashboardAlerts, recentSamples: samples.slice(0, 4).map(x => this.toSampleRow(x)),
+      goHome: this.goHome, goSamplesTab: this.goSamplesTab, goScannerTab: this.goScannerTab, goNotifTab: this.goNotifTab, goProfileTab: this.goProfileTab,
+      goNewSample: this.goNewSample, goBack: this.goBack, goCertificate: this.goCertificate,
+      searchQuery: s.searchQuery, onSearchChange: this.onSearchChange, statusOptions, filteredSamples, hasNoResults: filteredSamples.length === 0,
+      selectedSample,
+      newSample: s.newSample,
+      nextSampleIdDisplay: `LAB-24-0${s.nextIdNum}`,
+      sampleTypeOptions: ['Total Plate Count', 'Coliform / E. coli', 'Yeast & Mold', 'Sterility Test', 'Environmental Swab', 'Water Activity', 'Endotoxin (LAL)', 'Bioburden'],
+      onNewSampleTypeChange: (e) => this.onNewSampleField('type', e.target.value),
+      onNewSampleSourceChange: (e) => this.onNewSampleField('source', e.target.value),
+      onNewSampleCollectedByChange: (e) => this.onNewSampleField('collectedBy', e.target.value),
+      onNewSampleCollectedDateChange: (e) => this.onNewSampleField('collectedDate', e.target.value),
+      submitNewSample: this.submitNewSample,
+      testEntrySample, testEntryTest, testEntryResult: s.testEntry.result, testEntryNotes: s.testEntry.notes,
+      onTestResultChange: this.onTestResultChange, onTestNotesChange: this.onTestNotesChange, submitTestResult: this.submitTestResult,
+      simulateScan: this.simulateScan,
+      notifications, markNotificationsRead: this.markNotificationsRead,
+      signOut: this.signOut,
+    };
+  }
+}
+</script>
+</body>
+</html>
