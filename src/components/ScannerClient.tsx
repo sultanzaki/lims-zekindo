@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import type { IScannerControls } from "@zxing/browser";
+import Button from "@/components/ui/Button";
 
 export default function ScannerClient() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -73,14 +74,9 @@ export default function ScannerClient() {
           value={manualId}
           onChange={(e) => setManualId(e.target.value)}
           placeholder="Enter Sample ID e.g. LAB-24-0143"
-          className="text-sm px-3.5 py-3 rounded-lg border-none bg-white/10 text-white placeholder:text-[#A0B4BF]"
+          className="text-sm px-3.5 py-3 rounded-[8px] border border-white/15 bg-white/10 text-white placeholder:text-[#8C97A6]"
         />
-        <button
-          type="submit"
-          className="bg-primary text-white rounded-full py-3 text-sm font-semibold cursor-pointer"
-        >
-          Look Up Sample ID
-        </button>
+        <Button type="submit">Look Up Sample ID</Button>
       </form>
     </div>
   );

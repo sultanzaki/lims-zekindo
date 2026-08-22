@@ -13,7 +13,7 @@ export default async function AdminCatalogPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Sample & Test Catalog" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
         <CreateSampleTypeForm />
@@ -37,10 +37,17 @@ export default async function AdminCatalogPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 {st.tests.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between text-xs border-t border-border-soft pt-1.5">
+                  <div key={t.id} className="flex items-center justify-between gap-2 text-xs border-t border-border-soft pt-1.5">
                     <div>
                       <span className={`font-medium ${t.active ? "text-text" : "text-muted line-through"}`}>{t.name}</span>
                       <span className="text-muted"> · {t.spec}</span>
+                      {t.resultMode === "MULTI" && (
+                        <span className="ml-1.5 inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-primary-soft text-primary-dark align-middle">
+                          {[t.replicateCount ? `×${t.replicateCount}` : null, t.intervalPlan ? t.intervalPlan.split(",").length + " pts" : null]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      )}
                     </div>
                     <form action={setTestCatalogActiveAction.bind(null, t.id, !t.active)}>
                       <button type="submit" className={`text-[11px] font-semibold cursor-pointer shrink-0 ${t.active ? "text-danger" : "text-success-dark"}`}>

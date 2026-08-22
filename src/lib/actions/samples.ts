@@ -46,8 +46,11 @@ export async function createSampleAction(
           unit: t.unit,
           spec: t.spec,
           order: i,
+          resultMode: t.resultMode,
+          replicateCount: t.replicateCount,
+          intervalPlan: t.intervalPlan,
         }))
-      : [{ name: `${sampleType.name} — Screening`, status: "pending", unit: "", spec: "Per SOP", order: 0 }];
+      : [{ name: `${sampleType.name} — Screening`, status: "pending", unit: "", spec: "Per SOP", order: 0, resultMode: "SINGLE", replicateCount: null, intervalPlan: null }];
 
   await prisma.sample.create({
     data: {
@@ -141,6 +144,54 @@ export async function submitTestResultAction(
   revalidatePath("/samples");
   revalidatePath(`/samples/${sampleId}`);
   redirect(`/samples/${sampleId}`);
+}
+
+export async function addTestReadingAction(
+  sampleId: string,
+  testId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const user = await requireUser();
+  const value = String(formData.get("value") || "").trim();
+  const intervalLabel = String(formData.get("intervalLabel") || "").trim() || null;
+  const replicateIndexRaw = String(formData.get("replicateIndex") || "").trim();
+  const note = String(formData.get("note") || "").trim();
+
+  if (!value) return { error: "Enter a reading value." };
+
+  const test = await prisma.test.findUnique({ where: { id: testId } });
+  if (!test || test.sampleId !== sampleId) return { error: "Test not found." };
+  if (test.status !== "pending") return { error: "This test has already been submitted — readings are locked." };
+
+  const replicateIndex = replicateIndexRaw ? Number(replicateIndexRaw) : null;
+
+  await prisma.testReading.create({
+    data: {
+      testId,
+      intervalLabel,
+      replicateIndex: replicateIndex && Number.isFinite(replicateIndex) ? replicateIndex : null,
+      value,
+      note: note || null,
+      enteredBy: user.name,
+    },
+  });
+
+  await logAudit({ userId: user.id, action: "test.reading_added", entityType: "Test", entityId: testId, detail: value });
+
+  revalidatePath(`/samples/${sampleId}/tests/${testId}`);
+  return {};
+}
+
+export async function deleteTestReadingAction(sampleId: string, testId: string, readingId: string) {
+  const user = await requireUser();
+  const test = await prisma.test.findUnique({ where: { id: testId } });
+  if (!test || test.status !== "pending") return;
+
+  await prisma.testReading.delete({ where: { id: readingId } });
+  await logAudit({ userId: user.id, action: "test.reading_removed", entityType: "Test", entityId: testId, detail: readingId });
+
+  revalidatePath(`/samples/${sampleId}/tests/${testId}`);
 }
 
 async function openDeviationForRejection(sampleId: string, sampleType: string, userId: string, stage: string) {
@@ -360,6 +411,9 @@ export async function retestSampleAction(originalSampleId: string) {
           unit: t.unit,
           spec: t.spec,
           order: i,
+          resultMode: t.resultMode,
+          replicateCount: t.replicateCount,
+          intervalPlan: t.intervalPlan,
         })),
       },
       custodyEvents: {

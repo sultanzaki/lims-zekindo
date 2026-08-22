@@ -11,7 +11,7 @@ export default async function AdminUsersPage() {
   const users = await prisma.user.findMany({ orderBy: { createdAt: "asc" } });
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Users" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
         <CreateUserForm />

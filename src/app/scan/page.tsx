@@ -11,7 +11,7 @@ export default async function ScanPage() {
   return (
     <div className="min-h-screen flex flex-col bg-scanner-bg">
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border">
-        <div className="text-[17px] font-bold text-text">Scan Sample</div>
+        <div className="text-[19px] font-bold text-text tracking-tight">Scan Sample</div>
       </div>
       <ScannerClient />
       <BottomNav active="scan" hasUnread={unread > 0} />

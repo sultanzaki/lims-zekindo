@@ -39,6 +39,14 @@ export async function setSampleTypeActiveAction(id: string, active: boolean) {
   revalidatePath("/admin/catalog");
 }
 
+function normalizeIntervalPlan(raw: string): string | null {
+  const labels = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return labels.length > 0 ? labels.join(",") : null;
+}
+
 export async function createTestCatalogAction(
   _prevState: FormState,
   formData: FormData
@@ -49,12 +57,26 @@ export async function createTestCatalogAction(
   const unit = String(formData.get("unit") || "").trim();
   const spec = String(formData.get("spec") || "").trim();
   const method = String(formData.get("method") || "").trim();
+  const resultMode = String(formData.get("resultMode") || "SINGLE") === "MULTI" ? "MULTI" : "SINGLE";
+  const replicateCountRaw = String(formData.get("replicateCount") || "").trim();
+  const intervalPlanRaw = String(formData.get("intervalPlan") || "").trim();
 
   if (!sampleTypeId || !name || !spec) return { error: "Sample type, test name, and spec are required." };
 
+  let replicateCount: number | null = null;
+  let intervalPlan: string | null = null;
+  if (resultMode === "MULTI") {
+    const n = Number(replicateCountRaw);
+    replicateCount = Number.isFinite(n) && n >= 2 ? Math.floor(n) : null;
+    intervalPlan = normalizeIntervalPlan(intervalPlanRaw);
+    if (!replicateCount && !intervalPlan) {
+      return { error: "Multiple Readings needs a replicate count (≥2) and/or an interval plan." };
+    }
+  }
+
   const count = await prisma.testCatalog.count({ where: { sampleTypeId } });
   const created = await prisma.testCatalog.create({
-    data: { sampleTypeId, name, unit, spec, method: method || null, order: count },
+    data: { sampleTypeId, name, unit, spec, method: method || null, order: count, resultMode, replicateCount, intervalPlan },
   });
 
   await logAudit({ userId: user.id, action: "catalog.test_created", entityType: "TestCatalog", entityId: created.id, detail: name });

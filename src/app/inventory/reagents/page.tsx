@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import { CreateReagentForm, UpdateQuantityForm } from "@/components/InventoryForms";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default async function ReagentsPage() {
   await requirePageRole(canManageInventoryAndCatalog);
@@ -12,7 +13,7 @@ export default async function ReagentsPage() {
   const soonMs = 14 * 24 * 60 * 60 * 1000;
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Reagents" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
         <CreateReagentForm />
@@ -27,9 +28,9 @@ export default async function ReagentsPage() {
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="text-[13px] font-semibold text-text">{r.name}</div>
                   <div className="flex gap-1.5">
-                    {lowStock && <Badge color="#D0021B" label="Low stock" />}
-                    {expired && <Badge color="#D0021B" label="Expired" />}
-                    {!expired && expiringSoon && <Badge color="#a36a00" label="Expiring soon" />}
+                    {lowStock && <Badge color="#C22233" label="Low stock" />}
+                    {expired && <Badge color="#C22233" label="Expired" />}
+                    {!expired && expiringSoon && <Badge color="#B3720C" label="Expiring soon" />}
                   </div>
                 </div>
                 <div className="text-[11px] text-muted mb-1.5">
@@ -40,7 +41,7 @@ export default async function ReagentsPage() {
               </div>
             );
           })}
-          {reagents.length === 0 && <div className="text-xs text-muted">No reagents tracked yet.</div>}
+          {reagents.length === 0 && <EmptyState>No reagents tracked yet.</EmptyState>}
         </div>
       </div>
     </div>
@@ -49,7 +50,7 @@ export default async function ReagentsPage() {
 
 function Badge({ color, label }: { color: string; label: string }) {
   return (
-    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#F0F4F8", color }}>
+    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]" style={{ background: "#EFF2F5", color }}>
       {label}
     </span>
   );

@@ -3,6 +3,8 @@
 import { useActionState } from "react";
 import Image from "next/image";
 import { loginAction, type LoginState } from "@/lib/actions/auth";
+import Field, { inputClass } from "@/components/ui/Field";
+import Button from "@/components/ui/Button";
 
 const initialState: LoginState = {};
 
@@ -10,79 +12,61 @@ export default function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
-    <div
-      className="min-h-screen flex flex-col px-6"
-      style={{ background: "linear-gradient(160deg,#E8F4FA 0%,#ffffff 55%)" }}
-    >
-      <div className="flex-1 flex flex-col justify-center gap-6 py-10 max-w-sm mx-auto w-full">
-        <div className="flex flex-col items-center gap-2.5">
+    <div className="min-h-screen flex flex-col bg-page-bg px-6">
+      <div className="flex-1 flex flex-col justify-center gap-7 py-10 max-w-sm mx-auto w-full">
+        <div className="flex flex-col items-center gap-3">
           <Image
             src="/zekindo-logo.png"
             alt="Zekindo Chemicals"
             width={160}
             height={32}
-            style={{ height: 32, width: "auto" }}
+            style={{ height: 30, width: "auto" }}
             priority
           />
-          <div className="text-[11px] font-semibold text-primary tracking-wider uppercase text-center">
+          <div className="text-[10.5px] font-semibold text-muted tracking-[0.14em] uppercase text-center">
             Laboratory Information Management System
           </div>
         </div>
 
-        <form
-          action={formAction}
-          className="flex flex-col gap-4 bg-white rounded-2xl p-6 shadow-[0_4px_16px_rgba(0,0,0,0.08)] border border-border"
-        >
+        <form action={formAction} className="flex flex-col gap-4 bg-white rounded-xl p-6 border border-border">
           <div>
-            <div className="text-xl font-bold text-text mb-1">Sign in</div>
+            <div className="text-[19px] font-bold text-text mb-1 tracking-tight">Sign in</div>
             <div className="text-[13px] text-muted">Use your lab credentials to continue</div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text" htmlFor="identifier">
-              Email or Employee ID
-            </label>
+          <Field label="Email or Employee ID" htmlFor="identifier">
             <input
               id="identifier"
               name="identifier"
               type="text"
               placeholder="a.wijaya@lab.local"
               autoComplete="username"
-              className="text-sm px-3.5 py-3 border-[1.5px] border-border-soft rounded-lg text-text bg-white"
+              className={inputClass}
             />
-          </div>
+          </Field>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text" htmlFor="password">
-              Password
-            </label>
+          <Field label="Password" htmlFor="password">
             <input
               id="password"
               name="password"
               type="password"
               placeholder="••••••••"
               autoComplete="current-password"
-              className="text-sm px-3.5 py-3 border-[1.5px] border-border-soft rounded-lg text-text bg-white"
+              className={inputClass}
             />
-          </div>
+          </Field>
 
-          {state.error && (
-            <div className="text-xs font-medium text-danger -mt-1">{state.error}</div>
-          )}
+          {state.error && <div className="text-xs font-medium text-danger -mt-1">{state.error}</div>}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="bg-primary text-white rounded-full py-3.5 text-[15px] font-semibold cursor-pointer disabled:opacity-60"
-          >
+          <Button type="submit" disabled={pending} className="mt-1">
             {pending ? "Signing in…" : "Sign In"}
-          </button>
+          </Button>
           <div className="text-center text-xs text-muted">
             Forgot your password? Ask your Lab Manager to reset it.
           </div>
         </form>
 
-        <div className="text-center text-[11px] text-muted">
+        <div className="text-center text-[11px] text-faint">
           General Testing Laboratory · Microbiology Section
         </div>
       </div>

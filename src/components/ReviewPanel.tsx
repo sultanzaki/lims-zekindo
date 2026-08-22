@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import type { FormState } from "@/lib/actions/samples";
+import Button from "@/components/ui/Button";
+import { inputClassSm } from "@/components/ui/Field";
 
 const initialState: FormState = {};
 
@@ -25,13 +27,15 @@ export default function ReviewPanel({
   const [rejectState, rejectFormAction, rejectPending] = useActionState(rejectAction, initialState);
 
   return (
-    <div className="flex flex-col gap-2.5 bg-warning-bg border border-[#F5A623] rounded-xl p-4">
-      <div className="text-[13px] font-semibold text-[#a36a00]">{title}</div>
-      <div className="text-xs text-[#a36a00]">{body}</div>
+    <div className="flex flex-col gap-3 bg-warning-bg border border-warning/30 rounded-xl p-4">
+      <div>
+        <div className="text-[13px] font-semibold text-warning-dark">{title}</div>
+        <div className="text-xs text-warning-dark mt-0.5">{body}</div>
+      </div>
       {canAct ? (
         <>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-semibold text-[#a36a00]" htmlFor="review-password">
+            <label className="text-[11px] font-semibold text-warning-dark" htmlFor="review-password">
               Enter your password to sign this decision
             </label>
             <input
@@ -39,7 +43,7 @@ export default function ReviewPanel({
               id="review-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="text-xs px-3 py-2 border-[1.5px] border-[#F5A623] rounded-lg text-text bg-white"
+              className={`${inputClassSm} border-warning/40`}
             />
           </div>
           {(approveState.error || rejectState.error) && (
@@ -48,28 +52,20 @@ export default function ReviewPanel({
           <div className="flex gap-2.5">
             <form action={rejectFormAction} className="flex-1">
               <input type="hidden" name="password" value={password} />
-              <button
-                type="submit"
-                disabled={rejectPending || approvePending}
-                className="w-full bg-white text-danger border border-danger rounded-full py-3 text-[13px] font-semibold cursor-pointer disabled:opacity-60"
-              >
+              <Button variant="outlineDanger" size="sm" disabled={rejectPending || approvePending}>
                 {rejectPending ? "Signing…" : "Reject"}
-              </button>
+              </Button>
             </form>
             <form action={approveFormAction} className="flex-1">
               <input type="hidden" name="password" value={password} />
-              <button
-                type="submit"
-                disabled={approvePending || rejectPending}
-                className="w-full bg-success text-white rounded-full py-3 text-[13px] font-semibold cursor-pointer disabled:opacity-60"
-              >
+              <Button variant="success" size="sm" disabled={approvePending || rejectPending}>
                 {approvePending ? "Signing…" : approveLabel}
-              </button>
+              </Button>
             </form>
           </div>
         </>
       ) : (
-        <div className="text-xs text-[#a36a00] italic">Waiting on a reviewer with permission to act.</div>
+        <div className="text-xs text-warning-dark italic">Waiting on a reviewer with permission to act.</div>
       )}
     </div>
   );

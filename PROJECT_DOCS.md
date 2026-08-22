@@ -64,6 +64,24 @@ compute being far apart is the single biggest cause of a LIMS app "feeling slow.
 
 ---
 
+## 2a. Updating an existing deployment
+
+This release adds new database tables/columns (multi-reading test results — see
+[Section 5](#5-feature-walkthrough)). If you already have a live Supabase project
+from an earlier delivery, apply the new migration before deploying the new code:
+
+- **Easiest:** run `npx prisma migrate deploy` from a machine with Node.js and
+  your `DIRECT_URL` set — it applies only what's new.
+- **No Node.js available:** open `prisma/migrations/`, find the newest folder
+  (highest timestamp prefix), copy its `migration.sql`, and run it in Supabase's
+  SQL Editor. This is the same process used for every earlier update.
+
+Existing samples and catalog entries are unaffected — the new columns default to
+"single result" behavior, so nothing changes for tests that don't opt into
+multi-reading mode.
+
+---
+
 ## 3. Roles & permissions
 
 | Access Role | Can do |
@@ -114,6 +132,20 @@ a received-date range filter + CSV export of whatever is currently filtered.
 result entry, the review panel (role-gated, password-signed), any open
 Deviation, and a Retest button once a sample is Rejected.
 
+**Test result entry — single or multi-reading** — each test definition in the
+Catalog is either **Single result** (one value, like today) or **Multiple
+Readings**, for tests that need duplo/triplo replicates and/or a schedule of
+checkpoints (e.g. TPC read at 24h/48h/72h). For a multi-reading test, the entry
+screen lets you log each raw reading (replicate #, checkpoint, value, who/when)
+as you go — every reading is kept as audit-trail data — then you enter one
+**Final Reported Result** yourself (the screen shows a suggested average as a
+convenience, but you decide the number that actually gets reported, since some
+methods use pharmacopoeial rules more involved than a plain average). That
+final result is what flows into Supervisor/QA review and the COA, exactly like
+a single-result test today. Raw readings are visible on the test's own page for
+traceability, but are **not** printed on the customer-facing COA — the COA
+only ever shows the one final result per parameter, to keep it clean.
+
 **New Sample** — sample type is chosen from the **Sample & Test Catalog**
 (Profile → Sample & Test Catalog), which auto-attaches that type's standard
 tests.
@@ -121,14 +153,20 @@ tests.
 **Scanner** — reads a QR/barcode with the device camera and jumps to that
 sample; a manual Sample ID field is the fallback when a camera isn't available.
 
-**Certificate of Analysis** — available once a sample is Complete; "Share /
-Export PDF" uses the browser's native print-to-PDF.
+**Certificate of Analysis** — available once a sample is Complete. Laid out as
+a formal, letterhead-style A4 document (not a screenshot of the app) —
+certificate number, sample/testing details, a results table, an
+Approved-for-Release banner, two signature blocks (Supervisor reviewer + QA
+approver, pulled from the actual e-signed workflow), a verification QR code,
+and a footer disclaimer — designed to fit one page. "Share / Export PDF" uses
+the browser's native print-to-PDF, which works the same on desktop and mobile.
 
 **Deviations** (Supervisor+) — every rejected sample gets a Deviation record;
 record a root cause and CAPA, then close it.
 
 **Catalog** (QA Manager+) — manage sample types (name, target TAT, retention
-period) and their standard tests (name, unit, spec, method).
+period) and their standard tests (name, unit, spec, method, and Result Mode —
+Single or Multiple Readings with a replicate count and/or interval plan).
 
 **Inventory** (QA Manager+) — reagents (stock, lot, expiry — flags low-stock
 and expiring-soon) and equipment (status, calibration due date).
@@ -179,9 +217,14 @@ Scoped out of this release deliberately, not oversights:
 
 - `User` — account + `accessRole` (Technician/Supervisor/QA Manager/Admin) + `active`
 - `Sample` — one physical sample; `status` drives the whole workflow
-- `Test` — one test on a sample (name/unit/spec/result/status)
+- `Test` — one test on a sample (name/unit/spec/**final** result/status); carries
+  a `resultMode` snapshot (Single/Multi) copied from the catalog at creation time
+- `TestReading` — one raw reading on a Multi-mode test (replicate #, checkpoint
+  label, value, who/when) — supporting data behind a Test's final result
 - `CustodyEvent` — timestamped chain-of-custody entries for a sample
-- `SampleTypeCatalog` / `TestCatalog` — the configurable catalog New Sample draws from
+- `SampleTypeCatalog` / `TestCatalog` — the configurable catalog New Sample draws
+  from; `TestCatalog` also holds each test's `resultMode` / `replicateCount` /
+  `intervalPlan` configuration
 - `Deviation` — OOS record opened automatically on rejection
 - `Reagent` / `Equipment` — inventory
 - `Notification` — in-app alerts

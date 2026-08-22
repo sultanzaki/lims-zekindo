@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import { updateStorageAction, type FormState } from "@/lib/actions/samples";
+import { inputClassSm } from "@/components/ui/Field";
+import Button from "@/components/ui/Button";
 
 const initialState: FormState = {};
 
@@ -22,15 +24,11 @@ export default function StorageLocationForm({
         name="storageLocation"
         defaultValue={currentLocation ?? ""}
         placeholder="e.g. Freezer 2 - Shelf B"
-        className="flex-1 text-xs px-3 py-2 border-[1.5px] border-border-soft rounded-lg text-text bg-white"
+        className={`flex-1 ${inputClassSm}`}
       />
-      <button
-        type="submit"
-        disabled={pending}
-        className="bg-primary text-white rounded-lg px-3.5 text-xs font-semibold cursor-pointer disabled:opacity-60"
-      >
+      <Button type="submit" disabled={pending} size="sm" fullWidth={false} className="shrink-0">
         Save Location
-      </button>
+      </Button>
       {state.error && <div className="text-xs text-danger">{state.error}</div>}
     </form>
   );

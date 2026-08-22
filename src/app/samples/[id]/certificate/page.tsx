@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import QRCode from "qrcode";
 import { getSampleDetail } from "@/lib/data";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
 
@@ -14,63 +15,140 @@ export default async function CertificatePage({
   const sample = await getSampleDetail(id);
   if (!sample || sample.status !== "Complete") notFound();
 
+  const certificateNo = `COA-${sample.id}`;
+
+  const reviewEvent = sample.custodyEvents.find((e) => /^Supervisor Reviewed \(/.test(e.label));
+  const reviewedByName = reviewEvent?.label.match(/^Supervisor Reviewed \((.+)\)$/)?.[1] ?? null;
+
+  const [approvedName, approvedTitle] = (sample.approvedBy ?? "").split(",").map((s) => s.trim());
+
+  const qrDataUrl = await QRCode.toDataURL(
+    `${certificateNo} | ${sample.approvedAt ? sample.approvedAt.toISOString() : ""} | ${sample.approvedBy ?? ""}`,
+    { margin: 0, width: 200 }
+  );
+
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <div className="no-print">
+    <div className="min-h-screen flex flex-col items-center bg-page-bg print:bg-white print:block">
+      <div className="no-print w-full">
         <BackHeader title="Certificate of Analysis" backHref={`/samples/${id}`} />
       </div>
 
-      <div className="flex-1 px-5 pt-5 pb-7 flex flex-col gap-4.5">
-        <div className="flex flex-col items-center gap-1.5 text-center pb-2 border-b-[1.5px] border-text">
-          <Image src="/zekindo-logo.png" alt="lab logo" width={120} height={24} style={{ height: 24, width: "auto" }} className="mb-1" />
-          <div className="text-[15px] font-bold text-text">Certificate of Analysis</div>
-          <div className="text-[11px] text-muted">Microbiology Section · General Testing Laboratory</div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <CertRow label="Sample ID" value={sample.id} />
-          <CertRow label="Sample Type" value={sample.type} />
-          <CertRow label="Source" value={sample.source} />
-          <CertRow label="Collected" value={formatDateTime(sample.collectedDate)} />
-        </div>
-
-        <div>
-          <div className="text-[11px] font-semibold text-muted tracking-wider uppercase mb-2">Results</div>
-          {sample.tests.map((test) => (
-            <div key={test.id} className="border-t border-border-soft py-2.5">
-              <div className="text-[13px] font-semibold text-text mb-1">{test.name}</div>
-              <div className="flex justify-between text-xs text-[#444]">
-                <span>
-                  Result: <strong className="text-text">{test.result} {test.unit}</strong>
-                </span>
-                <span>Spec: {test.spec}</span>
-              </div>
+      <div className="coa-zoom-wrap w-full flex justify-center overflow-hidden print:overflow-visible">
+      <div className="coa-page w-[210mm] shrink-0 min-h-[297mm] bg-white shadow-[0_1px_16px_rgba(20,24,28,0.08)] my-5 print:my-0 px-[14mm] py-[12mm] flex flex-col text-[#1a1d21]">
+        {/* Letterhead */}
+        <div className="flex items-start justify-between gap-4 pb-3 border-b-[2px] border-text">
+          <div className="flex items-center gap-3">
+            <Image src="/zekindo-logo.png" alt="lab logo" width={140} height={30} style={{ height: 30, width: "auto" }} />
+            <div className="flex flex-col leading-tight">
+              <div className="text-[13px] font-bold tracking-tight">Zekindo Microbiology Laboratory</div>
+              <div className="text-[10px] text-muted">Microbiology Section · General Testing Laboratory</div>
             </div>
-          ))}
+          </div>
+          <div className="text-right text-[10px] text-muted leading-relaxed shrink-0">
+            <div>Certificate No.</div>
+            <div className="font-semibold text-text tracking-wide">{certificateNo}</div>
+          </div>
         </div>
 
-        <div className="bg-success-bg border border-success rounded-[10px] p-3 text-center text-[13px] font-semibold text-success-dark">
+        <div className="text-center mt-4 mb-4">
+          <div className="text-[17px] font-bold tracking-wide uppercase">Certificate of Analysis</div>
+        </div>
+
+        {/* Sample & testing info */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[11px] mb-5">
+          <InfoRow label="Sample ID" value={sample.id} />
+          <InfoRow label="Received" value={formatDateTime(sample.receivedDate)} />
+          <InfoRow label="Sample Type" value={sample.type} />
+          <InfoRow label="Reported" value={sample.approvedAt ? formatDateTime(sample.approvedAt) : "—"} />
+          <InfoRow label="Source" value={sample.source} />
+          <InfoRow label="Collected By" value={sample.collectedBy} />
+          <InfoRow label="Container" value={sample.container} />
+          <InfoRow label="Collected" value={formatDateTime(sample.collectedDate)} />
+        </div>
+
+        {/* Results table */}
+        <table className="w-full border-collapse text-[11px] mb-5">
+          <thead>
+            <tr className="border-y-[1.5px] border-text">
+              <th className="text-left font-bold uppercase tracking-wide py-1.5 pr-2">Parameter</th>
+              <th className="text-left font-bold uppercase tracking-wide py-1.5 pr-2">Specification</th>
+              <th className="text-right font-bold uppercase tracking-wide py-1.5">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sample.tests.map((test) => (
+              <tr key={test.id} className="border-b border-border-soft">
+                <td className="py-1.5 pr-2 font-medium">{test.name}</td>
+                <td className="py-1.5 pr-2 text-muted">{test.spec}</td>
+                <td className="py-1.5 text-right font-semibold whitespace-nowrap">
+                  {test.result} {test.unit}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="border-[1.5px] border-success text-success-dark text-center text-[12px] font-bold tracking-wide uppercase py-2 mb-6">
           Approved for Release
         </div>
 
-        <div className="flex flex-col gap-1 mt-1.5">
-          <CertRow label="Approved By" value={sample.approvedBy ?? "—"} />
-          <CertRow label="Approval Date" value={sample.approvedAt ? formatDateTime(sample.approvedAt) : "—"} />
+        {/* Signatures */}
+        <div className="grid grid-cols-2 gap-8 mt-auto text-[10px]">
+          <SignatureBlock
+            role="Reviewed By — Supervisor"
+            name={reviewedByName}
+            date={reviewEvent ? formatDate(reviewEvent.time) : null}
+          />
+          <SignatureBlock role="Approved By — QA Manager" name={approvedName} title={approvedTitle} date={sample.approvedAt ? formatDate(sample.approvedAt) : null} />
         </div>
 
-        <div className="no-print">
-          <PrintButton />
+        {/* Footer */}
+        <div className="flex items-end justify-between gap-4 mt-6 pt-3 border-t border-border-soft">
+          <div className="text-[8.5px] text-faint leading-relaxed max-w-[120mm]">
+            This certificate relates only to the sample(s) identified above and shall not be reproduced except in full,
+            without the written approval of the laboratory. Generated {formatDateTime(new Date())}.
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qrDataUrl} alt="Verification code" width={52} height={52} className="shrink-0" />
         </div>
+      </div>
+      </div>
+
+      <div className="no-print w-full max-w-[210mm] px-5 pb-7">
+        <PrintButton />
       </div>
     </div>
   );
 }
 
-function CertRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between text-xs">
+    <div className="flex justify-between border-b border-border-soft py-1">
       <span className="text-muted">{label}</span>
-      <span className="font-semibold text-text">{value}</span>
+      <span className="font-semibold text-text text-right">{value}</span>
+    </div>
+  );
+}
+
+function SignatureBlock({
+  role,
+  name,
+  title,
+  date,
+}: {
+  role: string;
+  name: string | null;
+  title?: string;
+  date: string | null;
+}) {
+  return (
+    <div className="flex flex-col">
+      <div className="text-muted uppercase tracking-wide font-semibold mb-6">{role}</div>
+      <div className="border-t border-text pt-1.5 flex flex-col gap-0.5">
+        <div className="font-semibold text-text text-[11px]">{name ?? "—"}</div>
+        {title && <div className="text-muted">{title}</div>}
+        <div className="text-muted">{date ?? "—"}</div>
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { isAdmin } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default async function AdminAuditPage() {
   await requirePageRole(isAdmin);
@@ -13,7 +14,7 @@ export default async function AdminAuditPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Audit Log" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-2">
         <div className="text-[11px] text-muted -mt-1 mb-1">Most recent 100 events</div>
@@ -29,7 +30,7 @@ export default async function AdminAuditPage() {
             </div>
           </div>
         ))}
-        {entries.length === 0 && <div className="text-xs text-muted">No activity logged yet.</div>}
+        {entries.length === 0 && <EmptyState>No activity logged yet.</EmptyState>}
       </div>
     </div>
   );

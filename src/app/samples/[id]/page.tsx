@@ -17,6 +17,10 @@ import {
 } from "@/lib/actions/samples";
 import StorageLocationForm from "@/components/StorageLocationForm";
 import ReviewPanel from "@/components/ReviewPanel";
+import Card from "@/components/ui/Card";
+import SectionLabel from "@/components/ui/SectionLabel";
+import Button from "@/components/ui/Button";
+import LinkButton from "@/components/ui/LinkButton";
 
 export default async function SampleDetailPage({
   params,
@@ -43,19 +47,19 @@ export default async function SampleDetailPage({
 
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5">
         <div>
-          <div className="text-base font-semibold text-text mb-1.5">{sample.type}</div>
+          <div className="text-[17px] font-semibold text-text mb-1 tracking-tight">{sample.type}</div>
           <div className="text-[13px] text-muted mb-2.5">{sample.source}</div>
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={sample.status} />
             {isOverdue && (
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-danger-bg text-danger">
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-[6px] bg-danger-bg text-danger">
                 Overdue (due {formatDateTime(dueAt)})
               </span>
             )}
             {sample.retestOf && (
               <Link
                 href={`/samples/${sample.retestOf.id}`}
-                className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-chip-bg text-primary"
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-[6px] bg-chip-bg text-primary"
               >
                 Retest of {sample.retestOf.id}
               </Link>
@@ -63,10 +67,8 @@ export default async function SampleDetailPage({
           </div>
         </div>
 
-        <div className="bg-surface border border-border-soft rounded-xl p-4">
-          <div className="text-[11px] font-semibold text-muted tracking-wider uppercase mb-2.5">
-            Sample Information
-          </div>
+        <Card className="bg-surface">
+          <SectionLabel className="mb-2.5">Sample Information</SectionLabel>
           <Row label="Collected By" value={sample.collectedBy} />
           <Row label="Collected" value={formatDateTime(sample.collectedDate)} />
           <Row label="Received" value={formatDateTime(sample.receivedDate)} />
@@ -74,25 +76,19 @@ export default async function SampleDetailPage({
           <Row label="Target TAT" value={`${targetHours}h (due ${formatDateTime(dueAt)})`} />
           {sample.retentionUntil && <Row label="Retain Until" value={formatDateTime(sample.retentionUntil)} />}
           <Row label="Storage Location" value={sample.storageLocation || "Not set"} last />
-        </div>
+        </Card>
 
         <StorageLocationForm sampleId={sample.id} currentLocation={sample.storageLocation} />
 
         <div className="flex gap-2.5">
-          <Link
-            href={`/samples/${sample.id}/label`}
-            className="flex-1 text-center bg-chip-bg text-text rounded-full py-2.5 text-xs font-semibold"
-          >
+          <LinkButton href={`/samples/${sample.id}/label`} variant="secondary" size="sm">
             Print Barcode Label
-          </Link>
+          </LinkButton>
           {status === "Complete" && !sample.disposedAt && (
             <form action={markDisposedAction.bind(null, sample.id)} className="flex-1">
-              <button
-                type="submit"
-                className="w-full bg-chip-bg text-text rounded-full py-2.5 text-xs font-semibold cursor-pointer"
-              >
+              <Button variant="secondary" size="sm">
                 Mark Disposed
-              </button>
+              </Button>
             </form>
           )}
         </div>
@@ -101,9 +97,7 @@ export default async function SampleDetailPage({
         )}
 
         <div>
-          <div className="text-[11px] font-semibold text-muted tracking-wider uppercase mb-2.5">
-            Chain of Custody
-          </div>
+          <SectionLabel className="mb-2.5">Chain of Custody</SectionLabel>
           <div className="flex flex-col">
             {sample.custodyEvents.map((step, i) => {
               const isLast = i === sample.custodyEvents.length - 1;
@@ -127,30 +121,25 @@ export default async function SampleDetailPage({
         </div>
 
         <div>
-          <div className="text-[11px] font-semibold text-muted tracking-wider uppercase mb-2.5">
-            Tests Requested
-          </div>
+          <SectionLabel className="mb-2.5">Tests Requested</SectionLabel>
           <div className="flex flex-col gap-2">
             {sample.tests.map((test) => {
               const st = TEST_STATUS_STYLES[test.status as keyof typeof TEST_STATUS_STYLES];
               return (
-                <div key={test.id} className="bg-white border border-border rounded-xl p-3.5">
-                  <div className="flex justify-between items-start gap-2 mb-2">
+                <Card key={test.id}>
+                  <div className="flex justify-between items-start gap-2 mb-2.5">
                     <div className="text-[13px] font-semibold text-text flex-1">{test.name}</div>
                     <span
-                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0"
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-[6px] whitespace-nowrap shrink-0"
                       style={{ background: st.bg, color: st.color }}
                     >
                       {st.label}
                     </span>
                   </div>
                   {test.status === "pending" && (
-                    <Link
-                      href={`/samples/${sample.id}/tests/${test.id}`}
-                      className="block text-center w-full bg-surface-alt text-primary rounded-full py-2.5 text-xs font-semibold"
-                    >
+                    <LinkButton href={`/samples/${sample.id}/tests/${test.id}`} variant="secondary" size="sm">
                       Enter Result
-                    </Link>
+                    </LinkButton>
                   )}
                   {test.status === "awaiting" && (
                     <div className="text-xs text-muted">
@@ -165,7 +154,7 @@ export default async function SampleDetailPage({
                       <span>Spec: {test.spec}</span>
                     </div>
                   )}
-                </div>
+                </Card>
               );
             })}
           </div>
@@ -194,7 +183,7 @@ export default async function SampleDetailPage({
         )}
 
         {openDeviation && (
-          <div className="flex flex-col gap-1.5 bg-danger-bg border border-danger rounded-xl p-4">
+          <div className="flex flex-col gap-1.5 bg-danger-bg border border-danger/30 rounded-xl p-4">
             <div className="text-[13px] font-semibold text-danger">Open Deviation</div>
             <div className="text-xs text-danger">{openDeviation.description}</div>
             <Link href="/deviations" className="text-xs font-semibold text-danger underline mt-1">
@@ -205,18 +194,13 @@ export default async function SampleDetailPage({
 
         {status === "Rejected" && sample.retests.length === 0 && (
           <form action={retestSampleAction.bind(null, sample.id)}>
-            <button
-              type="submit"
-              className="w-full bg-primary text-white rounded-full py-3.5 text-[15px] font-semibold cursor-pointer"
-            >
-              Request Retest
-            </button>
+            <Button>Request Retest</Button>
           </form>
         )}
 
         {sample.retests.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="text-[11px] font-semibold text-muted tracking-wider uppercase">Retests</div>
+            <SectionLabel>Retests</SectionLabel>
             {sample.retests.map((r) => (
               <Link
                 key={r.id}
@@ -231,12 +215,7 @@ export default async function SampleDetailPage({
         )}
 
         {status === "Complete" && (
-          <Link
-            href={`/samples/${sample.id}/certificate`}
-            className="block text-center bg-primary text-white rounded-full py-3.5 text-[15px] font-semibold"
-          >
-            View Certificate of Analysis
-          </Link>
+          <LinkButton href={`/samples/${sample.id}/certificate`}>View Certificate of Analysis</LinkButton>
         )}
       </div>
     </div>

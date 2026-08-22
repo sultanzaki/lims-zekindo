@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import { submitTestResultAction, type FormState } from "@/lib/actions/samples";
+import Field, { inputClass } from "@/components/ui/Field";
+import Button from "@/components/ui/Button";
 
 const initialState: FormState = {};
 
@@ -9,10 +11,12 @@ export default function TestResultForm({
   sampleId,
   testId,
   unit,
+  isMulti = false,
 }: {
   sampleId: string;
   testId: string;
   unit: string;
+  isMulti?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(submitTestResultAction, initialState);
 
@@ -21,43 +25,36 @@ export default function TestResultForm({
       <input type="hidden" name="sampleId" value={sampleId} />
       <input type="hidden" name="testId" value={testId} />
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-text" htmlFor="result">
-          Result {unit && `(${unit})`}
-        </label>
+      <Field
+        label={isMulti ? `Final Reported Result${unit ? ` (${unit})` : ""}` : `Result${unit ? ` (${unit})` : ""}`}
+        htmlFor="result"
+        hint={isMulti ? "The value that goes to supervisor/QA review and the COA." : `Unit: ${unit || "—"}`}
+      >
         <input
           id="result"
           name="result"
           type="text"
           placeholder="e.g. 42"
           required
-          className="text-base px-3.5 py-3 border-[1.5px] border-border-soft rounded-lg text-text bg-white"
+          className={`text-base py-3 ${inputClass}`}
         />
-        <div className="text-[11px] text-muted">Unit: {unit || "—"}</div>
-      </div>
+      </Field>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-text" htmlFor="notes">
-          Notes (optional)
-        </label>
+      <Field label="Notes (optional)" htmlFor="notes">
         <textarea
           id="notes"
           name="notes"
           rows={3}
           placeholder="Observations, deviations…"
-          className="text-sm px-3.5 py-3 border-[1.5px] border-border-soft rounded-lg text-text bg-white resize-none"
+          className={`${inputClass} resize-none`}
         />
-      </div>
+      </Field>
 
       {state.error && <div className="text-xs font-medium text-danger">{state.error}</div>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-2 bg-primary text-white rounded-full py-3.5 text-[15px] font-semibold cursor-pointer disabled:opacity-60"
-      >
+      <Button type="submit" disabled={pending} className="mt-2">
         {pending ? "Submitting…" : "Submit for QA Review"}
-      </button>
+      </Button>
     </form>
   );
 }

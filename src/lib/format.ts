@@ -13,6 +13,11 @@ export function formatDateTime(date: Date | string): string {
   return `${datePart} · ${timePart}`;
 }
 
+export function formatDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export function relativeTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const diffMs = Date.now() - d.getTime();

@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import { updateDeviationAction, type FormState } from "@/lib/actions/deviations";
+import { inputClassSm } from "@/components/ui/Field";
+import Button from "@/components/ui/Button";
 
 const initialState: FormState = {};
 
@@ -24,35 +26,23 @@ export default function DeviationForm({
         defaultValue={rootCause ?? ""}
         placeholder="Root cause…"
         rows={2}
-        className="text-xs px-2.5 py-2 border-[1.5px] border-border-soft rounded-lg text-text bg-white resize-none"
+        className={`${inputClassSm} resize-none`}
       />
       <textarea
         name="capa"
         defaultValue={capa ?? ""}
         placeholder="Corrective / preventive action…"
         rows={2}
-        className="text-xs px-2.5 py-2 border-[1.5px] border-border-soft rounded-lg text-text bg-white resize-none"
+        className={`${inputClassSm} resize-none`}
       />
       {state.error && <div className="text-xs text-danger">{state.error}</div>}
       <div className="flex gap-2">
-        <button
-          type="submit"
-          name="close"
-          value="false"
-          disabled={pending}
-          className="flex-1 bg-chip-bg text-text rounded-full py-2 text-xs font-semibold cursor-pointer disabled:opacity-60"
-        >
+        <Button type="submit" name="close" value="false" disabled={pending} variant="secondary" size="sm">
           Save
-        </button>
-        <button
-          type="submit"
-          name="close"
-          value="true"
-          disabled={pending}
-          className="flex-1 bg-success text-white rounded-full py-2 text-xs font-semibold cursor-pointer disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" name="close" value="true" disabled={pending} variant="success" size="sm">
           Save &amp; Close
-        </button>
+        </Button>
       </div>
     </form>
   );

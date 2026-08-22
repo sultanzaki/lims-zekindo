@@ -25,7 +25,7 @@ export default async function SampleLabelPage({
       </div>
 
       <div className="flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
-        <div className="w-full max-w-[280px] border-2 border-text rounded-lg p-4 flex flex-col items-center gap-3 text-center">
+        <div className="w-full max-w-[280px] border-2 border-text rounded-xl p-4 flex flex-col items-center gap-3 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrDataUrl} alt={`QR code for ${sample.id}`} width={180} height={180} />
           <div className="text-lg font-bold text-text tracking-wide">{sample.id}</div>

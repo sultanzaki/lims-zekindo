@@ -3,29 +3,31 @@
 :root {
   --color-primary: #2b8db8;
   --color-primary-dark: #1a5f7a;
-  --color-page-bg: #edf2f5;
+  --color-primary-soft: #e5f1f7;
+  --color-page-bg: #f4f6f8;
   --color-surface: #f7fbfd;
   --color-surface-alt: #e8f4fa;
-  --color-border: #e0e0e0;
-  --color-border-soft: #e0e8ee;
-  --color-chip-bg: #f0f4f8;
-  --color-text: #111111;
-  --color-muted: #888888;
-  --color-faint: #a0b4bf;
-  --color-success: #28a745;
-  --color-success-dark: #1e7a34;
-  --color-success-bg: #e6f4ea;
-  --color-warning: #f5a623;
-  --color-warning-dark: #a36a00;
-  --color-warning-bg: #fef3e0;
-  --color-danger: #d0021b;
-  --color-danger-bg: #fdecea;
+  --color-border: #e2e5e9;
+  --color-border-soft: #eaedf1;
+  --color-chip-bg: #eff2f5;
+  --color-text: #14181c;
+  --color-muted: #6b7280;
+  --color-faint: #9aa4b1;
+  --color-success: #1a8a4a;
+  --color-success-dark: #146638;
+  --color-success-bg: #e5f4ea;
+  --color-warning: #b3720c;
+  --color-warning-dark: #8a5808;
+  --color-warning-bg: #fbf0dd;
+  --color-danger: #c22233;
+  --color-danger-bg: #fbe9eb;
   --color-scanner-bg: #0c1418;
 }
 
 @theme inline {
   --color-primary: var(--color-primary);
   --color-primary-dark: var(--color-primary-dark);
+  --color-primary-soft: var(--color-primary-soft);
   --color-page-bg: var(--color-page-bg);
   --color-surface: var(--color-surface);
   --color-surface-alt: var(--color-surface-alt);
@@ -44,7 +46,7 @@
   --color-danger: var(--color-danger);
   --color-danger-bg: var(--color-danger-bg);
   --color-scanner-bg: var(--color-scanner-bg);
-  --font-sans: var(--font-poppins);
+  --font-sans: var(--font-inter);
 }
 
 html,
@@ -52,32 +54,59 @@ body {
   height: 100%;
 }
 
-body {
-  background: var(--color-page-bg);
-  color: var(--color-text);
-  font-family: var(--font-poppins), system-ui, sans-serif;
+html {
+  background: #ffffff;
+  overscroll-behavior-y: none;
 }
 
-a {
-  color: var(--color-primary);
+body {
+  background: #ffffff;
+  color: var(--color-text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
 }
-a:hover {
-  color: var(--color-primary-dark);
+
+/* @layer base (not a bare rule) so Tailwind utility classes like text-white
+   can still override this default — otherwise every button-styled <Link>
+   silently loses its intended text color to this rule (real bug we hit:
+   "View Certificate of Analysis" rendered as invisible blue-on-blue). */
+@layer base {
+  a {
+    color: var(--color-primary);
+  }
+  a:hover {
+    color: var(--color-primary-dark);
+  }
 }
 
 input,
 select,
 textarea {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
-/* Print styles for Certificate of Analysis */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Print styles for Certificate of Analysis.
+   The COA is laid out at a fixed A4-equivalent width (210mm) so its two-column
+   grid never reflows. On screens narrower than that, `zoom` shrinks the whole
+   block to fit — screen-only, so it never touches the actual print/PDF output. */
+@media screen and (max-width: 210mm) {
+  .coa-zoom-wrap {
+    zoom: calc(100vw / 210mm);
+  }
+}
+
 @media print {
   .no-print {
     display: none !important;
@@ -85,4 +114,17 @@ textarea:focus {
   body {
     background: #fff;
   }
+  .coa-page {
+    box-shadow: none !important;
+    border: none !important;
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 14mm 16mm;
 }

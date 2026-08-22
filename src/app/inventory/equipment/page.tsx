@@ -5,12 +5,13 @@ import { formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import { CreateEquipmentForm, LogCalibrationForm } from "@/components/InventoryForms";
 import { setEquipmentStatusAction } from "@/lib/actions/inventory";
+import EmptyState from "@/components/ui/EmptyState";
 
 const STATUS_OPTIONS = ["Operational", "Under Maintenance", "Out of Service"];
 const STATUS_COLOR: Record<string, string> = {
-  Operational: "#1e7a34",
-  "Under Maintenance": "#a36a00",
-  "Out of Service": "#D0021B",
+  Operational: "#146638",
+  "Under Maintenance": "#B3720C",
+  "Out of Service": "#C22233",
 };
 
 export default async function EquipmentPage() {
@@ -19,7 +20,7 @@ export default async function EquipmentPage() {
   const now = new Date().getTime();
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Equipment" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
         <CreateEquipmentForm />
@@ -31,7 +32,7 @@ export default async function EquipmentPage() {
               <div key={e.id} className="bg-white border border-border rounded-xl p-3.5">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="text-[13px] font-semibold text-text">{e.name}</div>
-                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ background: "#F0F4F8", color: STATUS_COLOR[e.status] }}>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-[6px]" style={{ background: "#EFF2F5", color: STATUS_COLOR[e.status] }}>
                     {e.status}
                   </span>
                 </div>
@@ -56,7 +57,7 @@ export default async function EquipmentPage() {
               </div>
             );
           })}
-          {equipment.length === 0 && <div className="text-xs text-muted">No equipment tracked yet.</div>}
+          {equipment.length === 0 && <EmptyState>No equipment tracked yet.</EmptyState>}
         </div>
       </div>
     </div>

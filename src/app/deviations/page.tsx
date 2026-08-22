@@ -5,11 +5,12 @@ import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import DeviationForm from "@/components/DeviationForm";
+import EmptyState from "@/components/ui/EmptyState";
 
 const STATUS_COLOR: Record<string, string> = {
-  Open: "#D0021B",
-  Investigating: "#a36a00",
-  Closed: "#1e7a34",
+  Open: "#C22233",
+  Investigating: "#B3720C",
+  Closed: "#146638",
 };
 
 export default async function DeviationsPage() {
@@ -21,7 +22,7 @@ export default async function DeviationsPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Deviations" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3">
         {deviations.map((d) => (
@@ -31,8 +32,8 @@ export default async function DeviationsPage() {
                 {d.sample.id}
               </Link>
               <span
-                className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: "#F0F4F8", color: STATUS_COLOR[d.status] ?? "#6B8A96" }}
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-[6px]"
+                style={{ background: "#EFF2F5", color: STATUS_COLOR[d.status] ?? "#6B7280" }}
               >
                 {d.status}
               </span>
@@ -49,7 +50,7 @@ export default async function DeviationsPage() {
             )}
           </div>
         ))}
-        {deviations.length === 0 && <div className="text-xs text-muted">No deviations logged.</div>}
+        {deviations.length === 0 && <EmptyState>No deviations logged.</EmptyState>}
       </div>
     </div>
   );

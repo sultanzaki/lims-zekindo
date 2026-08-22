@@ -63,19 +63,40 @@ model Sample {
 }
 
 // Test status values: "pending" | "awaiting" | "complete"
+// resultMode values: "SINGLE" | "MULTI" (snapshotted from TestCatalog at creation
+// so a later catalog edit never changes how an in-flight sample's test behaves)
 model Test {
-  id        String  @id @default(cuid())
-  sampleId  String
-  sample    Sample  @relation(fields: [sampleId], references: [id], onDelete: Cascade)
-  name      String
-  status    String
-  result    String?
-  unit      String
-  spec      String
-  notes     String?
-  order     Int     @default(0)
+  id             String  @id @default(cuid())
+  sampleId       String
+  sample         Sample  @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  name           String
+  status         String
+  result         String?
+  unit           String
+  spec           String
+  notes          String?
+  order          Int     @default(0)
+  resultMode     String  @default("SINGLE")
+  replicateCount Int?
+  intervalPlan   String?
+
+  readings TestReading[]
 
   @@index([sampleId])
+}
+
+model TestReading {
+  id             String   @id @default(cuid())
+  testId         String
+  test           Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  intervalLabel  String?
+  replicateIndex Int?
+  value          String
+  note           String?
+  enteredBy      String
+  takenAt        DateTime @default(now())
+
+  @@index([testId])
 }
 
 model CustodyEvent {
@@ -116,16 +137,21 @@ model SampleTypeCatalog {
   samples Sample[]
 }
 
+// resultMode values: "SINGLE" | "MULTI"
+// intervalPlan: comma-separated checkpoint labels, e.g. "24h,48h,72h" or "Day 1,Day 3,Day 7" (null = no interval plan, just replicates)
 model TestCatalog {
-  id           String            @id @default(cuid())
-  sampleTypeId String
-  sampleType   SampleTypeCatalog @relation(fields: [sampleTypeId], references: [id], onDelete: Cascade)
-  name         String
-  unit         String
-  spec         String
-  method       String?
-  active       Boolean           @default(true)
-  order        Int               @default(0)
+  id             String            @id @default(cuid())
+  sampleTypeId   String
+  sampleType     SampleTypeCatalog @relation(fields: [sampleTypeId], references: [id], onDelete: Cascade)
+  name           String
+  unit           String
+  spec           String
+  method         String?
+  active         Boolean           @default(true)
+  order          Int               @default(0)
+  resultMode     String            @default("SINGLE")
+  replicateCount Int?
+  intervalPlan   String?
 
   @@index([sampleTypeId])
 }
