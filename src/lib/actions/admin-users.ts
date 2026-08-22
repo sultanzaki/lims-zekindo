@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
@@ -10,7 +11,7 @@ import { isAdmin, ACCESS_ROLES } from "@/lib/roles";
 export type FormState = { error?: string; tempPassword?: string };
 
 function randomPassword() {
-  return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
+  return randomBytes(9).toString("base64url");
 }
 
 function initialsFrom(name: string) {

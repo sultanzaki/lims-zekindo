@@ -39,10 +39,7 @@ export default async function CertificatePage({
         <div className="flex items-start justify-between gap-4 pb-3 border-b-[2px] border-text">
           <div className="flex items-center gap-3">
             <Image src="/zekindo-logo.png" alt="lab logo" width={140} height={30} style={{ height: 30, width: "auto" }} />
-            <div className="flex flex-col leading-tight">
-              <div className="text-[13px] font-bold tracking-tight">Zekindo Microbiology Laboratory</div>
-              <div className="text-[10px] text-muted">Microbiology Section · General Testing Laboratory</div>
-            </div>
+            <div className="text-[13px] font-bold tracking-tight">Zekindo Chemicals</div>
           </div>
           <div className="text-right text-[10px] text-muted leading-relaxed shrink-0">
             <div>Certificate No.</div>

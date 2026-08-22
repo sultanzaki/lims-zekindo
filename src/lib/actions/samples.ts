@@ -186,9 +186,11 @@ export async function addTestReadingAction(
 export async function deleteTestReadingAction(sampleId: string, testId: string, readingId: string) {
   const user = await requireUser();
   const test = await prisma.test.findUnique({ where: { id: testId } });
-  if (!test || test.status !== "pending") return;
+  if (!test || test.sampleId !== sampleId || test.status !== "pending") return;
 
-  await prisma.testReading.delete({ where: { id: readingId } });
+  // Scope the delete to this test (not just the reading's own id) so a
+  // readingId can never remove a row belonging to a different test.
+  await prisma.testReading.deleteMany({ where: { id: readingId, testId } });
   await logAudit({ userId: user.id, action: "test.reading_removed", entityType: "Test", entityId: testId, detail: readingId });
 
   revalidatePath(`/samples/${sampleId}/tests/${testId}`);

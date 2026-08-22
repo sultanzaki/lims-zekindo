@@ -7,7 +7,7 @@ export default async function HelpPage() {
   const role = user?.accessRole ?? "TECHNICIAN";
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
       <BackHeader title="Help & Support" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5 text-sm text-text">
         <Section title="Logging in a sample">

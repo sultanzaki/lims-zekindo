@@ -42,7 +42,7 @@ export default async function SampleDetailPage({
   const openDeviation = sample.deviations.find((d) => d.status !== "Closed");
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
       <BackHeader title={sample.id} backHref="/samples" />
 
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5">

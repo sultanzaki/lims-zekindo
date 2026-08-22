@@ -22,7 +22,7 @@ export default async function TestEntryPage({
   const isMulti = test.resultMode === "MULTI";
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
       <BackHeader title="Enter Result" backHref={`/samples/${id}`} />
       <div className="px-5 pt-4.5 flex flex-col gap-4">
         <Card className="bg-surface">

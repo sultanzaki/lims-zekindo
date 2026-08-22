@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { ROLE_LABELS, AccessRole, canReviewAsSupervisor, canManageInventoryAndCatalog, isAdmin } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
+import MobileTopBar from "@/components/MobileTopBar";
 import { signOutAction } from "@/lib/actions/auth";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Chevron from "@/components/ui/Chevron";
@@ -21,8 +22,9 @@ export default async function ProfilePage() {
   const role = user.accessRole;
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg">
       <TopNav active="profile" hasUnread={unread > 0} role={user.accessRole} userName={user.name} />
+      <MobileTopBar hasUnread={unread > 0} />
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border">
         <h1 className="text-[19px] font-bold text-text tracking-tight">Profile</h1>
       </div>

@@ -2,7 +2,7 @@ import { SkeletonBlock } from "@/components/Skeleton";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen flex flex-col bg-surface">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-surface">
       <div className="px-5 pt-6 pb-3 bg-white border-b border-border">
         <SkeletonBlock className="h-5 w-24" />
       </div>

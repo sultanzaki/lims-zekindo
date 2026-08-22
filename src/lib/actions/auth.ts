@@ -7,6 +7,10 @@ import { createSession, destroySession, requireUser } from "@/lib/auth";
 
 export type LoginState = { error?: string };
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+const GENERIC_ERROR = "Invalid email/employee ID or password.";
+
 export async function loginAction(
   _prevState: LoginState,
   formData: FormData
@@ -27,18 +31,38 @@ export async function loginAction(
     },
   });
 
+  // Same generic error whether the account doesn't exist or the password is
+  // wrong — distinct messages would let an attacker enumerate valid accounts.
   if (!user) {
-    return { error: "No account found for those credentials." };
+    return { error: GENERIC_ERROR };
+  }
+
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    return { error: "Too many failed attempts. Try again in a few minutes." };
   }
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {
-    return { error: "Incorrect password." };
+    const attempts = user.failedLoginAttempts + 1;
+    const locked = attempts >= MAX_LOGIN_ATTEMPTS;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        failedLoginAttempts: locked ? 0 : attempts,
+        lockedUntil: locked ? new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000) : null,
+      },
+    });
+    return { error: GENERIC_ERROR };
   }
 
   if (!user.active) {
     return { error: "This account has been deactivated. Contact your Lab Manager." };
   }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { failedLoginAttempts: 0, lockedUntil: null },
+  });
 
   await createSession(user.id);
   redirect("/dashboard");

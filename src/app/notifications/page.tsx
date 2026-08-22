@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { relativeTime } from "@/lib/format";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
+import MobileTopBar from "@/components/MobileTopBar";
 import { markAllReadAction } from "@/lib/actions/notifications";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -18,8 +19,9 @@ export default async function NotificationsPage() {
   const hasUnread = notifications.some((n) => n.unread);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
       <TopNav active="notif" hasUnread={hasUnread} role={user.accessRole} userName={user.name} />
+      <MobileTopBar hasUnread={hasUnread} />
       <div className="sticky top-0 md:top-16 bg-white border-b border-border px-5 pt-6 pb-4 z-10 flex items-center justify-between">
         <h1 className="text-[19px] font-bold text-text tracking-tight">Alerts</h1>
         <form action={markAllReadAction}>

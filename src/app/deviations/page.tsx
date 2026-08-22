@@ -22,7 +22,7 @@ export default async function DeviationsPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg">
       <BackHeader title="Deviations" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3">
         {deviations.map((d) => (

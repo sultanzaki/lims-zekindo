@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { canReviewAsSupervisor } from "@/lib/roles";
 
 export type FormState = { error?: string };
 
@@ -11,7 +12,10 @@ export async function updateDeviationAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const user = await requireUser();
+  // Matches the page-level gate on /deviations (Supervisor+) — the UI hiding
+  // this form for Technicians isn't enough on its own, the action must also
+  // enforce it server-side.
+  const user = await requireRole(canReviewAsSupervisor);
   const deviationId = String(formData.get("deviationId") || "");
   const rootCause = String(formData.get("rootCause") || "").trim();
   const capa = String(formData.get("capa") || "").trim();

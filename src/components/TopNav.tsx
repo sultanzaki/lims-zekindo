@@ -24,6 +24,15 @@ function CloseIcon() {
   );
 }
 
+function BellIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 01-3.46 0" />
+    </svg>
+  );
+}
+
 function MenuLink({ href, label, active, badge, onNavigate }: { href: string; label: string; active?: boolean; badge?: boolean; onNavigate: () => void }) {
   return (
     <Link
@@ -71,27 +80,34 @@ export default function TopNav({
   const showManagement = canReviewAsSupervisor(role) || canManageInventoryAndCatalog(role);
 
   return (
-    <div className="hidden md:flex sticky top-0 z-20 items-center justify-between bg-white border-b border-border px-6 h-16 shrink-0">
-      <Link href="/dashboard" className="flex items-center gap-2.5">
-        <Image src="/zekindo-logo.png" alt="Zekindo" width={110} height={24} style={{ height: 24, width: "auto" }} />
-        <div className="w-px h-5 bg-border" />
-        <span className="text-[13px] font-bold text-text tracking-tight">LIMS Mobile</span>
+    <div className="hidden md:flex sticky top-0 z-20 items-center justify-between bg-white border-b border-border px-8 h-16 shrink-0">
+      <Link href="/dashboard" className="flex items-center">
+        <Image src="/zekindo-logo.png" alt="Zekindo" width={118} height={26} style={{ height: 26, width: "auto" }} />
       </Link>
 
-      <div className="relative" ref={menuRef}>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="relative w-10 h-10 rounded-full bg-chip-bg border border-border flex items-center justify-center cursor-pointer text-text"
-          aria-label="Open menu"
+      <div className="flex items-center gap-2">
+        <Link
+          href="/notifications"
+          aria-label="Alerts"
+          className="relative w-10 h-10 rounded-full flex items-center justify-center text-muted hover:bg-chip-bg hover:text-text transition-colors"
         >
-          {open ? <CloseIcon /> : <MenuIcon />}
-          {!open && hasUnread && (
-            <div className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-danger border-[1.5px] border-white" />
+          <BellIcon />
+          {hasUnread && (
+            <div className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-danger border-[1.5px] border-white" />
           )}
-        </button>
+        </Link>
 
-        {open && (
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className={`w-10 h-10 rounded-full border flex items-center justify-center cursor-pointer transition-colors ${open ? "bg-primary-soft border-primary/30 text-primary" : "bg-chip-bg border-border text-muted hover:text-text"}`}
+            aria-label="Open menu"
+          >
+            {open ? <CloseIcon /> : <MenuIcon />}
+          </button>
+
+          {open && (
           <div className="absolute right-0 top-12 w-64 bg-white border border-border rounded-xl shadow-[0_8px_28px_rgba(20,24,28,0.14)] overflow-hidden py-1.5">
             <div className="px-4 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider">{userName}</div>
 
@@ -132,7 +148,8 @@ export default function TopNav({
               </button>
             </form>
           </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -17,7 +17,7 @@ export default async function NewSamplePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
       <BackHeader title="New Sample" backHref="/dashboard" />
       <NewSampleForm nextSampleId={nextSampleId} defaultCollectedBy={user.name} sampleTypes={sampleTypes} />
     </div>

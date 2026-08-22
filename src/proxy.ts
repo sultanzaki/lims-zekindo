@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 const COOKIE_NAME = "lims_session";
+
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error(
+    "SESSION_SECRET is not set. Refusing to start in production with the public default signing key — anyone could forge a valid session. Set SESSION_SECRET in your environment."
+  );
+}
+
 const secret = new TextEncoder().encode(
   process.env.SESSION_SECRET || "dev-secret-change-me-please-32chars-min"
 );

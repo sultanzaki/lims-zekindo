@@ -66,19 +66,25 @@ compute being far apart is the single biggest cause of a LIMS app "feeling slow.
 
 ## 2a. Updating an existing deployment
 
-This release adds new database tables/columns (multi-reading test results — see
-[Section 5](#5-feature-walkthrough)). If you already have a live Supabase project
-from an earlier delivery, apply the new migration before deploying the new code:
+Each delivery after the first may add new database tables/columns. If you
+already have a live Supabase project from an earlier delivery, apply whatever
+migrations are new before deploying the new code:
 
 - **Easiest:** run `npx prisma migrate deploy` from a machine with Node.js and
-  your `DIRECT_URL` set — it applies only what's new.
-- **No Node.js available:** open `prisma/migrations/`, find the newest folder
-  (highest timestamp prefix), copy its `migration.sql`, and run it in Supabase's
-  SQL Editor. This is the same process used for every earlier update.
+  your `DIRECT_URL` set — it applies only what's new (safe to run repeatedly;
+  already-applied migrations are skipped).
+- **No Node.js available:** open `prisma/migrations/`, sort by the timestamp
+  prefix, and run the `migration.sql` of any folder you haven't applied yet
+  (oldest first) in Supabase's SQL Editor.
 
-Existing samples and catalog entries are unaffected — the new columns default to
-"single result" behavior, so nothing changes for tests that don't opt into
-multi-reading mode.
+This delivery adds two migrations on top of the last one:
+- **Multi-reading test results** (`TestReading` table + `resultMode` columns —
+  see [Section 5](#5-feature-walkthrough)).
+- **Login lockout** (`failedLoginAttempts` / `lockedUntil` on `User` — see
+  [Section 9](#9-security)).
+
+Both are purely additive — existing rows keep working unchanged (new columns
+default to "off"/zero), nothing to backfill.
 
 ---
 
@@ -213,9 +219,68 @@ Scoped out of this release deliberately, not oversights:
 
 ---
 
-## 8. Data model (high level)
+## 9. Security
+
+A full review was done before this release; what's in place, and what's
+deliberately left as your responsibility to configure.
+
+**Authentication**
+- Sessions are a JWT in an `httpOnly`, `secure` (in production), `sameSite=lax`
+  cookie — not readable or forgeable from client-side JS.
+- Passwords are hashed with bcrypt (cost 10); temp passwords (new user /
+  password reset) are generated with Node's `crypto.randomBytes`, not `Math.random`.
+- **Login lockout:** 5 wrong passwords locks that account for 15 minutes
+  (tracked in the database, so it holds even across serverless instances).
+  Login failure messages are generic ("Invalid email/employee ID or
+  password") whether the account doesn't exist or the password is wrong, so
+  the login form can't be used to enumerate valid accounts.
+- The app **refuses to start in production** (`NODE_ENV=production`) if
+  `SESSION_SECRET` isn't set, instead of silently signing sessions with the
+  public placeholder value from the source code — that placeholder must never
+  reach production, since anyone who reads it could forge a session for any
+  user, including Admin.
+
+**Authorization**
+- Every Server Action re-checks the caller's role itself (`requireRole(...)`)
+  — a page being hidden from a role in the UI is never the only thing
+  stopping that role from calling the underlying action directly.
+- Actions that mutate a specific record (readings, deviations, reagents…)
+  verify the record actually belongs to the parent you claim it does before
+  touching it, not just that *a* record with that id exists.
+
+**Input handling**
+- All database access goes through Prisma's parameterized queries — no
+  string-built SQL anywhere in the app.
+- CSV export (Samples → Export CSV) neutralizes leading `=`/`+`/`-`/`@` in any
+  cell, so a value typed into a free-text field (Source, Collected By…)
+  can't turn into an executing formula when the file is later opened in
+  Excel/Sheets ("CSV injection").
+- No `dangerouslySetInnerHTML` / `eval` anywhere in the codebase.
+
+**Transport / headers**
+- `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, and a `Permissions-Policy`
+  that only allows camera access (needed for Scan) are set on every response.
+
+**Left as your responsibility**
+- [ ] **Supabase Row Level Security** — see the [Section 7](#7-before-you-go-live)
+      checklist; the app's own DB role bypasses RLS, but RLS should still be
+      on so the public REST API can't expose your tables.
+- [ ] **Rotate the demo passwords / SESSION_SECRET** before real use (Section 7).
+- [ ] A Content-Security-Policy header was deliberately **not** added — this app
+      renders data: URIs (QR codes) and would need real testing across every
+      screen to get a CSP right without breaking something; ship one only
+      after testing it yourselves against your actual deployment.
+- [ ] Rate limiting exists only on login. Admin-only actions (create user,
+      reset password, etc.) are already restricted to the Admin role, so the
+      exposure is lower, but there's no additional throttling on them.
+
+---
+
+## 10. Data model (high level)
 
 - `User` — account + `accessRole` (Technician/Supervisor/QA Manager/Admin) + `active`
+  + login-lockout tracking (`failedLoginAttempts`, `lockedUntil`)
 - `Sample` — one physical sample; `status` drives the whole workflow
 - `Test` — one test on a sample (name/unit/spec/**final** result/status); carries
   a `resultMode` snapshot (Single/Multi) copied from the catalog at creation time

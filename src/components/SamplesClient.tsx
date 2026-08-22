@@ -5,6 +5,7 @@ import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
+import MobileTopBar from "@/components/MobileTopBar";
 import Chevron from "@/components/ui/Chevron";
 import EmptyState from "@/components/ui/EmptyState";
 import { SAMPLE_STATUSES } from "@/lib/status";
@@ -20,11 +21,18 @@ type SampleRow = {
 
 const STATUS_OPTIONS = ["All", ...SAMPLE_STATUSES];
 
+// Neutralize leading =, +, -, @ (and tab/CR) so a value typed into a free-text
+// field (Source, Collected By…) can't be interpreted as a formula by Excel/
+// Sheets when the exported file is opened later (CSV/formula injection).
+function csvSafe(v: string) {
+  return /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+}
+
 function toCsv(rows: SampleRow[]) {
   const header = ["Sample ID", "Type", "Source", "Status", "Collected By", "Received"];
   const lines = rows.map((s) =>
     [s.id, s.type, s.source, s.status, s.collectedBy, s.receivedDate.toISOString()]
-      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+      .map((v) => `"${csvSafe(String(v)).replace(/"/g, '""')}"`)
       .join(",")
   );
   return [header.join(","), ...lines].join("\n");
@@ -79,8 +87,9 @@ export default function SamplesClient({
   const hasDateFilter = dateFrom || dateTo;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
       <TopNav active="samples" hasUnread={hasUnread} role={role} userName={userName} />
+      <MobileTopBar hasUnread={hasUnread} />
       <div className="sticky top-0 md:top-16 bg-white border-b border-border px-5 pt-6 pb-3.5 z-10 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Samples</h1>

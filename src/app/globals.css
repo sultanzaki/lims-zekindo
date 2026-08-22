@@ -55,15 +55,19 @@ body {
 }
 
 html {
-  background: #ffffff;
   overscroll-behavior-y: none;
 }
 
+/* body never scrolls — each page owns a single h-dvh + overflow-y-auto root
+   div (its own bg-* color) as the real scroll container. That means any
+   overscroll/rubber-band bounce always reveals more of THAT page's own
+   background, never a mismatched color from a hardcoded body background
+   (the previous bug: a hardcoded white body bled through on bg-page-bg
+   screens like the dashboard during scroll). */
 body {
-  background: #ffffff;
+  overflow: hidden;
   color: var(--color-text);
   font-family: var(--font-inter), system-ui, sans-serif;
-  overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
 }
 

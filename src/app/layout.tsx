@@ -10,7 +10,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "LIMS Mobile",
-  description: "Laboratory Information Management System — General Testing Laboratory",
+  description: "Laboratory Information Management System",
 };
 
 export const viewport: Viewport = {
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-page-bg">{children}</body>
+      <body className="h-full flex flex-col bg-page-bg">{children}</body>
     </html>
   );
 }

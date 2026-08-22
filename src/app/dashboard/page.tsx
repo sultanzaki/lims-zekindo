@@ -4,15 +4,9 @@ import { getDashboardData, getUnreadCount } from "@/lib/data";
 import StatusBadge from "@/components/StatusBadge";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
+import MobileTopBar from "@/components/MobileTopBar";
 import Card from "@/components/ui/Card";
 import SectionLabel from "@/components/ui/SectionLabel";
-
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
-}
 
 function alertAccent(title: string) {
   if (title.toLowerCase().includes("rejected")) return "#C22233";
@@ -29,26 +23,9 @@ export default async function DashboardPage() {
   ] = await Promise.all([getDashboardData(user.id), getUnreadCount(user.id)]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg">
       <TopNav active="home" hasUnread={unread > 0} role={user.accessRole} userName={user.name} />
-      <div className="px-5 pt-6 pb-4 flex items-center justify-between bg-white border-b border-border">
-        <div>
-          <div className="text-xs text-muted">{greeting()}</div>
-          <div className="text-[19px] font-bold text-text tracking-tight">{user.name}</div>
-        </div>
-        <Link
-          href="/notifications"
-          className="relative w-10 h-10 rounded-full bg-chip-bg border border-border flex items-center justify-center shrink-0"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 01-3.46 0" />
-          </svg>
-          {unread > 0 && (
-            <div className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-danger border-[1.5px] border-white" />
-          )}
-        </Link>
-      </div>
+      <MobileTopBar hasUnread={unread > 0} />
 
       <div className="flex-1 p-5 flex flex-col gap-5">
         <Card padded={false} className="grid grid-cols-3 divide-x divide-border">

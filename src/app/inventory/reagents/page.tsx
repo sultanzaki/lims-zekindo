@@ -13,7 +13,7 @@ export default async function ReagentsPage() {
   const soonMs = 14 * 24 * 60 * 60 * 1000;
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg">
       <BackHeader title="Reagents" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
         <CreateReagentForm />

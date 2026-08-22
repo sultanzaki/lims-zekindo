@@ -22,6 +22,8 @@ model User {
   accessRole    String   @default("TECHNICIAN")
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
+  failedLoginAttempts Int      @default(0)
+  lockedUntil         DateTime?
 
   notifications Notification[]
   auditLogs     AuditLog[]
