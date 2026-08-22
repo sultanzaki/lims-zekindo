@@ -25,6 +25,25 @@ type SeedSample = {
 
 const day = (s: string) => new Date(s);
 
+const catalog = [
+  { name: "Total Plate Count", tatHours: 72, retentionDays: 30, tests: [{ name: "Total Plate Count (TPC)", unit: "CFU/g", spec: "≤10,000 CFU/g" }] },
+  {
+    name: "Coliform / E. coli",
+    tatHours: 48,
+    retentionDays: 30,
+    tests: [
+      { name: "Coliform Count", unit: "MPN/g", spec: "≤10 MPN/g" },
+      { name: "E. coli Confirmation", unit: "", spec: "Negative" },
+    ],
+  },
+  { name: "Yeast & Mold", tatHours: 120, retentionDays: 30, tests: [{ name: "Yeast & Mold Count", unit: "CFU/g", spec: "≤100 CFU/g" }] },
+  { name: "Sterility Test", tatHours: 360, retentionDays: 90, tests: [{ name: "Sterility Test (14-day)", unit: "", spec: "No Growth" }] },
+  { name: "Environmental Swab", tatHours: 48, retentionDays: 30, tests: [{ name: "Aerobic Plate Count — Surface Swab", unit: "CFU/plate", spec: "≤50 CFU/plate" }] },
+  { name: "Water Activity", tatHours: 24, retentionDays: 14, tests: [{ name: "Water Activity (aw)", unit: "aw", spec: "≤0.85 aw" }] },
+  { name: "Endotoxin (LAL)", tatHours: 48, retentionDays: 30, tests: [{ name: "Bacterial Endotoxin (LAL)", unit: "EU/mL", spec: "≤0.5 EU/mL" }] },
+  { name: "Bioburden", tatHours: 72, retentionDays: 30, tests: [{ name: "Bioburden Count", unit: "CFU/mL", spec: "≤100 CFU/mL" }] },
+];
+
 const samples: SeedSample[] = [
   {
     id: "LAB-24-0142",
@@ -43,7 +62,7 @@ const samples: SeedSample[] = [
     id: "LAB-24-0141",
     type: "Coliform / E. coli",
     source: "Utility Water Loop",
-    status: "Awaiting Approval",
+    status: "Awaiting QA Approval",
     collectedBy: "A. Wijaya",
     collectedDate: day("2026-08-18T14:00:00"),
     receivedDate: day("2026-08-18T15:20:00"),
@@ -142,7 +161,7 @@ function buildCustody(sample: SeedSample) {
     { label: "Logged In", time: sample.receivedDate },
   ];
   if (sample.status !== "Pending Login") steps.push({ label: "Testing Started", time: sample.receivedDate });
-  if (["Awaiting Approval", "Complete", "Rejected"].includes(sample.status)) {
+  if (["Awaiting QA Approval", "Complete", "Rejected"].includes(sample.status)) {
     steps.push({ label: "Result Submitted", time: sample.receivedDate });
   }
   if (sample.status === "Complete") steps.push({ label: "QA Approved", time: sample.receivedDate });
@@ -151,10 +170,16 @@ function buildCustody(sample: SeedSample) {
 }
 
 async function main() {
+  await prisma.deviation.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.custodyEvent.deleteMany();
   await prisma.test.deleteMany();
   await prisma.sample.deleteMany();
+  await prisma.testCatalog.deleteMany();
+  await prisma.sampleTypeCatalog.deleteMany();
+  await prisma.reagent.deleteMany();
+  await prisma.equipment.deleteMany();
   await prisma.user.deleteMany();
 
   const passwordHash = await bcrypt.hash("lab1234", 10);
@@ -168,20 +193,46 @@ async function main() {
       initials: "AW",
       role: "Lab Technician",
       section: "Microbiology",
+      accessRole: "TECHNICIAN",
     },
   });
 
+  await prisma.user.createMany({
+    data: [
+      { employeeId: "EMP-2050", email: "r.halim@lab.local", passwordHash, name: "R. Halim", initials: "RH", role: "Lab Supervisor", section: "Microbiology", accessRole: "SUPERVISOR" },
+      { employeeId: "EMP-2010", email: "r.kusuma@lab.local", passwordHash, name: "Dr. R. Kusuma", initials: "RK", role: "QA Manager", section: "Quality Assurance", accessRole: "QA_MANAGER" },
+      { employeeId: "EMP-2001", email: "admin@lab.local", passwordHash, name: "System Admin", initials: "SA", role: "Lab Manager", section: "Lab Management", accessRole: "ADMIN" },
+    ],
+  });
+
+  const catalogIdByName = new Map<string, string>();
+  for (const c of catalog) {
+    const created = await prisma.sampleTypeCatalog.create({
+      data: {
+        name: c.name,
+        targetTatHours: c.tatHours,
+        retentionDays: c.retentionDays,
+        tests: { create: c.tests.map((t, i) => ({ name: t.name, unit: t.unit, spec: t.spec, order: i })) },
+      },
+    });
+    catalogIdByName.set(c.name, created.id);
+  }
+
   for (const s of samples) {
+    const sampleTypeId = catalogIdByName.get(s.type);
+    const catalogEntry = catalog.find((c) => c.name === s.type)!;
     await prisma.sample.create({
       data: {
         id: s.id,
         type: s.type,
+        sampleTypeId,
         source: s.source,
         status: s.status,
         collectedBy: s.collectedBy,
         collectedDate: s.collectedDate,
         receivedDate: s.receivedDate,
         container: s.container,
+        retentionUntil: new Date(s.receivedDate.getTime() + catalogEntry.retentionDays * 24 * 60 * 60 * 1000),
         approvedBy: s.status === "Complete" ? "Dr. R. Kusuma, QA Manager" : null,
         approvedAt: s.status === "Complete" ? s.receivedDate : null,
         tests: {
@@ -200,6 +251,15 @@ async function main() {
       },
     });
   }
+
+  await prisma.deviation.create({
+    data: {
+      sampleId: "LAB-24-0138",
+      description: "Result rejected at QA review. Environmental Swab did not meet acceptance criteria.",
+      status: "Open",
+      openedBy: wijaya.id,
+    },
+  });
 
   await prisma.notification.createMany({
     data: [
@@ -239,7 +299,10 @@ async function main() {
   });
 
   console.log("Seeded database.");
-  console.log("Login with: a.wijaya@lab.local / lab1234 (or Employee ID EMP-2087 / lab1234)");
+  console.log("Technician: a.wijaya@lab.local / lab1234");
+  console.log("Supervisor: r.halim@lab.local / lab1234");
+  console.log("QA Manager: r.kusuma@lab.local / lab1234");
+  console.log("Admin:      admin@lab.local / lab1234");
 }
 
 main()

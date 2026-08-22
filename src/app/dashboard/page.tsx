@@ -20,7 +20,7 @@ function alertAccent(title: string) {
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  const [{ pendingLogin, inTesting, awaitingApproval, alerts, recentSamples }, unread] =
+  const [{ pendingLogin, inTesting, awaitingReview, overdueCount, alerts, recentSamples }, unread] =
     await Promise.all([getDashboardData(user.id), getUnreadCount(user.id)]);
 
   return (
@@ -66,15 +66,27 @@ export default async function DashboardPage() {
           </div>
           <div className="bg-white border border-border rounded-xl px-2 py-3.5 text-center">
             <div className="text-[22px] font-bold" style={{ color: "#a36a00" }}>
-              {awaitingApproval}
+              {awaitingReview}
             </div>
             <div className="text-[10px] text-muted mt-0.5 leading-tight">
               Awaiting
               <br />
-              Approval
+              Review
             </div>
           </div>
         </div>
+
+        {overdueCount > 0 && (
+          <Link
+            href="/samples"
+            className="flex items-center gap-2.5 bg-danger-bg border border-danger rounded-[10px] p-3"
+          >
+            <div className="w-2 h-2 rounded-full bg-danger shrink-0" />
+            <div className="flex-1 text-[13px] font-semibold text-danger">
+              {overdueCount} sample{overdueCount > 1 ? "s" : ""} past target turnaround time
+            </div>
+          </Link>
+        )}
 
         <div>
           <div className="text-[13px] font-semibold text-text mb-2.5">Quick Actions</div>

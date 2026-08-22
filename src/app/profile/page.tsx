@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { getSessionUserId } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import { prisma } from "@/lib/db";
+import { ROLE_LABELS, AccessRole, canReviewAsSupervisor, canManageInventoryAndCatalog, isAdmin } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
 import { signOutAction } from "@/lib/actions/auth";
 
@@ -12,6 +14,8 @@ export default async function ProfilePage() {
     getUnreadCount(userId),
   ]);
   if (!user) return null;
+
+  const role = user.accessRole;
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">
@@ -29,14 +33,43 @@ export default async function ProfilePage() {
             <div className="text-xs text-muted mt-0.5">
               {user.role} · {user.section}
             </div>
-            <div className="text-[11px] text-faint mt-0.5">Employee ID: {user.employeeId}</div>
+            <div className="text-[11px] text-faint mt-0.5">
+              Employee ID: {user.employeeId} · {ROLE_LABELS[role as AccessRole] ?? role}
+            </div>
           </div>
         </div>
 
-        <div className="bg-white border border-border rounded-2xl overflow-hidden">
-          <SettingsRow label="Notification Preferences" />
-          <SettingsRow label="Change Password" />
-          <SettingsRow label="Help & Support" last />
+        {(canReviewAsSupervisor(role) || canManageInventoryAndCatalog(role)) && (
+          <div>
+            <div className="text-[11px] font-semibold text-muted tracking-wider uppercase mb-2 px-1">
+              Lab Management
+            </div>
+            <div className="bg-white border border-border rounded-2xl overflow-hidden">
+              {canReviewAsSupervisor(role) && <SettingsRow label="Deviations" href="/deviations" />}
+              {canManageInventoryAndCatalog(role) && (
+                <>
+                  <SettingsRow label="Sample & Test Catalog" href="/admin/catalog" />
+                  <SettingsRow label="Reagents" href="/inventory/reagents" />
+                  <SettingsRow label="Equipment" href="/inventory/equipment" />
+                </>
+              )}
+              {isAdmin(role) && (
+                <>
+                  <SettingsRow label="Users" href="/admin/users" />
+                  <SettingsRow label="Audit Log" href="/admin/audit" last />
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <div className="text-[11px] font-semibold text-muted tracking-wider uppercase mb-2 px-1">Settings</div>
+          <div className="bg-white border border-border rounded-2xl overflow-hidden">
+            <SettingsRow label="Notification Preferences" />
+            <SettingsRow label="Change Password" />
+            <SettingsRow label="Help & Support" last />
+          </div>
         </div>
 
         <form action={signOutAction}>
@@ -55,8 +88,8 @@ export default async function ProfilePage() {
   );
 }
 
-function SettingsRow({ label, last }: { label: string; last?: boolean }) {
-  return (
+function SettingsRow({ label, href, last }: { label: string; href?: string; last?: boolean }) {
+  const content = (
     <div className={`flex items-center justify-between px-4 py-3.5 ${last ? "" : "border-b border-border-soft"}`}>
       <span className="text-[13px] font-medium text-text">{label}</span>
       <svg width="8" height="14" viewBox="0 0 8 14">
@@ -64,4 +97,5 @@ function SettingsRow({ label, last }: { label: string; last?: boolean }) {
       </svg>
     </div>
   );
+  return href ? <Link href={href}>{content}</Link> : content;
 }

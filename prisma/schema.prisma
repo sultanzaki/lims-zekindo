@@ -8,6 +8,8 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// accessRole values (kept in sync with src/lib/roles.ts):
+// "TECHNICIAN" | "SUPERVISOR" | "QA_MANAGER" | "ADMIN"
 model User {
   id            String   @id @default(cuid())
   employeeId    String   @unique
@@ -17,29 +19,47 @@ model User {
   initials      String
   role          String
   section       String
+  accessRole    String   @default("TECHNICIAN")
+  active        Boolean  @default(true)
   createdAt     DateTime @default(now())
 
   notifications Notification[]
+  auditLogs     AuditLog[]
+
+  @@index([accessRole])
 }
 
 // Sample status values (plain string, kept in sync with src/lib/status.ts):
-// "Pending Login" | "In Testing" | "Awaiting Approval" | "Complete" | "Rejected"
+// "Pending Login" | "In Testing" | "Awaiting Supervisor Review" | "Awaiting QA Approval" | "Complete" | "Rejected"
 model Sample {
-  id            String   @id
-  type          String
-  source        String
-  status        String
-  collectedBy   String
-  collectedDate DateTime
-  receivedDate  DateTime
-  container     String
-  createdAt     DateTime @default(now())
-  approvedBy    String?
-  approvedAt    DateTime?
+  id               String    @id
+  type             String
+  sampleTypeId     String?
+  sampleType       SampleTypeCatalog? @relation(fields: [sampleTypeId], references: [id], onDelete: SetNull)
+  source           String
+  status           String
+  collectedBy      String
+  collectedDate    DateTime
+  receivedDate     DateTime
+  container        String
+  createdAt        DateTime  @default(now())
+  approvedBy       String?
+  approvedAt       DateTime?
+  storageLocation  String?
+  retentionUntil   DateTime?
+  disposedAt       DateTime?
+  retestOfSampleId String?
+  retestOf         Sample?   @relation("SampleRetest", fields: [retestOfSampleId], references: [id], onDelete: SetNull)
+  retests          Sample[]  @relation("SampleRetest")
 
   tests         Test[]
   custodyEvents CustodyEvent[]
   notifications Notification[]
+  deviations    Deviation[]
+
+  @@index([status])
+  @@index([sampleTypeId])
+  @@index([retestOfSampleId])
 }
 
 // Test status values: "pending" | "awaiting" | "complete"
@@ -54,6 +74,8 @@ model Test {
   spec      String
   notes     String?
   order     Int     @default(0)
+
+  @@index([sampleId])
 }
 
 model CustodyEvent {
@@ -64,6 +86,8 @@ model CustodyEvent {
   detail    String?
   time      DateTime @default(now())
   order     Int      @default(0)
+
+  @@index([sampleId])
 }
 
 model Notification {
@@ -76,4 +100,94 @@ model Notification {
   sample    Sample?  @relation(fields: [sampleId], references: [id], onDelete: SetNull)
   unread    Boolean  @default(true)
   createdAt DateTime @default(now())
+
+  @@index([userId, unread])
+}
+
+model SampleTypeCatalog {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  targetTatHours Int      @default(48)
+  retentionDays  Int      @default(30)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  tests   TestCatalog[]
+  samples Sample[]
+}
+
+model TestCatalog {
+  id           String            @id @default(cuid())
+  sampleTypeId String
+  sampleType   SampleTypeCatalog @relation(fields: [sampleTypeId], references: [id], onDelete: Cascade)
+  name         String
+  unit         String
+  spec         String
+  method       String?
+  active       Boolean           @default(true)
+  order        Int               @default(0)
+
+  @@index([sampleTypeId])
+}
+
+// status values: "Operational" | "Under Maintenance" | "Out of Service"
+model Equipment {
+  id                 String    @id @default(cuid())
+  name               String
+  assetTag           String    @unique
+  status             String    @default("Operational")
+  location           String?
+  lastCalibratedAt   DateTime?
+  nextCalibrationDue DateTime?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([nextCalibrationDue])
+}
+
+model Reagent {
+  id            String    @id @default(cuid())
+  name          String
+  lotNumber     String
+  quantity      Float
+  unit          String
+  minStockLevel Float     @default(0)
+  expiryDate    DateTime?
+  location      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([expiryDate])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String
+  detail     String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// status values: "Open" | "Investigating" | "Closed"
+model Deviation {
+  id          String    @id @default(cuid())
+  sampleId    String
+  sample      Sample    @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  description String
+  rootCause   String?
+  capa        String?
+  status      String    @default("Open")
+  openedBy    String
+  openedAt    DateTime  @default(now())
+  closedAt    DateTime?
+
+  @@index([sampleId])
+  @@index([status])
 }

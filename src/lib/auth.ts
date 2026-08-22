@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 
 const COOKIE_NAME = "lims_session";
@@ -49,6 +50,19 @@ export async function getCurrentUser() {
 
 export async function requireUser() {
   const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
+  if (!user || !user.active) throw new Error("Unauthorized");
+  return user;
+}
+
+export async function requireRole(check: (accessRole: string) => boolean) {
+  const user = await requireUser();
+  if (!check(user.accessRole)) throw new Error("Forbidden");
+  return user;
+}
+
+/** For use at the top of a page.tsx — redirects instead of throwing. */
+export async function requirePageRole(check: (accessRole: string) => boolean) {
+  const user = await getCurrentUser();
+  if (!user || !user.active || !check(user.accessRole)) redirect("/dashboard");
   return user;
 }

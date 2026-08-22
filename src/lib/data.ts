@@ -1,14 +1,22 @@
 import { prisma } from "@/lib/db";
 
+const OPEN_STATUSES = ["Pending Login", "In Testing", "Awaiting Supervisor Review", "Awaiting QA Approval"];
+
 export async function getUnreadCount(userId: string) {
   return prisma.notification.count({ where: { userId, unread: true } });
 }
 
 export async function getDashboardData(userId: string) {
-  const [pendingLogin, inTesting, awaitingApproval, alerts, recentSamples] = await Promise.all([
+  const [pendingLogin, inTesting, awaitingReview, overdueRows, alerts, recentSamples] = await Promise.all([
     prisma.sample.count({ where: { status: "Pending Login" } }),
     prisma.sample.count({ where: { status: "In Testing" } }),
-    prisma.sample.count({ where: { status: "Awaiting Approval" } }),
+    prisma.sample.count({ where: { status: { in: ["Awaiting Supervisor Review", "Awaiting QA Approval"] } } }),
+    prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT count(*)::int as count FROM "Sample" s
+      LEFT JOIN "SampleTypeCatalog" c ON s."sampleTypeId" = c.id
+      WHERE s.status = ANY(${OPEN_STATUSES})
+      AND s."receivedDate" + (COALESCE(c."targetTatHours", 48) || ' hours')::interval < now()
+    `,
     prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
@@ -17,21 +25,14 @@ export async function getDashboardData(userId: string) {
     prisma.sample.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
   ]);
 
-  return { pendingLogin, inTesting, awaitingApproval, alerts, recentSamples };
-}
-
-export async function getSamples(search: string, status: string) {
-  const q = search.trim().toLowerCase();
-  const samples = await prisma.sample.findMany({ orderBy: { createdAt: "desc" } });
-  return samples.filter((s) => {
-    if (status !== "All" && s.status !== status) return false;
-    if (!q) return true;
-    return (
-      s.id.toLowerCase().includes(q) ||
-      s.type.toLowerCase().includes(q) ||
-      s.source.toLowerCase().includes(q)
-    );
-  });
+  return {
+    pendingLogin,
+    inTesting,
+    awaitingReview,
+    overdueCount: Number(overdueRows[0]?.count ?? 0),
+    alerts,
+    recentSamples,
+  };
 }
 
 export async function getSampleDetail(id: string) {
@@ -40,6 +41,10 @@ export async function getSampleDetail(id: string) {
     include: {
       tests: { orderBy: { order: "asc" } },
       custodyEvents: { orderBy: { order: "asc" } },
+      sampleType: true,
+      deviations: { orderBy: { openedAt: "desc" } },
+      retestOf: { select: { id: true, type: true } },
+      retests: { select: { id: true, type: true, status: true } },
     },
   });
 }
