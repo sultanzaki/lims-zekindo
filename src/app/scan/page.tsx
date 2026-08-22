@@ -1,12 +1,12 @@
-import { getCurrentUser } from "@/lib/auth";
+import { getSessionUserId } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import BottomNav from "@/components/BottomNav";
 import ScannerClient from "@/components/ScannerClient";
 
 export default async function ScanPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
-  const unread = await getUnreadCount(user.id);
+  const userId = await getSessionUserId();
+  if (!userId) return null;
+  const unread = await getUnreadCount(userId);
 
   return (
     <div className="min-h-screen flex flex-col bg-scanner-bg">

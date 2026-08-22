@@ -1,12 +1,17 @@
-import { getCurrentUser } from "@/lib/auth";
+import { getSessionUserId } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
+import { prisma } from "@/lib/db";
 import BottomNav from "@/components/BottomNav";
 import { signOutAction } from "@/lib/actions/auth";
 
 export default async function ProfilePage() {
-  const user = await getCurrentUser();
+  const userId = await getSessionUserId();
+  if (!userId) return null;
+  const [user, unread] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId } }),
+    getUnreadCount(userId),
+  ]);
   if (!user) return null;
-  const unread = await getUnreadCount(user.id);
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">

@@ -1,16 +1,16 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
+import { getSessionUserId } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { relativeTime } from "@/lib/format";
 import BottomNav from "@/components/BottomNav";
 import { markAllReadAction } from "@/lib/actions/notifications";
 
 export default async function NotificationsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const userId = await getSessionUserId();
+  if (!userId) return null;
 
   const notifications = await prisma.notification.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { createdAt: "desc" },
   });
   const hasUnread = notifications.some((n) => n.unread);
