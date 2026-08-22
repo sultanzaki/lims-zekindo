@@ -28,6 +28,17 @@ export default function NewSampleForm({
         <div className={`${inputClass} text-muted bg-surface`}>{nextSampleId} (auto-assigned)</div>
       </Field>
 
+      <Field label="Sample Name" htmlFor="name">
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          placeholder="e.g. Bottled Drinking Water 600ml"
+          className={inputClass}
+        />
+      </Field>
+
       <Field
         label="Sample Type"
         htmlFor="sampleTypeId"

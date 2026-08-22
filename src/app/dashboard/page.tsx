@@ -23,7 +23,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([getDashboardData(user.id), getUnreadCount(user.id)]);
 
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <TopNav active="home" hasUnread={unread > 0} role={user.accessRole} userName={user.name} />
       <MobileTopBar hasUnread={unread > 0} />
 
@@ -116,9 +116,10 @@ export default async function DashboardPage() {
                 href={`/samples/${s.id}`}
                 className="flex items-center gap-2.5 bg-white border border-border rounded-xl p-3"
               >
-                <div className="flex-1">
-                  <div className="text-[13px] font-semibold text-text">{s.id}</div>
-                  <div className="text-[11px] text-muted mt-0.5">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-semibold text-text truncate">{s.name || s.id}</div>
+                  <div className="text-[11px] text-muted mt-0.5 truncate">
+                    {s.name ? `${s.id} · ` : ""}
                     {s.type} · {s.source}
                   </div>
                 </div>

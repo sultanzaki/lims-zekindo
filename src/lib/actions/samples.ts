@@ -17,12 +17,16 @@ export async function createSampleAction(
 ): Promise<FormState> {
   const user = await requireUser();
 
+  const name = String(formData.get("name") || "").trim();
   const sampleTypeId = String(formData.get("sampleTypeId") || "");
   const source = String(formData.get("source") || "").trim();
   const collectedBy = String(formData.get("collectedBy") || user.name).trim();
   const collectedDateRaw = String(formData.get("collectedDate") || "");
   const storageLocation = String(formData.get("storageLocation") || "").trim();
 
+  if (!name) {
+    return { error: "Enter a sample name." };
+  }
   if (!sampleTypeId) {
     return { error: "Select a sample type." };
   }
@@ -55,6 +59,7 @@ export async function createSampleAction(
   await prisma.sample.create({
     data: {
       id,
+      name,
       type: sampleType.name,
       sampleTypeId: sampleType.id,
       source: source || "—",
@@ -396,6 +401,7 @@ export async function retestSampleAction(originalSampleId: string) {
   await prisma.sample.create({
     data: {
       id,
+      name: original.name,
       type: original.type,
       sampleTypeId: original.sampleTypeId,
       source: original.source,

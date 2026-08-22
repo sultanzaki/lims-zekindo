@@ -3,7 +3,7 @@ import LinkButton from "@/components/ui/LinkButton";
 
 export default function NotFound() {
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg px-6">
+    <div className="min-h-screen flex flex-col bg-page-bg px-6">
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-10 max-w-sm mx-auto w-full text-center">
         <Image
           src="/zekindo-logo.png"

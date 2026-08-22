@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg px-6">
+    <div className="min-h-screen flex flex-col bg-page-bg px-6">
       <div className="flex-1 flex flex-col justify-center gap-7 py-10 max-w-sm mx-auto w-full">
         <div className="flex flex-col items-center gap-3">
           <Image

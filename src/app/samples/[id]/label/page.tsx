@@ -12,7 +12,7 @@ export default async function SampleLabelPage({
   const { id } = await params;
   const sample = await prisma.sample.findUnique({
     where: { id },
-    select: { id: true, type: true, source: true, collectedDate: true, storageLocation: true },
+    select: { id: true, name: true, type: true, source: true, collectedDate: true, storageLocation: true },
   });
   if (!sample) notFound();
 
@@ -29,6 +29,7 @@ export default async function SampleLabelPage({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrDataUrl} alt={`QR code for ${sample.id}`} width={180} height={180} />
           <div className="text-lg font-bold text-text tracking-wide">{sample.id}</div>
+          {sample.name && <div className="text-sm font-semibold text-text">{sample.name}</div>}
           <div className="text-xs text-muted">{sample.type}</div>
           <div className="text-[11px] text-muted">{sample.source}</div>
           {sample.storageLocation && <div className="text-[11px] text-muted">{sample.storageLocation}</div>}

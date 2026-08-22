@@ -11,7 +11,7 @@ export default async function ScanPage() {
   const unread = await getUnreadCount(user.id);
 
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-scanner-bg">
+    <div className="min-h-screen flex flex-col bg-scanner-bg">
       <TopNav active="scan" hasUnread={unread > 0} role={user.accessRole} userName={user.name} />
       <MobileTopBar hasUnread={unread > 0} />
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border">

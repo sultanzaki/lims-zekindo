@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-scanner-bg">
+    <div className="min-h-screen flex flex-col bg-scanner-bg">
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border">
         <div className="h-4 w-28 bg-chip-bg rounded animate-pulse" />
       </div>

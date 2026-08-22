@@ -16,7 +16,7 @@ export function SkeletonRow({ withBadge = true }: { withBadge?: boolean }) {
 
 export function TabScreenSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border flex items-center justify-between">
         <div className="flex flex-col gap-1.5">
           <SkeletonBlock className="h-3 w-20" />
@@ -35,7 +35,7 @@ export function TabScreenSkeleton({ rows = 5 }: { rows?: number }) {
 
 export function DashboardSkeleton() {
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border flex items-center justify-between">
         <div className="flex flex-col gap-1.5">
           <SkeletonBlock className="h-3 w-20" />
@@ -62,7 +62,7 @@ export function DashboardSkeleton() {
 
 export function DetailScreenSkeleton() {
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
       <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border">
         <SkeletonBlock className="h-10 w-10 rounded-full" />
         <SkeletonBlock className="h-4 w-28" />
@@ -83,7 +83,7 @@ export function DetailScreenSkeleton() {
 
 export function FormScreenSkeleton() {
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
       <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border">
         <SkeletonBlock className="h-10 w-10 rounded-full" />
         <SkeletonBlock className="h-4 w-28" />

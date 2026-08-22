@@ -19,7 +19,7 @@ export default async function NotificationsPage() {
   const hasUnread = notifications.some((n) => n.unread);
 
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
       <TopNav active="notif" hasUnread={hasUnread} role={user.accessRole} userName={user.name} />
       <MobileTopBar hasUnread={hasUnread} />
       <div className="sticky top-0 md:top-16 bg-white border-b border-border px-5 pt-6 pb-4 z-10 flex items-center justify-between">

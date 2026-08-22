@@ -58,16 +58,17 @@ html {
   overscroll-behavior-y: none;
 }
 
-/* body never scrolls — each page owns a single h-dvh + overflow-y-auto root
-   div (its own bg-* color) as the real scroll container. That means any
-   overscroll/rubber-band bounce always reveals more of THAT page's own
-   background, never a mismatched color from a hardcoded body background
-   (the previous bug: a hardcoded white body bled through on bg-page-bg
-   screens like the dashboard during scroll). */
+/* No hardcoded background here on purpose — body's bg-page-bg Tailwind class
+   (set in layout.tsx) needs to be the only source of truth for this color.
+   A previous version of this rule hardcoded `background: #ffffff` here as a
+   plain (unlayered) declaration, which silently beat the layered bg-page-bg
+   utility class on every screen regardless of that screen's actual design —
+   the real cause of a white flash/seam on bg-page-bg screens (e.g. the
+   dashboard) during overscroll. Don't reintroduce a raw background here. */
 body {
-  overflow: hidden;
   color: var(--color-text);
   font-family: var(--font-inter), system-ui, sans-serif;
+  overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
 }
 

@@ -22,7 +22,7 @@ export default async function ProfilePage() {
   const role = user.accessRole;
 
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <TopNav active="profile" hasUnread={unread > 0} role={user.accessRole} userName={user.name} />
       <MobileTopBar hasUnread={unread > 0} />
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border">

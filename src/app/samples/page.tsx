@@ -11,6 +11,7 @@ export default async function SamplesPage() {
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
+        name: true,
         type: true,
         source: true,
         status: true,

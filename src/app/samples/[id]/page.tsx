@@ -42,13 +42,15 @@ export default async function SampleDetailPage({
   const openDeviation = sample.deviations.find((d) => d.status !== "Closed");
 
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
       <BackHeader title={sample.id} backHref="/samples" />
 
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5">
         <div>
-          <div className="text-[17px] font-semibold text-text mb-1 tracking-tight">{sample.type}</div>
-          <div className="text-[13px] text-muted mb-2.5">{sample.source}</div>
+          <div className="text-[17px] font-semibold text-text mb-1 tracking-tight">{sample.name || sample.type}</div>
+          <div className="text-[13px] text-muted mb-2.5">
+            {sample.name ? `${sample.type} · ${sample.source}` : sample.source}
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={sample.status} />
             {isOverdue && (

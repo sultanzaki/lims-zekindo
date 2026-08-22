@@ -14,7 +14,7 @@ export default async function AdminAuditPage() {
   });
 
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Audit Log" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-2">
         <div className="text-[11px] text-muted -mt-1 mb-1">Most recent 100 events</div>

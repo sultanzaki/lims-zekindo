@@ -13,6 +13,7 @@ type SeedTest = {
 
 type SeedSample = {
   id: string;
+  name: string;
   type: string;
   source: string;
   status: string;
@@ -47,6 +48,7 @@ const catalog = [
 const samples: SeedSample[] = [
   {
     id: "LAB-24-0142",
+    name: "Bottled Drinking Water 600ml",
     type: "Total Plate Count",
     source: "Production Line 2",
     status: "In Testing",
@@ -60,6 +62,7 @@ const samples: SeedSample[] = [
   },
   {
     id: "LAB-24-0141",
+    name: "Utility Water — Loop Return",
     type: "Coliform / E. coli",
     source: "Utility Water Loop",
     status: "Awaiting QA Approval",
@@ -74,6 +77,7 @@ const samples: SeedSample[] = [
   },
   {
     id: "LAB-24-0140",
+    name: "Refined Sugar — RM-2291",
     type: "Yeast & Mold",
     source: "Raw Material — Batch RM-2291",
     status: "Complete",
@@ -87,6 +91,7 @@ const samples: SeedSample[] = [
   },
   {
     id: "LAB-24-0139",
+    name: "Sterile Saline Solution 500ml",
     type: "Sterility Test",
     source: "Finished Goods — FG-1187",
     status: "Complete",
@@ -100,6 +105,7 @@ const samples: SeedSample[] = [
   },
   {
     id: "LAB-24-0138",
+    name: "Cleanroom Grade B — Wall Surface",
     type: "Environmental Swab",
     source: "Cleanroom Grade B — Point 4",
     status: "Rejected",
@@ -119,6 +125,7 @@ const samples: SeedSample[] = [
   },
   {
     id: "LAB-24-0143",
+    name: "Powdered Milk — Incoming Lot IQ-3342",
     type: "Water Activity",
     source: "Incoming QC — Batch IQ-3342",
     status: "Pending Login",
@@ -130,6 +137,7 @@ const samples: SeedSample[] = [
   },
   {
     id: "LAB-24-0137",
+    name: "Water for Injection Preparation",
     type: "Endotoxin (LAL)",
     source: "Finished Goods — FG-1180",
     status: "Complete",
@@ -143,6 +151,7 @@ const samples: SeedSample[] = [
   },
   {
     id: "LAB-24-0144",
+    name: "Raw Sugar — RM-2295",
     type: "Bioburden",
     source: "Raw Material — Batch RM-2295",
     status: "In Testing",
@@ -224,6 +233,7 @@ async function main() {
     await prisma.sample.create({
       data: {
         id: s.id,
+        name: s.name,
         type: s.type,
         sampleTypeId,
         source: s.source,

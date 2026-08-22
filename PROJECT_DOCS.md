@@ -77,14 +77,17 @@ migrations are new before deploying the new code:
   prefix, and run the `migration.sql` of any folder you haven't applied yet
   (oldest first) in Supabase's SQL Editor.
 
-This delivery adds two migrations on top of the last one:
+This delivery adds three migrations on top of the last one:
 - **Multi-reading test results** (`TestReading` table + `resultMode` columns —
   see [Section 5](#5-feature-walkthrough)).
 - **Login lockout** (`failedLoginAttempts` / `lockedUntil` on `User` — see
   [Section 9](#9-security)).
+- **Sample Name** (`name` on `Sample` — see [Section 5](#5-feature-walkthrough)).
 
-Both are purely additive — existing rows keep working unchanged (new columns
-default to "off"/zero), nothing to backfill.
+All three are purely additive — existing rows keep working unchanged (new
+columns default to "off"/zero/null), nothing to backfill. Samples created
+before this update just won't have a name until someone fills it in (there's
+no edit-name UI yet — see [Section 6](#6-known-limitations)).
 
 ---
 
@@ -152,9 +155,12 @@ a single-result test today. Raw readings are visible on the test's own page for
 traceability, but are **not** printed on the customer-facing COA — the COA
 only ever shows the one final result per parameter, to keep it clean.
 
-**New Sample** — sample type is chosen from the **Sample & Test Catalog**
-(Profile → Sample & Test Catalog), which auto-attaches that type's standard
-tests.
+**New Sample** — every sample gets a required **Sample Name** (a human-readable
+description, e.g. "Bottled Drinking Water 600ml" — distinct from Sample ID and
+Sample Type) alongside the sample type, which is chosen from the **Sample &
+Test Catalog** (Profile → Sample & Test Catalog) and auto-attaches that type's
+standard tests. The name shows up everywhere the sample does afterward —
+Samples list, Dashboard, sample detail, the barcode label, and the COA.
 
 **Scanner** — reads a QR/barcode with the device camera and jumps to that
 sample; a manual Sample ID field is the fallback when a camera isn't available.
@@ -193,6 +199,9 @@ Scoped out of this release deliberately, not oversights:
 
 - **Notifications are in-app only** — no email/push. The bell icon and Alerts
   tab are fully real; there's just no external delivery channel yet.
+- **Sample Name has no edit UI yet** — it's set once at New Sample and can't
+  be changed afterward from the app (a database update is the only way, e.g.
+  for the samples that existed before this field was added).
 - **Single lab / single section** — no multi-department or multi-tenant support.
 - **No offline mode** — the app needs connectivity (it's a thin client over
   Server Actions, not a PWA with offline sync).
@@ -281,7 +290,9 @@ deliberately left as your responsibility to configure.
 
 - `User` — account + `accessRole` (Technician/Supervisor/QA Manager/Admin) + `active`
   + login-lockout tracking (`failedLoginAttempts`, `lockedUntil`)
-- `Sample` — one physical sample; `status` drives the whole workflow
+- `Sample` — one physical sample; `status` drives the whole workflow; `name`
+  is the human-readable description set at intake (nullable — samples from
+  before this field existed just fall back to showing their type)
 - `Test` — one test on a sample (name/unit/spec/**final** result/status); carries
   a `resultMode` snapshot (Single/Multi) copied from the catalog at creation time
 - `TestReading` — one raw reading on a Multi-mode test (replicate #, checkpoint

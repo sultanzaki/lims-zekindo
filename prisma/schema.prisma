@@ -35,6 +35,7 @@ model User {
 // "Pending Login" | "In Testing" | "Awaiting Supervisor Review" | "Awaiting QA Approval" | "Complete" | "Rejected"
 model Sample {
   id               String    @id
+  name             String?
   type             String
   sampleTypeId     String?
   sampleType       SampleTypeCatalog? @relation(fields: [sampleTypeId], references: [id], onDelete: SetNull)

@@ -51,6 +51,10 @@ export default async function CertificatePage({
           <div className="text-[17px] font-bold tracking-wide uppercase">Certificate of Analysis</div>
         </div>
 
+        {sample.name && (
+          <div className="text-center text-[13px] font-semibold mb-3">{sample.name}</div>
+        )}
+
         {/* Sample & testing info */}
         <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[11px] mb-5">
           <InfoRow label="Sample ID" value={sample.id} />

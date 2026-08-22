@@ -12,6 +12,7 @@ import { SAMPLE_STATUSES } from "@/lib/status";
 
 type SampleRow = {
   id: string;
+  name: string | null;
   type: string;
   source: string;
   status: string;
@@ -29,9 +30,9 @@ function csvSafe(v: string) {
 }
 
 function toCsv(rows: SampleRow[]) {
-  const header = ["Sample ID", "Type", "Source", "Status", "Collected By", "Received"];
+  const header = ["Sample ID", "Name", "Type", "Source", "Status", "Collected By", "Received"];
   const lines = rows.map((s) =>
-    [s.id, s.type, s.source, s.status, s.collectedBy, s.receivedDate.toISOString()]
+    [s.id, s.name ?? "", s.type, s.source, s.status, s.collectedBy, s.receivedDate.toISOString()]
       .map((v) => `"${csvSafe(String(v)).replace(/"/g, '""')}"`)
       .join(",")
   );
@@ -77,6 +78,7 @@ export default function SamplesClient({
       if (!q) return true;
       return (
         s.id.toLowerCase().includes(q) ||
+        (s.name ?? "").toLowerCase().includes(q) ||
         s.type.toLowerCase().includes(q) ||
         s.source.toLowerCase().includes(q) ||
         s.collectedBy.toLowerCase().includes(q)
@@ -87,7 +89,7 @@ export default function SamplesClient({
   const hasDateFilter = dateFrom || dateTo;
 
   return (
-    <div className="h-dvh flex flex-col overflow-y-auto overscroll-contain bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
       <TopNav active="samples" hasUnread={hasUnread} role={role} userName={userName} />
       <MobileTopBar hasUnread={hasUnread} />
       <div className="sticky top-0 md:top-16 bg-white border-b border-border px-5 pt-6 pb-3.5 z-10 flex flex-col gap-3">
@@ -109,7 +111,7 @@ export default function SamplesClient({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by ID, type, source, collector…"
+            placeholder="Search by ID, name, type, source, collector…"
             className="border-none bg-transparent text-[13px] text-text flex-1 outline-none placeholder:text-faint"
           />
         </div>
@@ -167,9 +169,10 @@ export default function SamplesClient({
             href={`/samples/${s.id}`}
             className="flex items-center gap-2.5 bg-white border border-border rounded-xl p-3.5"
           >
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-text">{s.id}</div>
-              <div className="text-xs text-muted mt-0.5">
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-text truncate">{s.name || s.id}</div>
+              <div className="text-xs text-muted mt-0.5 truncate">
+                {s.name ? `${s.id} · ` : ""}
                 {s.type} · {s.source}
               </div>
             </div>
