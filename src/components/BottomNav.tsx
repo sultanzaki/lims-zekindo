@@ -68,7 +68,7 @@ function TapFeedback({ children }: { children: React.ReactNode }) {
 export default function BottomNav({ active, hasUnread }: { active: Tab; hasUnread: boolean }) {
   const c = (tab: Tab) => (active === tab ? ON : OFF);
   return (
-    <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-border flex items-start justify-around pt-2 px-1 pb-[max(env(safe-area-inset-bottom),14px)] z-10">
+    <div className="md:hidden sticky bottom-0 left-0 right-0 bg-white border-t border-border flex items-start justify-around pt-2 px-1 pb-[max(env(safe-area-inset-bottom),14px)] z-10">
       <Link href="/dashboard" className="flex flex-col items-center gap-[3px] w-14">
         <TapFeedback>
           <HomeIcon color={c("home")} />

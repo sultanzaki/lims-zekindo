@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getDashboardData, getUnreadCount } from "@/lib/data";
 import StatusBadge from "@/components/StatusBadge";
 import BottomNav from "@/components/BottomNav";
+import TopNav from "@/components/TopNav";
 import Card from "@/components/ui/Card";
 import SectionLabel from "@/components/ui/SectionLabel";
 
@@ -29,6 +30,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
+      <TopNav active="home" hasUnread={unread > 0} role={user.accessRole} userName={user.name} />
       <div className="px-5 pt-6 pb-4 flex items-center justify-between bg-white border-b border-border">
         <div>
           <div className="text-xs text-muted">{greeting()}</div>

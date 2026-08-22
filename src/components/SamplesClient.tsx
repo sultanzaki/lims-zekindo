@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
 import BottomNav from "@/components/BottomNav";
+import TopNav from "@/components/TopNav";
 import Chevron from "@/components/ui/Chevron";
 import EmptyState from "@/components/ui/EmptyState";
 import { SAMPLE_STATUSES } from "@/lib/status";
@@ -43,9 +44,13 @@ function downloadCsv(rows: SampleRow[]) {
 export default function SamplesClient({
   samples,
   hasUnread,
+  role,
+  userName,
 }: {
   samples: SampleRow[];
   hasUnread: boolean;
+  role: string;
+  userName: string;
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
@@ -75,7 +80,8 @@ export default function SamplesClient({
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <div className="sticky top-0 bg-white border-b border-border px-5 pt-6 pb-3.5 z-10 flex flex-col gap-3">
+      <TopNav active="samples" hasUnread={hasUnread} role={role} userName={userName} />
+      <div className="sticky top-0 md:top-16 bg-white border-b border-border px-5 pt-6 pb-3.5 z-10 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Samples</h1>
           <button

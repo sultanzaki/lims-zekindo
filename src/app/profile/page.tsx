@@ -4,6 +4,7 @@ import { getUnreadCount } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { ROLE_LABELS, AccessRole, canReviewAsSupervisor, canManageInventoryAndCatalog, isAdmin } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
+import TopNav from "@/components/TopNav";
 import { signOutAction } from "@/lib/actions/auth";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Chevron from "@/components/ui/Chevron";
@@ -21,6 +22,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
+      <TopNav active="profile" hasUnread={unread > 0} role={user.accessRole} userName={user.name} />
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border">
         <h1 className="text-[19px] font-bold text-text tracking-tight">Profile</h1>
       </div>

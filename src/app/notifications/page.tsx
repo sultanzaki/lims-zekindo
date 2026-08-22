@@ -1,24 +1,26 @@
 import Link from "next/link";
-import { getSessionUserId } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { relativeTime } from "@/lib/format";
 import BottomNav from "@/components/BottomNav";
+import TopNav from "@/components/TopNav";
 import { markAllReadAction } from "@/lib/actions/notifications";
 import EmptyState from "@/components/ui/EmptyState";
 
 export default async function NotificationsPage() {
-  const userId = await getSessionUserId();
-  if (!userId) return null;
+  const user = await getCurrentUser();
+  if (!user) return null;
 
   const notifications = await prisma.notification.findMany({
-    where: { userId },
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
   const hasUnread = notifications.some((n) => n.unread);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <div className="sticky top-0 bg-white border-b border-border px-5 pt-6 pb-4 z-10 flex items-center justify-between">
+      <TopNav active="notif" hasUnread={hasUnread} role={user.accessRole} userName={user.name} />
+      <div className="sticky top-0 md:top-16 bg-white border-b border-border px-5 pt-6 pb-4 z-10 flex items-center justify-between">
         <h1 className="text-[19px] font-bold text-text tracking-tight">Alerts</h1>
         <form action={markAllReadAction}>
           <button type="submit" className="text-xs font-semibold text-primary cursor-pointer">

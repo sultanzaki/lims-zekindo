@@ -114,17 +114,18 @@ textarea:focus {
   body {
     background: #fff;
   }
+  /* .coa-page's own mm padding IS the visual page margin (the @page rule below
+     sets margin: 0), so only reset sizing/decoration here — never padding. */
   .coa-page {
     box-shadow: none !important;
     border: none !important;
-    width: auto !important;
+    width: 100% !important;
     min-height: 0 !important;
     margin: 0 !important;
-    padding: 0 !important;
   }
 }
 
 @page {
   size: A4;
-  margin: 14mm 16mm;
+  margin: 0;
 }
