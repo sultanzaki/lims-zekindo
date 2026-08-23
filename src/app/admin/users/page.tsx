@@ -18,7 +18,7 @@ export default async function AdminUsersPage() {
 
         <div className="flex flex-col gap-2">
           {users.map((u) => (
-            <div key={u.id} className="bg-white border border-border rounded-xl p-3.5 flex items-center justify-between gap-2">
+            <div key={u.id} className="bg-white border border-border rounded-2xl shadow-card-sm p-3.5 flex items-center justify-between gap-2">
               <div>
                 <div className="text-[13px] font-semibold text-text">
                   {u.name} {!u.active && <span className="text-danger font-normal">(inactive)</span>}

@@ -1,8 +1,8 @@
 export const inputClass =
-  "text-sm px-3.5 py-2.5 border border-border rounded-[8px] text-text bg-white w-full placeholder:text-faint";
+  "text-[15px] px-4 py-3.5 border-[1.5px] border-border rounded-[13px] text-text bg-white w-full placeholder:text-faint";
 
 export const inputClassSm =
-  "text-xs px-3 py-2 border border-border rounded-[8px] text-text bg-white w-full placeholder:text-faint";
+  "text-xs px-3 py-2.5 border-[1.5px] border-border rounded-[10px] text-text bg-white w-full placeholder:text-faint";
 
 export default function Field({
   label,

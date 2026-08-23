@@ -8,7 +8,7 @@ export default function NotFound() {
         <Image
           src="/zekindo-logo.png"
           alt="Zekindo Chemicals"
-          width={140}
+          width={84}
           height={28}
           style={{ height: 28, width: "auto" }}
         />

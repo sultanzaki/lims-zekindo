@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
@@ -8,6 +9,18 @@ import { requireUser, requireRole } from "@/lib/auth";
 import { getNextSampleId } from "@/lib/data";
 import { logAudit } from "@/lib/audit";
 import { canReviewAsSupervisor, canApproveAsQa } from "@/lib/roles";
+import { uploadAttachment, deleteAttachment } from "@/lib/storage";
+
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const ALLOWED_ATTACHMENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/heic",
+  "image/webp",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/csv",
+]);
 
 export type FormState = { error?: string };
 
@@ -23,6 +36,8 @@ export async function createSampleAction(
   const collectedBy = String(formData.get("collectedBy") || user.name).trim();
   const collectedDateRaw = String(formData.get("collectedDate") || "");
   const storageLocation = String(formData.get("storageLocation") || "").trim();
+  const priorityRaw = String(formData.get("priority") || "Routine");
+  const priority = ["Routine", "Urgent", "STAT"].includes(priorityRaw) ? priorityRaw : "Routine";
 
   if (!name) {
     return { error: "Enter a sample name." };
@@ -60,6 +75,7 @@ export async function createSampleAction(
     data: {
       id,
       name,
+      priority,
       type: sampleType.name,
       sampleTypeId: sampleType.id,
       source: source || "—",
@@ -197,6 +213,69 @@ export async function deleteTestReadingAction(sampleId: string, testId: string, 
   // readingId can never remove a row belonging to a different test.
   await prisma.testReading.deleteMany({ where: { id: readingId, testId } });
   await logAudit({ userId: user.id, action: "test.reading_removed", entityType: "Test", entityId: testId, detail: readingId });
+
+  revalidatePath(`/samples/${sampleId}/tests/${testId}`);
+}
+
+export async function uploadTestAttachmentAction(
+  sampleId: string,
+  testId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const user = await requireUser();
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload." };
+  if (file.size > MAX_ATTACHMENT_BYTES) return { error: "File is too large (max 10MB)." };
+  if (!ALLOWED_ATTACHMENT_TYPES.has(file.type)) {
+    return { error: "Unsupported file type. Use a photo (JPG/PNG) or an Excel/CSV file." };
+  }
+
+  const test = await prisma.test.findUnique({ where: { id: testId } });
+  if (!test || test.sampleId !== sampleId) return { error: "Test not found." };
+  if (test.status !== "pending") return { error: "This test has already been submitted — attachments are locked." };
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storagePath = `${sampleId}/${testId}/${randomUUID()}-${safeName}`;
+
+  try {
+    await uploadAttachment(storagePath, file);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Upload failed." };
+  }
+
+  await prisma.testAttachment.create({
+    data: {
+      testId,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      storagePath,
+      uploadedBy: user.name,
+    },
+  });
+
+  await logAudit({ userId: user.id, action: "test.attachment_added", entityType: "Test", entityId: testId, detail: file.name });
+
+  revalidatePath(`/samples/${sampleId}/tests/${testId}`);
+  return {};
+}
+
+export async function deleteTestAttachmentAction(sampleId: string, testId: string, attachmentId: string) {
+  const user = await requireUser();
+  const test = await prisma.test.findUnique({ where: { id: testId } });
+  if (!test || test.sampleId !== sampleId || test.status !== "pending") return;
+
+  const attachment = await prisma.testAttachment.findFirst({ where: { id: attachmentId, testId } });
+  if (!attachment) return;
+
+  try {
+    await deleteAttachment(attachment.storagePath);
+  } catch {
+    return;
+  }
+  await prisma.testAttachment.delete({ where: { id: attachmentId } });
+  await logAudit({ userId: user.id, action: "test.attachment_removed", entityType: "Test", entityId: testId, detail: attachment.fileName });
 
   revalidatePath(`/samples/${sampleId}/tests/${testId}`);
 }
@@ -402,6 +481,7 @@ export async function retestSampleAction(originalSampleId: string) {
     data: {
       id,
       name: original.name,
+      priority: original.priority,
       type: original.type,
       sampleTypeId: original.sampleTypeId,
       source: original.source,

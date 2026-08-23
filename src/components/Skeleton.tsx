@@ -1,15 +1,18 @@
 export function SkeletonBlock({ className = "" }: { className?: string }) {
-  return <div className={`bg-chip-bg rounded-lg animate-pulse ${className}`} />;
+  return <div className={`skeleton-shimmer rounded-lg ${className}`} />;
 }
 
-export function SkeletonRow({ withBadge = true }: { withBadge?: boolean }) {
+export function SkeletonRow({ withBadge = true, stagger = 0 }: { withBadge?: boolean; stagger?: number }) {
   return (
-    <div className="flex items-center gap-2.5 bg-white border border-border rounded-xl p-3.5">
+    <div
+      className="stagger-item flex items-center gap-2.5 bg-white border border-border rounded-[18px] p-3.5"
+      style={{ "--stagger": stagger } as React.CSSProperties}
+    >
       <div className="flex-1 flex flex-col gap-1.5">
         <SkeletonBlock className="h-3.5 w-28" />
         <SkeletonBlock className="h-3 w-40" />
       </div>
-      {withBadge && <SkeletonBlock className="h-5 w-20 rounded-[6px]" />}
+      {withBadge && <SkeletonBlock className="h-5 w-20 rounded-full" />}
     </div>
   );
 }
@@ -26,7 +29,7 @@ export function TabScreenSkeleton({ rows = 5 }: { rows?: number }) {
       </div>
       <div className="flex-1 p-5 flex flex-col gap-2.5">
         {Array.from({ length: rows }).map((_, i) => (
-          <SkeletonRow key={i} />
+          <SkeletonRow key={i} stagger={i} />
         ))}
       </div>
     </div>
@@ -44,15 +47,15 @@ export function DashboardSkeleton() {
         <SkeletonBlock className="h-10 w-10 rounded-full" />
       </div>
       <div className="flex-1 p-5 flex flex-col gap-5">
-        <SkeletonBlock className="h-[76px] w-full rounded-xl" />
+        <SkeletonBlock className="h-[76px] w-full rounded-[18px]" />
         <div className="grid grid-cols-3 gap-2.5">
           {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-20 w-full rounded-xl" />
+            <SkeletonBlock key={i} className="h-20 w-full rounded-[18px]" />
           ))}
         </div>
         <div className="flex flex-col gap-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonRow key={i} withBadge={false} />
+            <SkeletonRow key={i} withBadge={false} stagger={i} />
           ))}
         </div>
       </div>
@@ -71,11 +74,11 @@ export function DetailScreenSkeleton() {
         <div className="flex flex-col gap-2">
           <SkeletonBlock className="h-4 w-40" />
           <SkeletonBlock className="h-3 w-52" />
-          <SkeletonBlock className="h-5 w-24 rounded-[6px]" />
+          <SkeletonBlock className="h-5 w-24 rounded-full" />
         </div>
-        <SkeletonBlock className="h-32 w-full rounded-xl" />
-        <SkeletonBlock className="h-24 w-full rounded-xl" />
-        <SkeletonBlock className="h-20 w-full rounded-xl" />
+        <SkeletonBlock className="h-32 w-full rounded-[18px]" />
+        <SkeletonBlock className="h-24 w-full rounded-[18px]" />
+        <SkeletonBlock className="h-20 w-full rounded-[18px]" />
       </div>
     </div>
   );
@@ -92,7 +95,7 @@ export function FormScreenSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="flex flex-col gap-1.5">
             <SkeletonBlock className="h-3 w-24" />
-            <SkeletonBlock className="h-10 w-full rounded-[8px]" />
+            <SkeletonBlock className="h-10 w-full rounded-[13px]" />
           </div>
         ))}
       </div>

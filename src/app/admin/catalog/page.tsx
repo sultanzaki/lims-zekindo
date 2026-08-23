@@ -21,7 +21,7 @@ export default async function AdminCatalogPage() {
 
         <div className="flex flex-col gap-3">
           {sampleTypes.map((st) => (
-            <div key={st.id} className="bg-white border border-border rounded-xl p-3.5">
+            <div key={st.id} className="bg-white border border-border rounded-2xl shadow-card-sm p-3.5">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <div className="text-[13px] font-semibold text-text">
                   {st.name} {!st.active && <span className="text-danger font-normal">(inactive)</span>}
@@ -42,7 +42,7 @@ export default async function AdminCatalogPage() {
                       <span className={`font-medium ${t.active ? "text-text" : "text-muted line-through"}`}>{t.name}</span>
                       <span className="text-muted"> · {t.spec}</span>
                       {t.resultMode === "MULTI" && (
-                        <span className="ml-1.5 inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px] bg-primary-soft text-primary-dark align-middle">
+                        <span className="ml-1.5 inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary-soft text-primary-dark align-middle">
                           {[t.replicateCount ? `×${t.replicateCount}` : null, t.intervalPlan ? t.intervalPlan.split(",").length + " pts" : null]
                             .filter(Boolean)
                             .join(" · ")}

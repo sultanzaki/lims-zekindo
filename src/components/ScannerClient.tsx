@@ -46,18 +46,30 @@ export default function ScannerClient() {
   }, [router]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-6 px-7">
-      <div className="relative w-[220px] h-[220px] rounded-xl overflow-hidden bg-black">
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8 mx-3.5 mt-3.5 mb-2.5 bg-scanner-bg rounded-[20px]">
+      <div className="relative w-[232px] h-[232px] rounded-[20px] overflow-hidden bg-white/[0.04]">
         <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
-        <Corner style={{ top: 0, left: 0, borderTop: "3px solid #2B8DB8", borderLeft: "3px solid #2B8DB8", borderRadius: "6px 0 0 0" }} />
-        <Corner style={{ top: 0, right: 0, borderTop: "3px solid #2B8DB8", borderRight: "3px solid #2B8DB8", borderRadius: "0 6px 0 0" }} />
-        <Corner style={{ bottom: 0, left: 0, borderBottom: "3px solid #2B8DB8", borderLeft: "3px solid #2B8DB8", borderRadius: "0 0 0 6px" }} />
-        <Corner style={{ bottom: 0, right: 0, borderBottom: "3px solid #2B8DB8", borderRight: "3px solid #2B8DB8", borderRadius: "0 0 6px 0" }} />
+        <Corner style={{ top: 0, left: 0, borderTop: "3.5px solid #2B8DB8", borderLeft: "3.5px solid #2B8DB8", borderRadius: "14px 0 0 0" }} />
+        <Corner style={{ top: 0, right: 0, borderTop: "3.5px solid #2B8DB8", borderRight: "3.5px solid #2B8DB8", borderRadius: "0 14px 0 0" }} />
+        <Corner style={{ bottom: 0, left: 0, borderBottom: "3.5px solid #2B8DB8", borderLeft: "3.5px solid #2B8DB8", borderRadius: "0 0 0 14px" }} />
+        <Corner style={{ bottom: 0, right: 0, borderBottom: "3.5px solid #2B8DB8", borderRight: "3.5px solid #2B8DB8", borderRadius: "0 0 14px 0" }} />
+        {status === "scanning" && (
+          <div
+            className="scan-line absolute left-5 right-5 h-[2px]"
+            style={{ background: "#2B8DB8", boxShadow: "0 0 14px rgba(43,141,184,0.9)" }}
+          />
+        )}
       </div>
 
-      <div className="text-center text-[#A0B4BF] text-[13px] leading-relaxed">
+      <div className="text-center text-[#B4C6CF] text-[14px] leading-relaxed">
         {status === "starting" && "Requesting camera access…"}
-        {status === "scanning" && "Align the sample barcode or QR label within the frame"}
+        {status === "scanning" && (
+          <>
+            Hold the barcode or QR label inside the frame.
+            <br />
+            Scanning works offline.
+          </>
+        )}
         {status === "found" && "Sample found — opening…"}
         {status === "error" && (errorMsg || "Camera unavailable. Use manual entry below.")}
       </div>
@@ -74,7 +86,7 @@ export default function ScannerClient() {
           value={manualId}
           onChange={(e) => setManualId(e.target.value)}
           placeholder="Enter Sample ID e.g. LAB-24-0143"
-          className="text-sm px-3.5 py-3 rounded-[8px] border border-white/15 bg-white/10 text-white placeholder:text-[#8C97A6]"
+          className="text-sm px-4 py-3.5 rounded-[13px] border border-white/15 bg-white/10 text-white placeholder:text-[#8C97A6]"
         />
         <Button type="submit">Look Up Sample ID</Button>
       </form>
@@ -83,5 +95,5 @@ export default function ScannerClient() {
 }
 
 function Corner({ style }: { style: React.CSSProperties }) {
-  return <div className="absolute w-[34px] h-[34px]" style={style} />;
+  return <div className="absolute w-[38px] h-[38px]" style={style} />;
 }

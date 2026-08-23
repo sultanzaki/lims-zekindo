@@ -7,9 +7,9 @@ export default async function HelpPage() {
   const role = user?.accessRole ?? "TECHNICIAN";
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Help & Support" backHref="/profile" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5 text-sm text-text">
+      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3 text-sm text-text">
         <Section title="Logging in a sample">
           Dashboard or Samples tab → <strong>New Sample</strong>. Pick a sample type from the
           catalog, fill in source and collection details, then <strong>Log Sample In</strong>. A
@@ -71,7 +71,7 @@ export default async function HelpPage() {
           <strong>Share / Export PDF</strong> to print or save it.
         </Section>
 
-        <div className="text-xs text-muted border-t border-border-soft pt-4">
+        <div className="text-xs text-muted text-center pt-2">
           Need something this page doesn&apos;t cover? Contact your Lab Manager.
         </div>
       </div>
@@ -81,8 +81,8 @@ export default async function HelpPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <div className="text-[13px] font-semibold text-text mb-1.5">{title}</div>
+    <div className="bg-white border border-border rounded-[18px] shadow-card-sm p-4">
+      <div className="text-sm font-semibold text-text mb-1.5">{title}</div>
       <div className="text-[13px] text-muted leading-relaxed">{children}</div>
     </div>
   );

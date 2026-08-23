@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { relativeTime, dueLabelFor } from "@/lib/format";
+import { SAMPLE_STATUS_SHORT, CUSTODY_DOT_COLOR, type SampleStatus } from "@/lib/status";
 
 const OPEN_STATUSES = ["Pending Login", "In Testing", "Awaiting Supervisor Review", "Awaiting QA Approval"];
 
@@ -6,7 +8,7 @@ export async function getUnreadCount(userId: string) {
   return prisma.notification.count({ where: { userId, unread: true } });
 }
 
-export async function getDashboardData(userId: string) {
+export async function getDashboardData() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const [
@@ -14,29 +16,79 @@ export async function getDashboardData(userId: string) {
     inTesting,
     awaitingReview,
     overdueRows,
-    alerts,
-    recentSamples,
+    rejectedEvents,
+    queueRows,
     approvedLast7,
     rejectedLast7,
   ] = await Promise.all([
     prisma.sample.count({ where: { status: "Pending Login" } }),
     prisma.sample.count({ where: { status: "In Testing" } }),
     prisma.sample.count({ where: { status: { in: ["Awaiting Supervisor Review", "Awaiting QA Approval"] } } }),
-    prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT count(*)::int as count FROM "Sample" s
+    prisma.$queryRaw<{ id: string }[]>`
+      SELECT s.id FROM "Sample" s
       LEFT JOIN "SampleTypeCatalog" c ON s."sampleTypeId" = c.id
       WHERE s.status = ANY(${OPEN_STATUSES})
       AND s."receivedDate" + (COALESCE(c."targetTatHours", 48) || ' hours')::interval < now()
+      ORDER BY s."receivedDate" ASC
+      LIMIT 3
     `,
-    prisma.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
+    prisma.custodyEvent.findMany({
+      where: { label: { contains: "Rejected" }, sample: { status: "Rejected" } },
+      orderBy: { time: "desc" },
       take: 3,
+      include: { sample: { select: { id: true, name: true, type: true, source: true } } },
     }),
-    prisma.sample.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
+    prisma.sample.findMany({
+      where: { status: { in: OPEN_STATUSES } },
+      orderBy: { receivedDate: "asc" },
+      take: 5,
+      include: { sampleType: { select: { targetTatHours: true } } },
+    }),
     prisma.sample.count({ where: { status: "Complete", approvedAt: { gte: sevenDaysAgo } } }),
     prisma.custodyEvent.count({ where: { label: { contains: "Rejected" }, time: { gte: sevenDaysAgo } } }),
   ]);
+
+  const overdueIds = overdueRows.map((r) => r.id);
+  const overdueSamples = overdueIds.length
+    ? await prisma.sample.findMany({ where: { id: { in: overdueIds } } })
+    : [];
+
+  type AttentionItem = {
+    id: string;
+    tag: "REJECTED" | "OVERDUE";
+    title: string;
+    body: string;
+  };
+
+  const attentionItems: AttentionItem[] = [
+    ...rejectedEvents.map((e) => ({
+      id: e.sample.id,
+      tag: "REJECTED" as const,
+      title: e.sample.name || e.sample.id,
+      body: e.detail || `${e.sample.type} · ${e.sample.source}`,
+    })),
+    ...overdueSamples.map((s) => ({
+      id: s.id,
+      tag: "OVERDUE" as const,
+      title: s.name || s.id,
+      body: `${s.type} · Received ${relativeTime(s.receivedDate)}`,
+    })),
+  ].slice(0, 4);
+
+  const queueSamples = queueRows.map((s) => {
+    const due = dueLabelFor(s.receivedDate, s.sampleType?.targetTatHours ?? 48);
+    return {
+      id: s.id,
+      name: s.name,
+      type: s.type,
+      source: s.source,
+      status: s.status,
+      dotColor: CUSTODY_DOT_COLOR[s.status as SampleStatus] ?? "#93A6B0",
+      statusShort: SAMPLE_STATUS_SHORT[s.status as SampleStatus] ?? s.status,
+      dueLabel: due.label,
+      dueColor: due.color,
+    };
+  });
 
   const reviewedLast7 = approvedLast7 + rejectedLast7;
   const passRate = reviewedLast7 > 0 ? Math.round((approvedLast7 / reviewedLast7) * 100) : null;
@@ -45,9 +97,8 @@ export async function getDashboardData(userId: string) {
     pendingLogin,
     inTesting,
     awaitingReview,
-    overdueCount: Number(overdueRows[0]?.count ?? 0),
-    alerts,
-    recentSamples,
+    attentionItems,
+    queueSamples,
     approvedLast7,
     rejectedLast7,
     passRate,
@@ -58,7 +109,7 @@ export async function getSampleDetail(id: string) {
   return prisma.sample.findUnique({
     where: { id },
     include: {
-      tests: { orderBy: { order: "asc" } },
+      tests: { orderBy: { order: "asc" }, include: { attachments: { orderBy: { uploadedAt: "desc" } } } },
       custodyEvents: { orderBy: { order: "asc" } },
       sampleType: true,
       deviations: { orderBy: { openedAt: "desc" } },

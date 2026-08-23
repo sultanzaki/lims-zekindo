@@ -54,13 +54,13 @@ export default function TestReadingsPanel({
         </SectionLabel>
 
         {readings.length === 0 ? (
-          <div className="text-xs text-muted border border-dashed border-border rounded-[8px] p-3 text-center">
+          <div className="text-xs text-muted border border-dashed border-border rounded-[10px] p-3 text-center">
             No readings recorded yet — add the first one below.
           </div>
         ) : (
           <div className="flex flex-col gap-1.5">
             {readings.map((r) => (
-              <div key={r.id} className="flex items-center justify-between gap-2 bg-surface border border-border rounded-[8px] px-3 py-2 text-xs">
+              <div key={r.id} className="flex items-center justify-between gap-2 bg-surface border border-border rounded-[10px] px-3 py-2 text-xs">
                 <div className="flex flex-col gap-0.5">
                   <div className="font-semibold text-text">
                     {r.value} {unit}
@@ -83,7 +83,7 @@ export default function TestReadingsPanel({
         )}
       </div>
 
-      <form action={formAction} className="flex flex-col gap-2 bg-white border border-border rounded-[8px] p-3">
+      <form action={formAction} className="flex flex-col gap-2 bg-white border border-border rounded-[10px] p-3">
         <div className="text-[11px] font-semibold text-text">New Reading</div>
         <div className="grid grid-cols-2 gap-2">
           {checkpoints.length > 0 && (

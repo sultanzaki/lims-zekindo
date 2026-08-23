@@ -11,14 +11,14 @@ export default async function ScanPage() {
   const unread = await getUnreadCount(user.id);
 
   return (
-    <div className="min-h-screen flex flex-col bg-scanner-bg">
-      <TopNav active="scan" hasUnread={unread > 0} role={user.accessRole} userName={user.name} />
-      <MobileTopBar hasUnread={unread > 0} />
+    <div className="min-h-screen flex flex-col bg-page-bg">
+      <TopNav active="scan" unreadCount={unread} role={user.accessRole} userName={user.name} />
+      <MobileTopBar unreadCount={unread} />
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border">
         <div className="text-[19px] font-bold text-text tracking-tight">Scan Sample</div>
       </div>
       <ScannerClient />
-      <BottomNav active="scan" hasUnread={unread > 0} />
+      <BottomNav active="scan" unreadCount={unread} />
     </div>
   );
 }

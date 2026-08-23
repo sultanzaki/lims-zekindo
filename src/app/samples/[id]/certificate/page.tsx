@@ -3,6 +3,7 @@ import Image from "next/image";
 import QRCode from "qrcode";
 import { getSampleDetail } from "@/lib/data";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { parseSpecVerdict } from "@/lib/spec";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
 
@@ -38,7 +39,7 @@ export default async function CertificatePage({
         {/* Letterhead */}
         <div className="flex items-start justify-between gap-4 pb-3 border-b-[2px] border-text">
           <div className="flex items-center gap-3">
-            <Image src="/zekindo-logo.png" alt="lab logo" width={140} height={30} style={{ height: 30, width: "auto" }} />
+            <Image src="/zekindo-logo.png" alt="lab logo" width={90} height={30} style={{ height: 30, width: "auto" }} />
             <div className="text-[13px] font-bold tracking-tight">Zekindo Chemicals</div>
           </div>
           <div className="text-right text-[10px] text-muted leading-relaxed shrink-0">
@@ -73,19 +74,29 @@ export default async function CertificatePage({
             <tr className="border-y-[1.5px] border-text">
               <th className="text-left font-bold uppercase tracking-wide py-1.5 pr-2">Parameter</th>
               <th className="text-left font-bold uppercase tracking-wide py-1.5 pr-2">Specification</th>
-              <th className="text-right font-bold uppercase tracking-wide py-1.5">Result</th>
+              <th className="text-right font-bold uppercase tracking-wide py-1.5 pr-2">Result</th>
+              <th className="text-right font-bold uppercase tracking-wide py-1.5">Verdict</th>
             </tr>
           </thead>
           <tbody>
-            {sample.tests.map((test) => (
-              <tr key={test.id} className="border-b border-border-soft">
-                <td className="py-1.5 pr-2 font-medium">{test.name}</td>
-                <td className="py-1.5 pr-2 text-muted">{test.spec}</td>
-                <td className="py-1.5 text-right font-semibold whitespace-nowrap">
-                  {test.result} {test.unit}
-                </td>
-              </tr>
-            ))}
+            {sample.tests.map((test) => {
+              const verdict = parseSpecVerdict(test.spec, test.result);
+              return (
+                <tr key={test.id} className="border-b border-border-soft">
+                  <td className="py-1.5 pr-2 font-medium">{test.name}</td>
+                  <td className="py-1.5 pr-2 text-muted">{test.spec}</td>
+                  <td className="py-1.5 pr-2 text-right font-semibold whitespace-nowrap">
+                    {test.result} {test.unit}
+                  </td>
+                  <td
+                    className="py-1.5 text-right font-bold whitespace-nowrap"
+                    style={{ color: verdict === "Fail" ? "var(--color-danger)" : verdict === "Pass" ? "var(--color-success-dark)" : undefined }}
+                  >
+                    {verdict ?? "—"}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 

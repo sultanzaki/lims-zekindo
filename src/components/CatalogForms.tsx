@@ -10,7 +10,7 @@ const initialState: FormState = {};
 export function CreateSampleTypeForm() {
   const [state, formAction, pending] = useActionState(createSampleTypeAction, initialState);
   return (
-    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-xl p-4">
+    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
       <div className="text-[13px] font-semibold text-text">Add Sample Type</div>
       <input name="name" placeholder="e.g. Total Plate Count" required className={inputClassSm} />
       <div className="grid grid-cols-2 gap-2.5">
@@ -35,7 +35,7 @@ export function CreateTestCatalogForm({ sampleTypes }: { sampleTypes: { id: stri
   const [state, formAction, pending] = useActionState(createTestCatalogAction, initialState);
   const [resultMode, setResultMode] = useState<"SINGLE" | "MULTI">("SINGLE");
   return (
-    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-xl p-4">
+    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
       <div className="text-[13px] font-semibold text-text">Add Test Definition</div>
       <select name="sampleTypeId" required defaultValue="" className={inputClassSm}>
         <option value="" disabled>Sample type…</option>

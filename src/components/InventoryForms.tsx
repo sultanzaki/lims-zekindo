@@ -31,7 +31,7 @@ function LabeledField({
 export function CreateReagentForm() {
   const [state, formAction, pending] = useActionState(createReagentAction, initialState);
   return (
-    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-xl p-4">
+    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
       <div className="text-[13px] font-semibold text-text">Add Reagent</div>
       <LabeledField label="Reagent name">
         <input name="name" placeholder="e.g. Peptone Water" required className={inputClassSm} />
@@ -88,7 +88,7 @@ export function UpdateQuantityForm({ id, quantity, unit }: { id: string; quantit
 export function CreateEquipmentForm() {
   const [state, formAction, pending] = useActionState(createEquipmentAction, initialState);
   return (
-    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-xl p-4">
+    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
       <div className="text-[13px] font-semibold text-text">Add Equipment</div>
       <div className="grid grid-cols-2 gap-2.5">
         <LabeledField label="Equipment name">

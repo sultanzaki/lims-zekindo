@@ -8,7 +8,7 @@ export default function Card({
   padded?: boolean;
 }) {
   return (
-    <div className={`bg-white border border-border rounded-xl ${padded ? "p-4" : ""} ${className}`}>
+    <div className={`bg-white border border-border rounded-[18px] shadow-card ${padded ? "p-4" : ""} ${className}`}>
       {children}
     </div>
   );

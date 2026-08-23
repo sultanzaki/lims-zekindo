@@ -12,7 +12,7 @@ export default function ChangePasswordForm() {
 
   if (state.success) {
     return (
-      <div className="text-sm font-medium text-success-dark bg-success-bg border border-success/30 rounded-xl p-4">
+      <div className="text-sm font-medium text-success-dark bg-success-bg border border-success/30 rounded-[18px] p-4">
         Password updated. Use your new password next time you sign in.
       </div>
     );

@@ -19,7 +19,7 @@ export default async function AdminAuditPage() {
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-2">
         <div className="text-[11px] text-muted -mt-1 mb-1">Most recent 100 events</div>
         {entries.map((e) => (
-          <div key={e.id} className="bg-white border border-border rounded-xl p-3">
+          <div key={e.id} className="bg-white border border-border rounded-2xl shadow-card-sm p-3.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[13px] font-semibold text-text">{e.action}</span>
               <span className="text-[11px] text-faint shrink-0">{formatDateTime(e.createdAt)}</span>

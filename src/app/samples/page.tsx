@@ -1,11 +1,18 @@
 import { getCurrentUser } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import { prisma } from "@/lib/db";
+import { SAMPLE_STATUSES } from "@/lib/status";
 import SamplesClient from "@/components/SamplesClient";
 
-export default async function SamplesPage() {
+export default async function SamplesPage({ searchParams }: PageProps<"/samples">) {
   const user = await getCurrentUser();
   if (!user) return null;
+  const { status } = await searchParams;
+  const statusParam = typeof status === "string" ? status : undefined;
+  const initialStatus = statusParam && (SAMPLE_STATUSES as readonly string[]).includes(statusParam)
+    ? statusParam
+    : "All";
+
   const [samples, unread] = await Promise.all([
     prisma.sample.findMany({
       orderBy: { createdAt: "desc" },
@@ -17,10 +24,20 @@ export default async function SamplesPage() {
         status: true,
         collectedBy: true,
         receivedDate: true,
+        approvedAt: true,
+        sampleType: { select: { targetTatHours: true } },
       },
     }),
     getUnreadCount(user.id),
   ]);
 
-  return <SamplesClient samples={samples} hasUnread={unread > 0} role={user.accessRole} userName={user.name} />;
+  return (
+    <SamplesClient
+      samples={samples}
+      unreadCount={unread}
+      role={user.accessRole}
+      userName={user.name}
+      initialStatus={initialStatus}
+    />
+  );
 }

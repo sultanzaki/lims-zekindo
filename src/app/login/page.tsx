@@ -12,28 +12,29 @@ export default function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg px-6">
-      <div className="flex-1 flex flex-col justify-center gap-7 py-10 max-w-sm mx-auto w-full">
-        <div className="flex flex-col items-center gap-3">
+    <div className="min-h-screen flex flex-col bg-white px-4">
+      <div className="flex-1 flex flex-col justify-center gap-6 py-10 max-w-sm mx-auto w-full">
+        <div
+          className="rounded-[22px] px-[22px] pt-6 pb-[26px] flex flex-col gap-4"
+          style={{
+            background: "linear-gradient(158deg, #1A5F7A 0%, #2B8DB8 100%)",
+            boxShadow: "0 10px 26px rgba(26,95,122,0.22)",
+          }}
+        >
           <Image
-            src="/zekindo-logo.png"
+            src="/zekindo-logo-white.png"
             alt="Zekindo Chemicals"
-            width={160}
-            height={32}
-            style={{ height: 30, width: "auto" }}
+            width={78}
+            height={26}
+            style={{ height: 26, width: "auto" }}
             priority
           />
-          <div className="text-[10.5px] font-semibold text-muted tracking-[0.14em] uppercase text-center">
-            Laboratory Information Management System
+          <div className="text-[25px] font-bold text-white leading-[1.18] tracking-tight">
+            Laboratory Information Management
           </div>
         </div>
 
-        <form action={formAction} className="flex flex-col gap-4 bg-white rounded-xl p-6 border border-border">
-          <div>
-            <div className="text-[19px] font-bold text-text mb-1 tracking-tight">Sign in</div>
-            <div className="text-[13px] text-muted">Use your lab credentials to continue</div>
-          </div>
-
+        <form action={formAction} className="flex flex-col gap-[18px]">
           <Field label="Email or Employee ID" htmlFor="identifier">
             <input
               id="identifier"
@@ -61,10 +62,13 @@ export default function LoginPage() {
           <Button type="submit" disabled={pending} className="mt-1">
             {pending ? "Signing in…" : "Sign In"}
           </Button>
+
           <div className="text-center text-xs text-muted">
             Forgot your password? Ask your Lab Manager to reset it.
           </div>
         </form>
+
+        <div className="text-center text-[11px] text-faint">LIMS Mobile · v1.4.2</div>
       </div>
     </div>
   );

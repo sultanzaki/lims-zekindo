@@ -1,7 +1,7 @@
 import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
-import { formatDateTime } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import { CreateReagentForm, UpdateQuantityForm } from "@/components/InventoryForms";
 import EmptyState from "@/components/ui/EmptyState";
@@ -14,30 +14,52 @@ export default async function ReagentsPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
-      <BackHeader title="Reagents" backHref="/profile" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
+      <BackHeader title="Reagents & Media" backHref="/profile" />
+      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5">
         <CreateReagentForm />
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           {reagents.map((r) => {
             const lowStock = r.quantity <= r.minStockLevel;
             const expiringSoon = r.expiryDate && r.expiryDate.getTime() - now < soonMs;
             const expired = r.expiryDate && r.expiryDate.getTime() < now;
+            const reference = r.minStockLevel > 0 ? r.minStockLevel * 2 : r.quantity || 1;
+            const pct = Math.max(4, Math.min(100, (r.quantity / reference) * 100));
+            const barColor = expired || lowStock ? "#D0021B" : expiringSoon ? "#F5A623" : "#28A745";
+            const badge =
+              expired ? { label: "Expired", bg: "#FDECEA", color: "#B00016" } :
+              lowStock ? { label: "Low stock", bg: "#FDECEA", color: "#B00016" } :
+              expiringSoon ? { label: "Expiring soon", bg: "#FEF3E0", color: "#9A6100" } :
+              { label: "In stock", bg: "#E6F4EA", color: "#1E7A34" };
+
             return (
-              <div key={r.id} className="bg-white border border-border rounded-xl p-3.5">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <div className="text-[13px] font-semibold text-text">{r.name}</div>
-                  <div className="flex gap-1.5">
-                    {lowStock && <Badge color="#C22233" label="Low stock" />}
-                    {expired && <Badge color="#C22233" label="Expired" />}
-                    {!expired && expiringSoon && <Badge color="#B3720C" label="Expiring soon" />}
+              <div key={r.id} className="bg-white border border-border rounded-2xl shadow-card-sm px-4 py-3.5">
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-text leading-snug">{r.name}</div>
+                    <div className="text-xs text-muted mt-0.5 font-mono-data">
+                      Lot {r.lotNumber} {r.expiryDate && `· exp ${formatDate(r.expiryDate)}`}
+                      {r.location && ` · ${r.location}`}
+                    </div>
                   </div>
+                  <span
+                    className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0"
+                    style={{ background: badge.bg, color: badge.color }}
+                  >
+                    {badge.label}
+                  </span>
                 </div>
-                <div className="text-[11px] text-muted mb-1.5">
-                  Lot {r.lotNumber} {r.location && `· ${r.location}`}
-                  {r.expiryDate && ` · Expires ${formatDateTime(r.expiryDate)}`}
+                <div className="flex items-center gap-2.5 mt-3">
+                  <div className="flex-1 h-[7px] rounded-full bg-[#EEF2F5] overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: barColor }} />
+                  </div>
+                  <span className="text-xs font-semibold text-[#444] font-mono-data whitespace-nowrap">
+                    {r.quantity} {r.unit}
+                  </span>
                 </div>
-                <UpdateQuantityForm id={r.id} quantity={r.quantity} unit={r.unit} />
+                <div className="mt-2.5 pt-2.5 border-t border-border-soft">
+                  <UpdateQuantityForm id={r.id} quantity={r.quantity} unit={r.unit} />
+                </div>
               </div>
             );
           })}
@@ -45,13 +67,5 @@ export default async function ReagentsPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-function Badge({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]" style={{ background: "#EFF2F5", color }}>
-      {label}
-    </span>
   );
 }

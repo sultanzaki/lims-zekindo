@@ -3,25 +3,28 @@
 :root {
   --color-primary: #2b8db8;
   --color-primary-dark: #1a5f7a;
-  --color-primary-soft: #e5f1f7;
-  --color-page-bg: #f4f6f8;
-  --color-surface: #f7fbfd;
-  --color-surface-alt: #e8f4fa;
-  --color-border: #e2e5e9;
-  --color-border-soft: #eaedf1;
-  --color-chip-bg: #eff2f5;
-  --color-text: #14181c;
-  --color-muted: #6b7280;
-  --color-faint: #9aa4b1;
-  --color-success: #1a8a4a;
-  --color-success-dark: #146638;
-  --color-success-bg: #e5f4ea;
-  --color-warning: #b3720c;
-  --color-warning-dark: #8a5808;
-  --color-warning-bg: #fbf0dd;
-  --color-danger: #c22233;
-  --color-danger-bg: #fbe9eb;
-  --color-scanner-bg: #0c1418;
+  --color-primary-soft: #e8f4fa;
+  --color-page-bg: #f4f8fa;
+  --color-surface: #ffffff;
+  --color-surface-alt: #edf3f7;
+  --color-border: #ecf1f4;
+  --color-border-soft: #f2f6f8;
+  --color-chip-bg: #eef2f5;
+  --color-text: #111111;
+  --color-muted: #7a8b94;
+  --color-faint: #93a6b0;
+  --color-success: #28a745;
+  --color-success-dark: #1e7a34;
+  --color-success-bg: #e6f4ea;
+  --color-warning: #f5a623;
+  --color-warning-dark: #9a6100;
+  --color-warning-bg: #fef3e0;
+  --color-danger: #d0021b;
+  --color-danger-bg: #fdecea;
+  --color-scanner-bg: #0b1418;
+  --shadow-card: 0 1px 2px rgba(16, 42, 58, 0.04), 0 8px 22px rgba(16, 42, 58, 0.05);
+  --shadow-card-sm: 0 1px 2px rgba(16, 42, 58, 0.04), 0 4px 12px rgba(16, 42, 58, 0.04);
+  --shadow-glow-primary: 0 6px 16px rgba(43, 141, 184, 0.26);
 }
 
 @theme inline {
@@ -46,7 +49,11 @@
   --color-danger: var(--color-danger);
   --color-danger-bg: var(--color-danger-bg);
   --color-scanner-bg: var(--color-scanner-bg);
-  --font-sans: var(--font-inter);
+  --shadow-card: var(--shadow-card);
+  --shadow-card-sm: var(--shadow-card-sm);
+  --shadow-glow-primary: var(--shadow-glow-primary);
+  --font-sans: var(--font-poppins);
+  --font-mono: var(--font-roboto-mono);
 }
 
 html,
@@ -67,7 +74,7 @@ html {
    dashboard) during overscroll. Don't reintroduce a raw background here. */
 body {
   color: var(--color-text);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-poppins), "Segoe UI", system-ui, sans-serif;
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
 }
@@ -88,7 +95,11 @@ body {
 input,
 select,
 textarea {
-  font-family: var(--font-inter), sans-serif;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.font-mono-data {
+  font-family: var(--font-roboto-mono), "Roboto Mono", monospace;
 }
 input:focus,
 select:focus,
@@ -133,4 +144,134 @@ textarea:focus {
 @page {
   size: A4;
   margin: 0;
+}
+
+/* ---- Motion ----
+   Page-level enter/exit uses React's <ViewTransition> (see app/template.tsx),
+   which activates on every navigation with no JS animation library. These
+   rules style the browser's View Transitions API pseudo-elements it drives.
+   Everything below degrades to an instant swap in browsers without support
+   (Safari <18, older Firefox) — no fallback needed. */
+::view-transition-old(.page-fade),
+::view-transition-new(.page-fade) {
+  animation-duration: 220ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+::view-transition-old(.page-fade) {
+  animation-name: page-fade-out;
+}
+::view-transition-new(.page-fade) {
+  animation-name: page-fade-in;
+}
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+::view-transition {
+  pointer-events: none;
+}
+
+/* Skeleton shimmer — a moving highlight sweep reads as "actively loading"
+   more clearly than a flat opacity pulse. */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-chip-bg);
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* Fade-up entrance for list rows/cards, staggered via the --stagger custom
+   property each row sets on itself (see .stagger-item usage). */
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.stagger-item {
+  animation: fade-slide-up 320ms cubic-bezier(0.25, 0.8, 0.4, 1) both;
+  animation-delay: calc(var(--stagger, 0) * 35ms);
+}
+
+/* Crossfade for same-route content swaps (e.g. sample detail tabs) driven by
+   a React `key` change rather than navigation. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-in {
+  animation: fade-in 200ms ease-out both;
+}
+
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.menu-pop {
+  animation: menu-pop 160ms cubic-bezier(0.25, 0.8, 0.4, 1) both;
+  transform-origin: top right;
+}
+
+@keyframes scan-sweep {
+  0%,
+  100% {
+    top: 18%;
+    opacity: 0.5;
+  }
+  50% {
+    top: 82%;
+    opacity: 1;
+  }
+}
+.scan-line {
+  animation: scan-sweep 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.001ms !important;
+  }
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0.001ms !important;
+  }
 }

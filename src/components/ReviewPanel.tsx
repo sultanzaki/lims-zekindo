@@ -27,7 +27,7 @@ export default function ReviewPanel({
   const [rejectState, rejectFormAction, rejectPending] = useActionState(rejectAction, initialState);
 
   return (
-    <div className="flex flex-col gap-3 bg-warning-bg border border-warning/30 rounded-xl p-4">
+    <div className="flex flex-col gap-3 bg-warning-bg border border-warning/30 rounded-[18px] p-4">
       <div>
         <div className="text-[13px] font-semibold text-warning-dark">{title}</div>
         <div className="text-xs text-warning-dark mt-0.5">{body}</div>

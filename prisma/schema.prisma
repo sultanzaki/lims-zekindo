@@ -33,9 +33,11 @@ model User {
 
 // Sample status values (plain string, kept in sync with src/lib/status.ts):
 // "Pending Login" | "In Testing" | "Awaiting Supervisor Review" | "Awaiting QA Approval" | "Complete" | "Rejected"
+// priority values: "Routine" | "Urgent" | "STAT"
 model Sample {
   id               String    @id
   name             String?
+  priority         String    @default("Routine")
   type             String
   sampleTypeId     String?
   sampleType       SampleTypeCatalog? @relation(fields: [sampleTypeId], references: [id], onDelete: SetNull)
@@ -83,9 +85,27 @@ model Test {
   replicateCount Int?
   intervalPlan   String?
 
-  readings TestReading[]
+  readings    TestReading[]
+  attachments TestAttachment[]
 
   @@index([sampleId])
+}
+
+// storagePath points to an object in the Supabase Storage bucket configured
+// via SUPABASE_STORAGE_BUCKET — never a public URL, since access is brokered
+// through short-lived signed URLs generated on read.
+model TestAttachment {
+  id          String   @id @default(cuid())
+  testId      String
+  test        Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileType    String
+  fileSize    Int
+  storagePath String
+  uploadedBy  String
+  uploadedAt  DateTime @default(now())
+
+  @@index([testId])
 }
 
 model TestReading {

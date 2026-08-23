@@ -12,7 +12,7 @@ export default function CreateUserForm() {
   const [state, formAction, pending] = useActionState(createUserAction, initialState);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 bg-white border border-border rounded-xl p-4">
+    <form action={formAction} className="flex flex-col gap-3 bg-white border border-border rounded-[18px] shadow-card p-4">
       <div className="text-[13px] font-semibold text-text">Add User</div>
       <div className="grid grid-cols-2 gap-2.5">
         <MiniField label="Full Name" name="name" placeholder="Andi Wijaya" />
@@ -34,7 +34,7 @@ export default function CreateUserForm() {
 
       {state.error && <div className="text-xs font-medium text-danger">{state.error}</div>}
       {state.tempPassword && (
-        <div className="text-xs font-medium text-success-dark bg-success-bg border border-success/30 rounded-[8px] p-2.5">
+        <div className="text-xs font-medium text-success-dark bg-success-bg border border-success/30 rounded-[13px] p-3">
           User created. Temporary password (share with them once, they should change it):{" "}
           <strong>{state.tempPassword}</strong>
         </div>

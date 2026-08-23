@@ -29,3 +29,21 @@ export function relativeTime(date: Date | string): string {
   const diffDay = Math.round(diffHr / 24);
   return `${diffDay}d ago`;
 }
+
+export function dueLabelFor(receivedDate: Date, targetTatHours: number): { label: string; color: string } {
+  const dueAt = receivedDate.getTime() + targetTatHours * 60 * 60 * 1000;
+  const hoursLeft = (dueAt - Date.now()) / (60 * 60 * 1000);
+  if (hoursLeft <= 0) return { label: "Overdue", color: "#D0021B" };
+  if (hoursLeft < 1) return { label: "Due <1h", color: "#F5A623" };
+  if (hoursLeft < 24) return { label: `Due in ${Math.round(hoursLeft)}h`, color: "#F5A623" };
+  return { label: `Due in ${Math.round(hoursLeft / 24)}d`, color: "#7A8B94" };
+}
+
+export function dayGroupLabel(date: Date): "Today" | "Yesterday" | "Earlier" {
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / (24 * 60 * 60 * 1000));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return "Earlier";
+}

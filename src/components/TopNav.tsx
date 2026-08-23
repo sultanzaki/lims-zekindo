@@ -48,15 +48,16 @@ function MenuLink({ href, label, active, badge, onNavigate }: { href: string; la
 
 export default function TopNav({
   active,
-  hasUnread,
+  unreadCount,
   role,
   userName,
 }: {
   active: Tab;
-  hasUnread: boolean;
+  unreadCount: number;
   role: string;
   userName: string;
 }) {
+  const hasUnread = unreadCount > 0;
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -82,7 +83,7 @@ export default function TopNav({
   return (
     <div className="hidden md:flex sticky top-0 z-20 items-center justify-between bg-white border-b border-border px-8 h-16 shrink-0">
       <Link href="/dashboard" className="flex items-center">
-        <Image src="/zekindo-logo.png" alt="Zekindo" width={118} height={26} style={{ height: 26, width: "auto" }} />
+        <Image src="/zekindo-logo.png" alt="Zekindo" width={78} height={26} style={{ height: 26, width: "auto" }} />
       </Link>
 
       <div className="flex items-center gap-2">
@@ -93,7 +94,9 @@ export default function TopNav({
         >
           <BellIcon />
           {hasUnread && (
-            <div className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-danger border-[1.5px] border-white" />
+            <div className="absolute top-1.5 right-2 min-w-[16px] h-4 px-1 rounded-full bg-danger border-[1.5px] border-white flex items-center justify-center text-[9px] font-bold text-white leading-none">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </div>
           )}
         </Link>
 
@@ -108,7 +111,7 @@ export default function TopNav({
           </button>
 
           {open && (
-          <div className="absolute right-0 top-12 w-64 bg-white border border-border rounded-xl shadow-[0_8px_28px_rgba(20,24,28,0.14)] overflow-hidden py-1.5">
+          <div className="menu-pop absolute right-0 top-12 w-64 bg-white border border-border rounded-[18px] shadow-[0_8px_28px_rgba(16,42,58,0.14)] overflow-hidden py-1.5">
             <div className="px-4 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider">{userName}</div>
 
             <MenuLink href="/dashboard" label="Dashboard" active={active === "home"} onNavigate={close} />

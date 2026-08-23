@@ -8,7 +8,7 @@ export default function BackHeader({ title, backHref }: { title: string; backHre
         className="w-10 h-10 rounded-full bg-chip-bg border border-border flex items-center justify-center shrink-0"
         aria-label="Back"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A5F7A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M15 18l-6-6 6-6" />
         </svg>
       </Link>

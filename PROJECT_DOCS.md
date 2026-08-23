@@ -49,11 +49,39 @@ Open http://localhost:3000 and sign in with one of the [demo accounts](#4-demo-a
 
 ---
 
+## 1a. Attachment storage (Supabase Storage)
+
+Test result entry supports attaching a photo or Excel/CSV file as supporting
+documentation. This uses Supabase Storage, which is separate from the
+database connection above — set it up once per project:
+
+1. In your Supabase project, go to **Storage** and create a new **private**
+   bucket (the app never exposes a public bucket URL — it reads files back
+   through short-lived signed URLs it generates on the server).
+2. Go to **Project Settings → API** and copy the **Project URL** and the
+   **`service_role`** secret key.
+3. Add to `.env` (see `.env.example`):
+
+```
+SUPABASE_URL="https://xxxxxxxxxxxx.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="..."
+# SUPABASE_STORAGE_BUCKET="test-attachments"   # only if you named the bucket differently
+```
+
+The `service_role` key bypasses Row Level Security — it's used server-side
+only (in `src/lib/storage.ts`) and must never be exposed to the browser or
+committed to source control. Without these two variables set, the
+attachment upload form still renders but shows a clear inline error instead
+of crashing the page — everything else in the app works normally.
+
+---
+
 ## 2. Deploying (Vercel or Netlify)
 
 1. Push this repository to GitHub (or GitLab/Bitbucket).
 2. Import it into Vercel/Netlify.
-3. Set the same three environment variables as above in the project's settings.
+3. Set the same environment variables as above (including the Supabase Storage
+   ones from §1a, if you want attachments to work) in the project's settings.
 4. Deploy — the `postinstall` script (`prisma generate`) runs automatically during
    the build.
 
@@ -154,6 +182,13 @@ final result is what flows into Supervisor/QA review and the COA, exactly like
 a single-result test today. Raw readings are visible on the test's own page for
 traceability, but are **not** printed on the customer-facing COA — the COA
 only ever shows the one final result per parameter, to keep it clean.
+
+**Test entry attachments** — while a test is still pending, you can attach a
+photo or Excel/CSV file as supporting documentation for the observation
+(e.g. a photo of a plate count, a raw data export). Files are stored in
+Supabase Storage (see §1a) and shown read-only on the sample's Results tab
+afterward, so Supervisors/QA can view them during review — attachments lock
+along with the rest of the test once a result is submitted.
 
 **New Sample** — every sample gets a required **Sample Name** (a human-readable
 description, e.g. "Bottled Drinking Water 600ml" — distinct from Sample ID and
@@ -297,6 +332,9 @@ deliberately left as your responsibility to configure.
   a `resultMode` snapshot (Single/Multi) copied from the catalog at creation time
 - `TestReading` — one raw reading on a Multi-mode test (replicate #, checkpoint
   label, value, who/when) — supporting data behind a Test's final result
+- `TestAttachment` — a photo/Excel/CSV file attached to a Test as supporting
+  documentation; stores metadata + a Supabase Storage path (see §1a), not the
+  file itself
 - `CustodyEvent` — timestamped chain-of-custody entries for a sample
 - `SampleTypeCatalog` / `TestCatalog` — the configurable catalog New Sample draws
   from; `TestCatalog` also holds each test's `resultMode` / `replicateCount` /
