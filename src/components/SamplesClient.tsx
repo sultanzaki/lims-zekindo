@@ -110,7 +110,7 @@ export default function SamplesClient({
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <TopNav active="samples" unreadCount={unreadCount} role={role} userName={userName} />
-      <MobileTopBar unreadCount={unreadCount} userName={userName} />
+      <MobileTopBar unreadCount={unreadCount} />
       <div className="sticky top-0 md:top-16 bg-white border-b border-border-soft px-5 pt-6 pb-2.5 z-10 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Samples</h1>

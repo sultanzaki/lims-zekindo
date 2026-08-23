@@ -24,7 +24,7 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <TopNav active="profile" unreadCount={unread} role={user.accessRole} userName={user.name} />
-      <MobileTopBar unreadCount={unread} userName={user.name} />
+      <MobileTopBar unreadCount={unread} />
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border">
         <h1 className="text-[19px] font-bold text-text tracking-tight">Profile</h1>
       </div>

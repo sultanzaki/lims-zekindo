@@ -4,7 +4,7 @@ import { getDashboardData, getUnreadCount } from "@/lib/data";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
-import MobileTopBar from "@/components/MobileTopBar";
+import DashboardMobileHeader from "@/components/DashboardMobileHeader";
 import Card from "@/components/ui/Card";
 
 type QuickAction = { href: string; label: string; icon: React.ReactNode };
@@ -91,11 +91,11 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <TopNav active="home" unreadCount={unread} role={user.accessRole} userName={user.name} />
-      <MobileTopBar unreadCount={unread} userName={user.name} />
+      <DashboardMobileHeader unreadCount={unread} userName={user.name} />
 
       <div className="flex-1 p-5 flex flex-col gap-5">
         <div
-          className="rounded-[20px] p-[18px]"
+          className="rounded-[20px] p-[18px] -mt-9 md:mt-0 relative z-10"
           style={{
             background: "linear-gradient(152deg, #FFFFFF 0%, #F1F9FC 100%)",
             border: "1px solid #E4EFF4",
