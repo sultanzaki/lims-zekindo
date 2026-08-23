@@ -93,9 +93,9 @@ export default async function DashboardPage() {
       <TopNav active="home" unreadCount={unread} role={user.accessRole} userName={user.name} />
       <DashboardMobileHeader unreadCount={unread} userName={user.name} />
 
-      <div className="flex-1 p-5 flex flex-col gap-5">
+      <div className="flex-1 px-5 pb-5 pt-0 md:pt-5 flex flex-col gap-5">
         <div
-          className="rounded-[20px] p-[18px] -mt-9 md:mt-0 relative z-10"
+          className="rounded-[20px] p-[18px]"
           style={{
             background: "linear-gradient(152deg, #FFFFFF 0%, #F1F9FC 100%)",
             border: "1px solid #E4EFF4",

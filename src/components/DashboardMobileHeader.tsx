@@ -20,39 +20,40 @@ function initialsFrom(name: string) {
   return chars || "?";
 }
 
-/** Mobile-only colored hero header for the Dashboard: greeting + avatar + alerts. */
+/** Mobile-only Dashboard header: light, flush, productivity-app style — bold greeting + soft avatar, no solid color block. */
 export default function DashboardMobileHeader({ unreadCount, userName }: { unreadCount: number; userName: string }) {
   const hasUnread = unreadCount > 0;
   const greeting = useSyncExternalStore(subscribeNoop, getGreetingSnapshot, getGreetingServerSnapshot);
   const firstName = userName.trim().split(/\s+/)[0] ?? userName;
 
   return (
-    <div
-      className="md:hidden px-5 pt-6 pb-11 rounded-b-[28px] shrink-0"
-      style={{ background: "linear-gradient(135deg, #1A5F7A 0%, #2B8DB8 100%)" }}
-    >
-      <div className="flex items-center justify-between">
+    <div className="md:hidden relative overflow-hidden bg-white px-5 pt-6 pb-5 shrink-0">
+      <div
+        className="absolute -top-14 -right-10 w-44 h-44 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(43,141,184,0.14) 0%, rgba(43,141,184,0) 72%)" }}
+      />
+      <div className="relative flex items-center justify-between">
         <Link href="/profile" className="flex items-center gap-3 min-w-0">
-          <div className="w-11 h-11 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-[14px] font-bold text-white shrink-0">
+          <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center text-[15px] font-bold text-primary-dark shrink-0">
             {initialsFrom(userName)}
           </div>
           <div className="min-w-0">
             <div
-              className="text-[12px] text-white/70 leading-none transition-opacity duration-300"
+              className="text-[12.5px] text-muted leading-none transition-opacity duration-300"
               style={{ opacity: greeting ? 1 : 0 }}
             >
               {greeting}
             </div>
-            <div className="text-[17px] font-bold text-white leading-tight truncate mt-1">{firstName}</div>
+            <div className="text-[19px] font-bold text-text leading-tight truncate mt-1">{firstName}</div>
           </div>
         </Link>
 
         <Link
           href="/notifications"
           aria-label="Alerts"
-          className="relative w-10 h-10 flex items-center justify-center shrink-0 rounded-full bg-white/15 hover:bg-white/25 transition-colors"
+          className="relative w-10 h-10 flex items-center justify-center shrink-0 rounded-full bg-chip-bg hover:bg-border transition-colors"
         >
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1A5F7A" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 01-3.46 0" />
           </svg>
