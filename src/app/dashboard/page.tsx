@@ -93,7 +93,7 @@ export default async function DashboardPage() {
       <TopNav active="home" unreadCount={unread} role={user.accessRole} userName={user.name} />
       <DashboardMobileHeader unreadCount={unread} userName={user.name} />
 
-      <div className="flex-1 px-5 pb-5 pt-0 md:pt-5 flex flex-col gap-5">
+      <div className="flex-1 px-5 pb-5 pt-4 md:pt-5 flex flex-col gap-5">
         <div
           className="rounded-[20px] p-[18px]"
           style={{

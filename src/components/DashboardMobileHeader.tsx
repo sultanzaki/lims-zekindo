@@ -14,19 +14,27 @@ function getGreetingServerSnapshot() {
   return null;
 }
 
-/** Mobile-only Dashboard header: light, flush, productivity-app style — bold greeting on a soft gradient accent, no avatar, no solid color block. */
+/**
+ * Mobile-only Dashboard header: transparent, so it's truly seamless with the page background —
+ * bold greeting on a soft gradient accent, no avatar, no solid color block.
+ * The decorative blob lives in its own tall clipping box so its soft fade completes before any
+ * edge would cut it off (a tightly-sized overflow-hidden box was clipping it mid-fade, which read
+ * as a hard boundary against the content below).
+ */
 export default function DashboardMobileHeader({ unreadCount, userName }: { unreadCount: number; userName: string }) {
   const hasUnread = unreadCount > 0;
   const greeting = useSyncExternalStore(subscribeNoop, getGreetingSnapshot, getGreetingServerSnapshot);
   const firstName = userName.trim().split(/\s+/)[0] ?? userName;
 
   return (
-    <div className="md:hidden relative overflow-hidden bg-white px-5 pt-7 pb-6 shrink-0">
-      <div
-        className="absolute -top-16 -right-14 w-56 h-56 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(43,141,184,0.16) 0%, rgba(43,141,184,0) 70%)" }}
-      />
-      <div className="relative flex items-start justify-between gap-3">
+    <div className="md:hidden relative shrink-0">
+      <div className="absolute inset-x-0 top-0 h-[220px] overflow-hidden pointer-events-none" aria-hidden="true">
+        <div
+          className="absolute -top-16 -right-14 w-56 h-56 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(43,141,184,0.16) 0%, rgba(43,141,184,0) 70%)" }}
+        />
+      </div>
+      <div className="relative flex items-start justify-between gap-3 px-5 pt-7 pb-6">
         <div className="min-w-0">
           <div
             className="text-[13px] text-muted leading-none transition-opacity duration-300"
