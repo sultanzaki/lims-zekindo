@@ -1,37 +1,38 @@
 import { requirePageRole } from "@/lib/auth";
 import { isAdmin } from "@/lib/roles";
 import { prisma } from "@/lib/db";
-import { formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
-import EmptyState from "@/components/ui/EmptyState";
+import AuditLogClient from "@/components/AuditLogClient";
 
 export default async function AdminAuditPage() {
   await requirePageRole(isAdmin);
   const entries = await prisma.auditLog.findMany({
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: 500,
     include: { user: { select: { name: true } } },
   });
+
+  const userEntityIds = [...new Set(entries.filter((e) => e.entityType === "User").map((e) => e.entityId))];
+  const referencedUsers = userEntityIds.length
+    ? await prisma.user.findMany({ where: { id: { in: userEntityIds } }, select: { id: true, name: true } })
+    : [];
+  const userNameById = new Map(referencedUsers.map((u) => [u.id, u.name]));
+
+  const rows = entries.map((e) => ({
+    id: e.id,
+    action: e.action,
+    entityType: e.entityType,
+    entityId: e.entityId,
+    entityLabel: e.entityType === "User" ? userNameById.get(e.entityId) ?? null : null,
+    detail: e.detail,
+    createdAt: e.createdAt,
+    actorName: e.user?.name ?? "System",
+  }));
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Audit Log" backHref="/profile" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-2">
-        <div className="text-[11px] text-muted -mt-1 mb-1">Most recent 100 events</div>
-        {entries.map((e) => (
-          <div key={e.id} className="bg-white border border-border rounded-2xl shadow-card-sm p-3.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[13px] font-semibold text-text">{e.action}</span>
-              <span className="text-[11px] text-faint shrink-0">{formatDateTime(e.createdAt)}</span>
-            </div>
-            <div className="text-[11px] text-muted mt-0.5">
-              {e.user?.name ?? "System"} · {e.entityType} {e.entityId}
-              {e.detail ? ` · ${e.detail}` : ""}
-            </div>
-          </div>
-        ))}
-        {entries.length === 0 && <EmptyState>No activity logged yet.</EmptyState>}
-      </div>
+      <AuditLogClient entries={rows} />
     </div>
   );
 }

@@ -91,7 +91,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <TopNav active="home" unreadCount={unread} role={user.accessRole} userName={user.name} />
-      <MobileTopBar unreadCount={unread} />
+      <MobileTopBar unreadCount={unread} userName={user.name} />
 
       <div className="flex-1 p-5 flex flex-col gap-5">
         <div
