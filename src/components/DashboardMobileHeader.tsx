@@ -14,39 +14,28 @@ function getGreetingServerSnapshot() {
   return null;
 }
 
-function initialsFrom(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const chars = parts.slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");
-  return chars || "?";
-}
-
-/** Mobile-only Dashboard header: light, flush, productivity-app style — bold greeting + soft avatar, no solid color block. */
+/** Mobile-only Dashboard header: light, flush, productivity-app style — bold greeting on a soft gradient accent, no avatar, no solid color block. */
 export default function DashboardMobileHeader({ unreadCount, userName }: { unreadCount: number; userName: string }) {
   const hasUnread = unreadCount > 0;
   const greeting = useSyncExternalStore(subscribeNoop, getGreetingSnapshot, getGreetingServerSnapshot);
   const firstName = userName.trim().split(/\s+/)[0] ?? userName;
 
   return (
-    <div className="md:hidden relative overflow-hidden bg-white px-5 pt-6 pb-5 shrink-0">
+    <div className="md:hidden relative overflow-hidden bg-white px-5 pt-7 pb-6 shrink-0">
       <div
-        className="absolute -top-14 -right-10 w-44 h-44 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(43,141,184,0.14) 0%, rgba(43,141,184,0) 72%)" }}
+        className="absolute -top-16 -right-14 w-56 h-56 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(43,141,184,0.16) 0%, rgba(43,141,184,0) 70%)" }}
       />
-      <div className="relative flex items-center justify-between">
-        <Link href="/profile" className="flex items-center gap-3 min-w-0">
-          <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center text-[15px] font-bold text-primary-dark shrink-0">
-            {initialsFrom(userName)}
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div
+            className="text-[13px] text-muted leading-none transition-opacity duration-300"
+            style={{ opacity: greeting ? 1 : 0 }}
+          >
+            {greeting}
           </div>
-          <div className="min-w-0">
-            <div
-              className="text-[12.5px] text-muted leading-none transition-opacity duration-300"
-              style={{ opacity: greeting ? 1 : 0 }}
-            >
-              {greeting}
-            </div>
-            <div className="text-[19px] font-bold text-text leading-tight truncate mt-1">{firstName}</div>
-          </div>
-        </Link>
+          <div className="text-[23px] font-bold text-text leading-tight truncate mt-1.5">{firstName}</div>
+        </div>
 
         <Link
           href="/notifications"
