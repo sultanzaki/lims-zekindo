@@ -74,6 +74,23 @@ committed to source control. Without these two variables set, the
 attachment upload form still renders but shows a clear inline error instead
 of crashing the page — everything else in the app works normally.
 
+**Troubleshooting "bucket not found":** the upload error now includes the
+exact bucket name it tried (e.g. `bucket: "test-attachments"`) — check that
+against the bucket list in Supabase **Storage**. This almost always means
+one of:
+
+- The bucket name doesn't match exactly (case-sensitive) — rename the
+  bucket or set `SUPABASE_STORAGE_BUCKET` to the real name.
+- A leftover `SUPABASE_STORAGE_BUCKET` variable (in `.env` or in
+  Vercel/Netlify's project settings) still points at an old/renamed bucket
+  name — remove it if you're using the default `test-attachments`.
+- `SUPABASE_URL` points at a different Supabase project than the one where
+  the bucket was created (easy to mix up if you have more than one
+  project) — compare the project ref in `SUPABASE_URL` against
+  `DATABASE_URL`.
+- On Vercel/Netlify, environment variable changes only take effect on the
+  **next deploy** — re-deploy after adding or editing them.
+
 ---
 
 ## 2. Deploying (Vercel or Netlify)

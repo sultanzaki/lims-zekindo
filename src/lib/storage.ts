@@ -21,7 +21,13 @@ export async function uploadAttachment(path: string, file: File): Promise<void> 
   const { error } = await client()
     .storage.from(BUCKET)
     .upload(path, buffer, { contentType: file.type || "application/octet-stream", upsert: false });
-  if (error) throw new Error(`Attachment upload failed: ${error.message}`);
+  if (error) {
+    // Surface the exact bucket name being used — "bucket not found" almost
+    // always means the bucket name here doesn't match what actually exists
+    // in Supabase (typo, wrong project, or a stale SUPABASE_STORAGE_BUCKET
+    // override left over from before the bucket was renamed/recreated).
+    throw new Error(`Attachment upload failed: ${error.message} (bucket: "${BUCKET}")`);
+  }
 }
 
 export async function signedAttachmentUrl(path: string, expiresInSeconds = 3600): Promise<string | null> {

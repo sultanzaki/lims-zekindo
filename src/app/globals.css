@@ -109,6 +109,14 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
+/* Inline, borderless fields (e.g. the large result-entry value) opt out of
+   the default focus ring — they sit inside their own card that already
+   shows focus state via border color. */
+input.field-plain:focus {
+  border-color: transparent !important;
+  box-shadow: none;
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }

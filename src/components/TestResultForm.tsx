@@ -20,8 +20,6 @@ function qualitativeOptionsFor(spec: string): [string, string] | null {
   return QUALITATIVE_PAIRS[limit.value.toLowerCase()] ?? [limit.value, "Fail"];
 }
 
-const KEYS = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "<", "0", "del"] as const;
-
 export default function TestResultForm({
   sampleId,
   testId,
@@ -45,12 +43,20 @@ export default function TestResultForm({
   const liveVerdictColor = verdict === "Fail" ? "#B00016" : "#1E7A34";
   const liveVerdictLabel = verdict === "Fail" ? "Out of spec" : "In spec";
 
-  function pressKey(k: (typeof KEYS)[number]) {
-    setResult((r) => {
-      if (k === "del") return r.slice(0, -1);
-      if (k === "<") return r.startsWith("<") ? r.slice(1) : "<" + r;
-      return (r === "0" ? "" : r) + k;
-    });
+  const belowLimit = result.startsWith("<");
+
+  function handleNumberChange(raw: string) {
+    // Keep only digits and a single decimal point; the "<" (below detection
+    // limit) prefix is toggled separately since a numeric keyboard has no
+    // key for it.
+    let v = raw.replace(/[^0-9.]/g, "");
+    const firstDot = v.indexOf(".");
+    if (firstDot !== -1) v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+    setResult((belowLimit ? "<" : "") + v);
+  }
+
+  function toggleBelowLimit() {
+    setResult((r) => (r.startsWith("<") ? r.slice(1) : "<" + r));
   }
 
   return (
@@ -69,13 +75,25 @@ export default function TestResultForm({
               {isMulti ? "Final reported value" : "Measured value"}
             </div>
             <div className="flex items-baseline gap-2 mt-1">
-              <span
-                className="text-[32px] font-bold font-mono-data leading-none"
-                style={{ color: result ? "#111111" : "#C2D2DB" }}
-              >
-                {result || "—"}
-              </span>
-              {unit && <span className="text-sm text-muted font-medium">{unit}</span>}
+              {qualitative ? (
+                <span
+                  className="text-[32px] font-bold font-mono-data leading-none"
+                  style={{ color: result ? "#111111" : "#C2D2DB" }}
+                >
+                  {result || "—"}
+                </span>
+              ) : (
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="—"
+                  value={result}
+                  onChange={(e) => handleNumberChange(e.target.value)}
+                  className="field-plain text-[32px] font-bold font-mono-data leading-none w-full min-w-0 bg-transparent border-none outline-none p-0 placeholder:text-[#C2D2DB]"
+                  style={{ color: "#111111" }}
+                />
+              )}
+              {unit && <span className="text-sm text-muted font-medium shrink-0">{unit}</span>}
             </div>
           </div>
           {verdict && (
@@ -109,7 +127,20 @@ export default function TestResultForm({
               );
             })}
           </div>
-        ) : null}
+        ) : (
+          <button
+            type="button"
+            onClick={toggleBelowLimit}
+            className="self-start text-[13px] font-semibold px-3.5 py-2 rounded-full border-[1.5px] cursor-pointer transition-colors duration-150"
+            style={{
+              background: belowLimit ? "#2B8DB8" : "#FFFFFF",
+              color: belowLimit ? "#ffffff" : "#444444",
+              borderColor: belowLimit ? "#2B8DB8" : "#E3EAEF",
+            }}
+          >
+            {belowLimit ? "✓ " : ""}Below detection limit (&lt;)
+          </button>
+        )}
 
         <Field label="Notes (optional)" htmlFor="notes">
           <textarea
@@ -122,33 +153,7 @@ export default function TestResultForm({
         </Field>
       </div>
 
-      {!qualitative && (
-        <div className="mt-4 bg-[#EDF3F7] border-t border-[#E2EBF0] px-3.5 pt-3.5 pb-2">
-          <div className="grid grid-cols-3 gap-2">
-            {KEYS.map((k) => {
-              const isAction = k === "del" || k === "<";
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => pressKey(k)}
-                  className="flex items-center justify-center h-[54px] rounded-[13px] border text-xl font-semibold font-mono-data cursor-pointer select-none transition-transform duration-100 active:scale-[0.93]"
-                  style={{
-                    background: isAction ? "#DCE8EE" : "#FFFFFF",
-                    borderColor: isAction ? "#CBDCE5" : "#E4EDF2",
-                    color: isAction ? "#0F4C63" : "#111111",
-                    boxShadow: "0 1px 2px rgba(16,42,58,0.07)",
-                  }}
-                >
-                  {k === "del" ? "⌫" : k}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div className={`px-5 pb-7 pt-3 ${!qualitative ? "bg-[#EDF3F7]" : ""}`}>
+      <div className="px-5 pb-7 pt-3 mt-auto">
         {state.error && <div className="text-xs font-medium text-danger mb-3">{state.error}</div>}
         <Button type="submit" disabled={pending || !result}>
           {pending ? "Submitting…" : "Submit for QA Review"}
