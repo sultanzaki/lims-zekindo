@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
+import LabelCard from "@/components/LabelCard";
 
 export default async function SampleLabelPage({
   params,
@@ -24,16 +25,13 @@ export default async function SampleLabelPage({
         <BackHeader title="Barcode Label" backHref={`/samples/${sample.id}`} />
       </div>
 
-      <div className="flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
-        <div className="w-full max-w-[280px] border-2 border-text rounded-xl p-4 flex flex-col items-center gap-3 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrDataUrl} alt={`QR code for ${sample.id}`} width={180} height={180} />
-          <div className="text-lg font-bold text-text tracking-wide">{sample.id}</div>
-          {sample.name && <div className="text-sm font-semibold text-text">{sample.name}</div>}
-          <div className="text-xs text-muted">{sample.type}</div>
-          <div className="text-[11px] text-muted">{sample.source}</div>
-          {sample.storageLocation && <div className="text-[11px] text-muted">{sample.storageLocation}</div>}
-        </div>
+      <div className="label-print-wrap flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
+        <LabelCard
+          qrDataUrl={qrDataUrl}
+          code={sample.id}
+          title={sample.name}
+          lines={[sample.type, sample.source, sample.storageLocation]}
+        />
 
         <div className="no-print w-full max-w-[280px]">
           <PrintButton label="Print Label" />

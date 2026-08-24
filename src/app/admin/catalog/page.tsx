@@ -2,19 +2,15 @@ import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import BackHeader from "@/components/BackHeader";
-import SectionLabel from "@/components/ui/SectionLabel";
-import { CreateSampleTypeForm, CreateTestCatalogForm, CreateBusinessUnitForm } from "@/components/CatalogForms";
-import { setSampleTypeActiveAction, setTestCatalogActiveAction, setBusinessUnitActiveAction } from "@/lib/actions/catalog";
+import { CreateSampleTypeForm, CreateTestCatalogForm } from "@/components/CatalogForms";
+import { setSampleTypeActiveAction, setTestCatalogActiveAction } from "@/lib/actions/catalog";
 
 export default async function AdminCatalogPage() {
   await requirePageRole(canManageInventoryAndCatalog);
-  const [sampleTypes, businessUnits] = await Promise.all([
-    prisma.sampleTypeCatalog.findMany({
-      orderBy: { name: "asc" },
-      include: { tests: { orderBy: { order: "asc" } } },
-    }),
-    prisma.businessUnit.findMany({ orderBy: { name: "asc" } }),
-  ]);
+  const sampleTypes = await prisma.sampleTypeCatalog.findMany({
+    orderBy: { name: "asc" },
+    include: { tests: { orderBy: { order: "asc" } } },
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
@@ -65,25 +61,6 @@ export default async function AdminCatalogPage() {
             </div>
           ))}
           {sampleTypes.length === 0 && <div className="text-xs text-muted">No sample types yet — add one above.</div>}
-        </div>
-
-        <SectionLabel className="mt-2">Business Units</SectionLabel>
-        <CreateBusinessUnitForm />
-        <div className="bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
-          {businessUnits.map((bu, i) => (
-            <div
-              key={bu.id}
-              className={`flex items-center justify-between gap-2 px-3.5 py-3 text-xs ${i < businessUnits.length - 1 ? "border-b border-border-soft" : ""}`}
-            >
-              <span className={bu.active ? "font-medium text-text" : "font-medium text-muted line-through"}>{bu.name}</span>
-              <form action={setBusinessUnitActiveAction.bind(null, bu.id, !bu.active)}>
-                <button type="submit" className={`text-[11px] font-semibold cursor-pointer ${bu.active ? "text-danger" : "text-success-dark"}`}>
-                  {bu.active ? "Deactivate" : "Reactivate"}
-                </button>
-              </form>
-            </div>
-          ))}
-          {businessUnits.length === 0 && <div className="px-3.5 py-3 text-xs text-muted">No business units yet — add one above.</div>}
         </div>
       </div>
     </div>

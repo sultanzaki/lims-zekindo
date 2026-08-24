@@ -163,6 +163,21 @@ input.field-plain:focus {
   margin: 0;
 }
 
+/* Barcode labels (sample/equipment/reagent/warehouse): on-screen they're
+   centered for a nicer mobile preview, but printed on a full A4 sheet they
+   need to sit flush at the top-left corner so the label can be trimmed out
+   with one horizontal + one vertical cut instead of guessing the margins. */
+@media print {
+  .label-print-wrap {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    padding: 6mm !important;
+  }
+  .label-card {
+    page-break-inside: avoid;
+  }
+}
+
 /* ---- Motion ----
    Page-level enter/exit uses React's <ViewTransition> (see app/template.tsx),
    which activates on every navigation with no JS animation library. These

@@ -116,6 +116,7 @@ export async function getSampleDetail(id: string) {
       deviations: { orderBy: { openedAt: "desc" } },
       retestOf: { select: { id: true, type: true } },
       retests: { select: { id: true, type: true, status: true } },
+      reports: { orderBy: { uploadedAt: "desc" } },
     },
   });
 }

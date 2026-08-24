@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Matches the 10MB app-level checks in lib/actions/samples.ts and
+      // lib/actions/inventory.ts — the framework's own 1MB default was
+      // rejecting uploads before those checks even ran.
+      bodySizeLimit: "10mb",
+    },
+  },
   async headers() {
     return [
       {

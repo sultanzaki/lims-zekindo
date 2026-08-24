@@ -1,0 +1,39 @@
+import { requirePageRole } from "@/lib/auth";
+import { canManageInventoryAndCatalog } from "@/lib/roles";
+import { prisma } from "@/lib/db";
+import BackHeader from "@/components/BackHeader";
+import { CreateBusinessUnitForm } from "@/components/CatalogForms";
+import { setBusinessUnitActiveAction } from "@/lib/actions/catalog";
+
+export default async function AdminBusinessUnitsPage() {
+  await requirePageRole(canManageInventoryAndCatalog);
+  const businessUnits = await prisma.businessUnit.findMany({ orderBy: { name: "asc" } });
+
+  return (
+    <div className="min-h-screen flex flex-col bg-page-bg">
+      <BackHeader title="Business Units" backHref="/profile" />
+      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
+        <p className="text-xs text-muted -mt-1">
+          The requesting business units that samples can be logged against — managed separately from the sample &amp; test catalog.
+        </p>
+        <CreateBusinessUnitForm />
+        <div className="bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
+          {businessUnits.map((bu, i) => (
+            <div
+              key={bu.id}
+              className={`flex items-center justify-between gap-2 px-3.5 py-3 text-xs ${i < businessUnits.length - 1 ? "border-b border-border-soft" : ""}`}
+            >
+              <span className={bu.active ? "font-medium text-text" : "font-medium text-muted line-through"}>{bu.name}</span>
+              <form action={setBusinessUnitActiveAction.bind(null, bu.id, !bu.active)}>
+                <button type="submit" className={`text-[11px] font-semibold cursor-pointer ${bu.active ? "text-danger" : "text-success-dark"}`}>
+                  {bu.active ? "Deactivate" : "Reactivate"}
+                </button>
+              </form>
+            </div>
+          ))}
+          {businessUnits.length === 0 && <div className="px-3.5 py-3 text-xs text-muted">No business units yet — add one above.</div>}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -30,7 +30,7 @@ export default async function EquipmentLabelPage({
         <BackHeader title="Equipment Label" backHref={`/inventory/equipment/${equipment.id}`} />
       </div>
 
-      <div className="flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
+      <div className="label-print-wrap flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
         <LabelCard
           qrDataUrl={qrDataUrl}
           code={equipment.assetTag}

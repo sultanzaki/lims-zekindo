@@ -11,6 +11,7 @@ import StatusBadge from "@/components/StatusBadge";
 import StorageLocationForm from "@/components/StorageLocationForm";
 import ReviewPanel from "@/components/ReviewPanel";
 import AttachmentGallery from "@/components/AttachmentGallery";
+import SampleReportPanel from "@/components/SampleReportPanel";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Button from "@/components/ui/Button";
 import LinkButton from "@/components/ui/LinkButton";
@@ -19,7 +20,9 @@ type SampleDetailBase = NonNullable<Awaited<ReturnType<typeof getSampleDetail>>>
 type BaseTest = SampleDetailBase["tests"][number];
 type AttachmentWithUrl = BaseTest["attachments"][number] & { url: string | null };
 type TestWithAttachmentUrls = Omit<BaseTest, "attachments"> & { attachments: AttachmentWithUrl[] };
-type SampleDetail = Omit<SampleDetailBase, "tests"> & { tests: TestWithAttachmentUrls[] };
+type BaseReport = SampleDetailBase["reports"][number];
+type ReportWithUrl = BaseReport & { url: string | null };
+type SampleDetail = Omit<SampleDetailBase, "tests" | "reports"> & { tests: TestWithAttachmentUrls[]; reports: ReportWithUrl[] };
 type ServerAction = (prevState: FormState, formData: FormData) => Promise<FormState>;
 
 const TABS = ["Results", "Details", "Custody"] as const;
@@ -49,12 +52,15 @@ export default function SampleDetailClient({
   actions: {
     canReviewAsSupervisor: boolean;
     canApproveAsQa: boolean;
+    canManageReports: boolean;
     supervisorApproveAction: ServerAction;
     supervisorRejectAction: ServerAction;
     qaApproveAction: ServerAction;
     qaRejectAction: ServerAction;
     retestSampleAction: () => Promise<void>;
     markDisposedAction: () => Promise<void>;
+    uploadSampleReportAction: ServerAction;
+    deleteSampleReportAction: (reportId: string) => Promise<void>;
   };
 }) {
   const [tab, setTab] = useState<Tab>("Results");
@@ -130,6 +136,14 @@ export default function SampleDetailClient({
       <div key={tab} className="fade-in flex-1 px-5 py-4 flex flex-col gap-3.5">
         {tab === "Results" && (
           <>
+            <SampleReportPanel
+              reports={sample.reports}
+              canManage={actions.canManageReports}
+              canUpload={true}
+              uploadAction={actions.uploadSampleReportAction}
+              deleteAction={actions.deleteSampleReportAction}
+            />
+
             {sample.tests.map((test) => {
               const st = TEST_STATUS_STYLES[test.status as TestStatus];
               const hasResult = test.result != null;

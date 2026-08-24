@@ -27,7 +27,7 @@ export default async function StorageLocationLabelPage({
         <BackHeader title="Location Label" backHref={`/inventory/warehouse/${location.id}`} />
       </div>
 
-      <div className="flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
+      <div className="label-print-wrap flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
         <LabelCard qrDataUrl={qrDataUrl} code={location.name} lines={[path !== location.name ? path : null]} />
         <div className="no-print w-full max-w-[280px]">
           <PrintButton label="Print Label" />

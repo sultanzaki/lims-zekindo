@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { requireUser, requireRole } from "@/lib/auth";
 import { getNextSampleId } from "@/lib/data";
 import { logAudit } from "@/lib/audit";
-import { canReviewAsSupervisor, canApproveAsQa } from "@/lib/roles";
+import { canReviewAsSupervisor, canApproveAsQa, isAdmin } from "@/lib/roles";
 import { uploadAttachment, deleteAttachment } from "@/lib/storage";
 import { parseJakartaLocalDateTime } from "@/lib/tz";
 import { generateAccessCode } from "@/lib/tracking";
@@ -23,6 +23,18 @@ const ALLOWED_ATTACHMENT_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/csv",
 ]);
+
+const MAX_REPORT_BYTES = 20 * 1024 * 1024;
+const ALLOWED_REPORT_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/jpeg",
+  "image/png",
+]);
+const canManageReports = (role: string) => canReviewAsSupervisor(role) || canApproveAsQa(role) || isAdmin(role);
 
 export type FormState = { error?: string };
 
@@ -285,6 +297,68 @@ export async function deleteTestAttachmentAction(sampleId: string, testId: strin
   await logAudit({ userId: user.id, action: "test.attachment_removed", entityType: "Test", entityId: testId, detail: attachment.fileName });
 
   revalidatePath(`/samples/${sampleId}/tests/${testId}`);
+}
+
+// Sample-level report documents (e.g. a finished, signed-off report drafted
+// outside the system) — separate from TestAttachment, which is per-parameter
+// working documentation attached while an individual test is still open.
+export async function uploadSampleReportAction(
+  sampleId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const user = await requireUser();
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload." };
+  if (file.size > MAX_REPORT_BYTES) return { error: "File is too large (max 20MB)." };
+  if (!ALLOWED_REPORT_TYPES.has(file.type)) {
+    return { error: "Unsupported file type. Use a PDF, Word, Excel, or image file." };
+  }
+
+  const sample = await prisma.sample.findUnique({ where: { id: sampleId }, select: { id: true } });
+  if (!sample) return { error: "Sample not found." };
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storagePath = `reports/${sampleId}/${randomUUID()}-${safeName}`;
+
+  try {
+    await uploadAttachment(storagePath, file);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Upload failed." };
+  }
+
+  await prisma.sampleReport.create({
+    data: {
+      sampleId,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      storagePath,
+      uploadedBy: user.name,
+    },
+  });
+
+  await logAudit({ userId: user.id, action: "sample.report_added", entityType: "Sample", entityId: sampleId, detail: file.name });
+
+  revalidatePath(`/samples/${sampleId}`);
+  return {};
+}
+
+export async function deleteSampleReportAction(sampleId: string, reportId: string) {
+  const user = await requireRole(canManageReports);
+
+  const report = await prisma.sampleReport.findFirst({ where: { id: reportId, sampleId } });
+  if (!report) return;
+
+  try {
+    await deleteAttachment(report.storagePath);
+  } catch {
+    return;
+  }
+  await prisma.sampleReport.delete({ where: { id: reportId } });
+  await logAudit({ userId: user.id, action: "sample.report_removed", entityType: "Sample", entityId: sampleId, detail: report.fileName });
+
+  revalidatePath(`/samples/${sampleId}`);
 }
 
 async function openDeviationForRejection(sampleId: string, sampleType: string, userId: string, stage: string) {

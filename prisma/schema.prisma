@@ -65,11 +65,30 @@ model Sample {
   custodyEvents CustodyEvent[]
   notifications Notification[]
   deviations    Deviation[]
+  reports       SampleReport[]
 
   @@index([status])
   @@index([sampleTypeId])
   @@index([retestOfSampleId])
   @@index([businessUnitId])
+}
+
+// A finished lab report document for the whole sample (e.g. a signed-off
+// report drafted outside the system) — distinct from TestAttachment, which
+// is per-parameter working documentation (raw data, photos) attached while
+// a single test is still in progress.
+model SampleReport {
+  id          String   @id @default(cuid())
+  sampleId    String
+  sample      Sample   @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileType    String
+  fileSize    Int
+  storagePath String
+  uploadedBy  String
+  uploadedAt  DateTime @default(now())
+
+  @@index([sampleId])
 }
 
 model BusinessUnit {

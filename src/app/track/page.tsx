@@ -37,6 +37,21 @@ function MailIcon() {
   );
 }
 
+function FileIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <path d="M14 2v6h6" />
+    </svg>
+  );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function contactMailtoHref(sampleId: string) {
   const subject = `Inquiry about Sample ${sampleId}`;
   const body = `Hi Zekindo Lab team,\n\nI have a question regarding sample ${sampleId}.\n\n`;
@@ -62,6 +77,7 @@ export default async function TrackPage({
       sampleType: { select: { targetTatHours: true } },
       businessUnit: { select: { name: true } },
       tests: { orderBy: { order: "asc" }, include: { attachments: { orderBy: { uploadedAt: "asc" } } } },
+      reports: { orderBy: { uploadedAt: "desc" } },
     },
   });
   if (!sample) return <LookupForm showError />;
@@ -89,6 +105,10 @@ export default async function TrackPage({
   const testedCount = sample.tests.filter((t) => t.status === "awaiting" || completed).length;
   const totalCount = sample.tests.length;
   const progressPct = totalCount > 0 ? Math.round((testedCount / totalCount) * 100) : 0;
+
+  const reportsWithUrls = completed
+    ? await Promise.all(sample.reports.map(async (r) => ({ ...r, url: await signedAttachmentUrl(r.storagePath) })))
+    : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg px-5">
@@ -164,6 +184,29 @@ export default async function TrackPage({
             </Link>
           )}
         </div>
+
+        {completed && reportsWithUrls.length > 0 && (
+          <div className="bg-white rounded-[18px] shadow-card border border-border p-5 flex flex-col gap-3">
+            <div className="text-[15px] font-bold text-text tracking-tight">Report</div>
+            <div className="flex flex-col gap-2">
+              {reportsWithUrls.map((r) => (
+                <div key={r.id} className="flex items-center gap-2.5 bg-page-bg border border-border-soft rounded-[12px] px-3 py-2.5">
+                  <FileIcon />
+                  <div className="flex-1 min-w-0">
+                    {r.url ? (
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[13px] font-medium text-primary truncate block">
+                        {r.fileName}
+                      </a>
+                    ) : (
+                      <span className="text-[13px] font-medium text-faint truncate block">{r.fileName}</span>
+                    )}
+                    <div className="text-[11px] text-faint mt-0.5">{formatBytes(r.fileSize)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!rejected && totalCount > 0 && (
           <div className="bg-white rounded-[18px] shadow-card border border-border p-5 flex flex-col gap-4">

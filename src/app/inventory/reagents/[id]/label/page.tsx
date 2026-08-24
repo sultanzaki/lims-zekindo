@@ -30,7 +30,7 @@ export default async function ReagentLabelPage({
         <BackHeader title="Reagent Label" backHref={`/inventory/reagents/${reagent.id}`} />
       </div>
 
-      <div className="flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
+      <div className="label-print-wrap flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
         <LabelCard
           qrDataUrl={qrDataUrl}
           code={`Lot ${reagent.lotNumber}`}

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { getSampleDetail } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth";
-import { canReviewAsSupervisor, canApproveAsQa } from "@/lib/roles";
+import { canReviewAsSupervisor, canApproveAsQa, isAdmin } from "@/lib/roles";
 import { signedAttachmentUrl } from "@/lib/storage";
 import { formatAccessCode } from "@/lib/tracking";
 import SampleDetailClient from "@/components/SampleDetailClient";
@@ -13,6 +13,8 @@ import {
   qaRejectAction,
   retestSampleAction,
   markDisposedAction,
+  uploadSampleReportAction,
+  deleteSampleReportAction,
 } from "@/lib/actions/samples";
 
 export default async function SampleDetailPage({
@@ -39,6 +41,9 @@ export default async function SampleDetailPage({
         ),
       }))
     ),
+    reports: await Promise.all(
+      sample.reports.map(async (r) => ({ ...r, url: await signedAttachmentUrl(r.storagePath) }))
+    ),
   };
 
   let trackingUrl: string | null = null;
@@ -60,12 +65,15 @@ export default async function SampleDetailPage({
       actions={{
         canReviewAsSupervisor: canReviewAsSupervisor(user.accessRole),
         canApproveAsQa: canApproveAsQa(user.accessRole),
+        canManageReports: canReviewAsSupervisor(user.accessRole) || canApproveAsQa(user.accessRole) || isAdmin(user.accessRole),
         supervisorApproveAction: supervisorApproveAction.bind(null, sample.id),
         supervisorRejectAction: supervisorRejectAction.bind(null, sample.id),
         qaApproveAction: qaApproveAction.bind(null, sample.id),
         qaRejectAction: qaRejectAction.bind(null, sample.id),
         retestSampleAction: retestSampleAction.bind(null, sample.id),
         markDisposedAction: markDisposedAction.bind(null, sample.id),
+        uploadSampleReportAction: uploadSampleReportAction.bind(null, sample.id),
+        deleteSampleReportAction: deleteSampleReportAction.bind(null, sample.id),
       }}
     />
   );

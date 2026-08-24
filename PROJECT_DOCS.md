@@ -144,6 +144,33 @@ Sample Name did when it was first added. Existing `StorageLocation` rows
 default to `parentId = null` (top-level), so nothing already in your
 warehouse catalog moves or gets reorganized.
 
+**This delivery adds one more migration** on top of those three:
+`SampleReport` — the new per-sample Report document, separate from the
+per-test attachments — see [Section 5d](#5d-business-unit-page-body-size-fix-warehouse-tree-view-barcode-print-fix-and-sample-reports).
+Also purely additive, nothing to backfill.
+
+> This session's sandbox could not reach your Supabase database directly
+> (only outbound HTTPS is allowed here, not raw Postgres connections), so
+> this migration has **not** been applied to your production database yet —
+> run it yourself using either option above before deploying this code.
+> The file is `prisma/migrations/20260824035857_sample_reports/migration.sql`:
+> ```sql
+> CREATE TABLE "SampleReport" (
+>     "id" TEXT NOT NULL,
+>     "sampleId" TEXT NOT NULL,
+>     "fileName" TEXT NOT NULL,
+>     "fileType" TEXT NOT NULL,
+>     "fileSize" INTEGER NOT NULL,
+>     "storagePath" TEXT NOT NULL,
+>     "uploadedBy" TEXT NOT NULL,
+>     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+>     CONSTRAINT "SampleReport_pkey" PRIMARY KEY ("id")
+> );
+> CREATE INDEX "SampleReport_sampleId_idx" ON "SampleReport"("sampleId");
+> ALTER TABLE "SampleReport" ADD CONSTRAINT "SampleReport_sampleId_fkey"
+>   FOREIGN KEY ("sampleId") REFERENCES "Sample"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+> ```
+
 ---
 
 ## 3. Roles & permissions
@@ -381,6 +408,50 @@ model:
   On-time rate compares each submission's timestamp to its sample's TAT
   deadline; out-of-spec rate only counts tests with a comparable
   numeric/exact spec.
+
+---
+
+## 5d. Business Unit page, body size fix, warehouse tree view, barcode print fix, and Sample Reports
+
+**Business Units moved out of the Catalog page** — managing Business Units
+is now its own page, `/admin/business-units` (Profile → Lab Management →
+Business Units), separate from `/admin/catalog` (Sample & Test Catalog).
+Nothing about the `BusinessUnit` data itself changed — a sample's Business
+Unit field on the New Sample form still works the same way — this only
+splits the *management* screen so it's not mixed in with sample-type/test
+definitions.
+
+**Fixed: attachment upload failing above 1MB** — Next.js caps Server Action
+request bodies at 1MB by default, which was rejecting any file upload over
+that size with `Body exceeded 1 MB limit` before the app's own 10MB check
+ever ran. `next.config.ts` now sets `experimental.serverActions.bodySizeLimit`
+to `10mb` to match.
+
+**Warehouse: hierarchy tree view** — `/inventory/warehouse` now renders the
+*entire* nested tree in one view (e.g. KBI → Microbiology Lab → Rak X, all
+visible at once with indentation and connector lines and a distinct icon per
+level: building / room / rack), instead of showing only top-level locations
+and requiring a click-through per level. Opening a location's own page still
+works the same as before, for adding a sub-location or printing its label.
+
+**Barcode labels: top-left print alignment + Zekindo logo** — every barcode
+label (Sample, Equipment, Reagent, Warehouse location) now prints flush to
+the top-left corner of the A4 sheet, so it can be trimmed out with one
+horizontal and one vertical cut instead of guessing where the margins are.
+On screen the label preview still centers itself for a nicer mobile view —
+only the print output changed. Each label card also now shows the Zekindo
+Chemicals logo above its QR code.
+
+**Sample Reports** — a new document type, `SampleReport`, distinct from the
+per-parameter documentation (`TestAttachment`) shown under each test result.
+A Report is one finished document for the *whole sample* (e.g. a signed-off
+PDF report written outside the system), uploaded from the new "Report" panel
+at the top of a sample's Results tab. Any signed-in user can upload one;
+removing one is restricted to Supervisor/QA Manager/Admin. Once a sample
+reaches **Complete**, its Report(s) also appear on the public client
+tracking page (`/track`) as downloadable files, following the same
+disclosure timing as everything else there — nothing is shown to the
+requestor before the sample has cleared review.
 
 ---
 
