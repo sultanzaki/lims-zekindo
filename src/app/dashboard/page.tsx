@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
+import { requirePageUser } from "@/lib/auth";
 import { getDashboardData, getUnreadCount } from "@/lib/data";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
@@ -78,8 +78,7 @@ function quickActionsFor(role: string): QuickAction[] {
 }
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageUser();
   const [
     { pendingLogin, inTesting, awaitingReview, attentionItems, queueSamples, approvedLast7, rejectedLast7, passRate },
     unread,

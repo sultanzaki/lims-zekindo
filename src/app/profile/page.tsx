@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { getSessionUserId } from "@/lib/auth";
+import { requirePageUser } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
-import { prisma } from "@/lib/db";
 import { ROLE_LABELS, AccessRole, canReviewAsSupervisor, canManageInventoryAndCatalog } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
@@ -11,14 +10,8 @@ import Chevron from "@/components/ui/Chevron";
 import InstallPwaButton from "@/components/InstallPwaButton";
 
 export default async function ProfilePage() {
-  const userId = await getSessionUserId();
-  if (!userId) return null;
-  const [user, unread] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId } }),
-    getUnreadCount(userId),
-  ]);
-  if (!user) return null;
-
+  const user = await requirePageUser();
+  const unread = await getUnreadCount(user.id);
   const role = user.accessRole;
 
   return (

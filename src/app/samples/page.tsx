@@ -1,12 +1,11 @@
-import { getCurrentUser } from "@/lib/auth";
+import { requirePageUser } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { SAMPLE_STATUSES } from "@/lib/status";
 import SamplesClient from "@/components/SamplesClient";
 
 export default async function SamplesPage({ searchParams }: PageProps<"/samples">) {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageUser();
   const { status } = await searchParams;
   const statusParam = typeof status === "string" ? status : undefined;
   const initialStatus = statusParam && (SAMPLE_STATUSES as readonly string[]).includes(statusParam)

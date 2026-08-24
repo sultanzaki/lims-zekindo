@@ -1,12 +1,11 @@
-import { getCurrentUser } from "@/lib/auth";
+import { requirePageUser } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
 import ScannerClient from "@/components/ScannerClient";
 
 export default async function ScanPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageUser();
   const unread = await getUnreadCount(user.id);
 
   return (

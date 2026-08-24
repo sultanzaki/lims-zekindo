@@ -503,6 +503,32 @@ stays the normal manual step from the Share sheet.
 
 ---
 
+## 5f. Fix: blank page on a stale/deleted-user session
+
+No database migration in this delivery — code only.
+
+`proxy.ts` (this project's App Router middleware) only verifies the session
+cookie's JWT *signature* — it has no database access, so it can't tell a
+genuinely logged-in session from one whose underlying `User` row was since
+deleted or deactivated (e.g. after clearing dummy/demo accounts). Several
+pages (`/dashboard`, `/profile`, `/scan`, `/notifications`, `/samples`,
+`/samples/new`) did the real database check themselves but, on finding no
+user, simply `return null`ed — rendering a blank white page instead of
+sending the visitor back to `/login`, since the still-signature-valid
+cookie kept the proxy from redirecting them there itself.
+
+Fixed with a new `requirePageUser()` helper (`src/lib/auth.ts`) used by all
+of the pages above: on a missing/deactivated user it now redirects through
+a small Route Handler (`src/app/api/session/clear`) that clears the stale
+cookie before landing on `/login` — cookies can only be mutated in a Server
+Action, Route Handler, or middleware, never during a plain page render, so
+that clearing step couldn't happen directly in the page. Reproduced and
+verified with an end-to-end test: log in, delete that same user from the
+database (as the cleanup script does), reload — confirmed landing cleanly
+on `/login` with the stale cookie gone, instead of a blank page.
+
+---
+
 ## 6. Known limitations
 
 Scoped out of this release deliberately, not oversights:

@@ -67,9 +67,29 @@ export async function requireRole(check: (accessRole: string) => boolean) {
   return user;
 }
 
+// proxy.ts only verifies the session cookie's signature — it has no DB
+// access, so it can't tell a genuinely logged-in session from one whose
+// user was since deleted or deactivated (e.g. after a data cleanup). That
+// check has to happen here, at the DB-backed layer, and on failure the
+// stale cookie must be cleared — otherwise the proxy sees a
+// still-signature-valid cookie and bounces the request right back in, and a
+// page that merely `return null`s on a missing user renders blank instead.
+// Cookies can't be mutated during a page render, though (only in a Server
+// Action, Route Handler, or middleware), so the redirect goes via a Route
+// Handler that does the actual clearing — see app/api/session/clear.
+
+/** For use at the top of a page.tsx that just needs any logged-in user. */
+export async function requirePageUser() {
+  const user = await getCurrentUser();
+  if (!user || !user.active) {
+    redirect("/api/session/clear");
+  }
+  return user;
+}
+
 /** For use at the top of a page.tsx — redirects instead of throwing. */
 export async function requirePageRole(check: (accessRole: string) => boolean) {
-  const user = await getCurrentUser();
-  if (!user || !user.active || !check(user.accessRole)) redirect("/dashboard");
+  const user = await requirePageUser();
+  if (!check(user.accessRole)) redirect("/dashboard");
   return user;
 }

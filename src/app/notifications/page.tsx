@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
+import { requirePageUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { relativeTime } from "@/lib/format";
 import BottomNav from "@/components/BottomNav";
@@ -19,8 +19,7 @@ function notifAccent(title: string) {
 }
 
 export default async function NotificationsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageUser();
 
   const notifications = await prisma.notification.findMany({
     where: { userId: user.id },
