@@ -43,6 +43,10 @@ model Sample {
   sampleType       SampleTypeCatalog? @relation(fields: [sampleTypeId], references: [id], onDelete: SetNull)
   source           String
   status           String
+  accessCode       String?   @unique
+  requestorName    String?
+  businessUnitId   String?
+  businessUnit     BusinessUnit? @relation(fields: [businessUnitId], references: [id], onDelete: SetNull)
   collectedBy      String
   collectedDate    DateTime
   receivedDate     DateTime
@@ -65,6 +69,16 @@ model Sample {
   @@index([status])
   @@index([sampleTypeId])
   @@index([retestOfSampleId])
+  @@index([businessUnitId])
+}
+
+model BusinessUnit {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  samples Sample[]
 }
 
 // Test status values: "pending" | "awaiting" | "complete"
@@ -186,28 +200,86 @@ model Equipment {
   assetTag           String    @unique
   status             String    @default("Operational")
   location           String?
+  locationId         String?
+  storageLocation    StorageLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
   lastCalibratedAt   DateTime?
   nextCalibrationDue DateTime?
   notes              String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
+  events EquipmentEvent[]
+
   @@index([nextCalibrationDue])
+  @@index([locationId])
 }
 
-model Reagent {
+// type values: "CALIBRATION" | "MAINTENANCE" | "STATUS_CHANGE"
+model EquipmentEvent {
   id            String    @id @default(cuid())
-  name          String
-  lotNumber     String
-  quantity      Float
-  unit          String
-  minStockLevel Float     @default(0)
-  expiryDate    DateTime?
-  location      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  equipmentId   String
+  equipment     Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  type          String
+  detail        String?
+  performedBy   String
+  performedAt   DateTime  @default(now())
+  nextDueAt     DateTime?
+  attachmentFileName    String?
+  attachmentFileType    String?
+  attachmentFileSize    Int?
+  attachmentStoragePath String?
+
+  @@index([equipmentId])
+}
+
+// category values: "Reagent" | "Chemical" | "Consumable" | "Media"
+model Reagent {
+  id              String    @id @default(cuid())
+  name            String
+  category        String    @default("Reagent")
+  lotNumber       String
+  quantity        Float
+  unit            String
+  minStockLevel   Float     @default(0)
+  expiryDate      DateTime?
+  location        String?
+  locationId      String?
+  storageLocation StorageLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  transactions ReagentTransaction[]
 
   @@index([expiryDate])
+  @@index([locationId])
+}
+
+// type values: "RECEIVED" | "CONSUMED" | "ADJUSTED" | "DISPOSED"
+model ReagentTransaction {
+  id             String   @id @default(cuid())
+  reagentId      String
+  reagent        Reagent  @relation(fields: [reagentId], references: [id], onDelete: Cascade)
+  type           String
+  quantityChange Float
+  quantityAfter  Float
+  reason         String?
+  performedBy    String
+  performedAt    DateTime @default(now())
+
+  @@index([reagentId])
+}
+
+// The "Warehouse" catalog — a browsable list of physical storage locations
+// shared by Reagents and Equipment, so both can be tracked to one place.
+model StorageLocation {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  notes     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  reagents  Reagent[]
+  equipment Equipment[]
 }
 
 model AuditLog {

@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { generateAccessCode } from "../src/lib/tracking";
 
 const prisma = new PrismaClient();
 
@@ -18,6 +19,8 @@ type SeedSample = {
   source: string;
   status: string;
   collectedBy: string;
+  requestorName?: string;
+  businessUnit?: string;
   collectedDate: Date;
   receivedDate: Date;
   container: string;
@@ -53,6 +56,8 @@ const samples: SeedSample[] = [
     source: "Production Line 2",
     status: "In Testing",
     collectedBy: "B. Santoso",
+    requestorName: "B. Santoso",
+    businessUnit: "Production",
     collectedDate: day("2026-08-19T08:10:00"),
     receivedDate: day("2026-08-19T10:40:00"),
     container: "Sterile bag, 200g",
@@ -82,6 +87,8 @@ const samples: SeedSample[] = [
     source: "Raw Material — Batch RM-2291",
     status: "Complete",
     collectedBy: "B. Santoso",
+    requestorName: "D. Prasetyo",
+    businessUnit: "R&D",
     collectedDate: day("2026-08-15T09:30:00"),
     receivedDate: day("2026-08-15T11:00:00"),
     container: "Sterile bag, 100g",
@@ -187,8 +194,12 @@ async function main() {
   await prisma.sample.deleteMany();
   await prisma.testCatalog.deleteMany();
   await prisma.sampleTypeCatalog.deleteMany();
+  await prisma.businessUnit.deleteMany();
+  await prisma.reagentTransaction.deleteMany();
   await prisma.reagent.deleteMany();
+  await prisma.equipmentEvent.deleteMany();
   await prisma.equipment.deleteMany();
+  await prisma.storageLocation.deleteMany();
   await prisma.user.deleteMany();
 
   const passwordHash = await bcrypt.hash("lab1234", 10);
@@ -214,6 +225,18 @@ async function main() {
     ],
   });
 
+  const businessUnitIdByName = new Map<string, string>();
+  for (const name of ["Quality Assurance", "Production", "R&D", "Marketing"]) {
+    const created = await prisma.businessUnit.create({ data: { name } });
+    businessUnitIdByName.set(name, created.id);
+  }
+
+  const locationIdByName = new Map<string, string>();
+  for (const name of ["Cold Room 1", "Chemical Storage Cabinet", "Lab Room 2 — Shelf B"]) {
+    const created = await prisma.storageLocation.create({ data: { name } });
+    locationIdByName.set(name, created.id);
+  }
+
   const catalogIdByName = new Map<string, string>();
   for (const c of catalog) {
     const created = await prisma.sampleTypeCatalog.create({
@@ -238,6 +261,9 @@ async function main() {
         sampleTypeId,
         source: s.source,
         status: s.status,
+        accessCode: generateAccessCode(),
+        requestorName: s.requestorName ?? null,
+        businessUnitId: s.businessUnit ? businessUnitIdByName.get(s.businessUnit) : null,
         collectedBy: s.collectedBy,
         collectedDate: s.collectedDate,
         receivedDate: s.receivedDate,
@@ -261,6 +287,119 @@ async function main() {
       },
     });
   }
+
+  const peptone = await prisma.reagent.create({
+    data: {
+      name: "Peptone Water",
+      category: "Media",
+      lotNumber: "PW-2024-11",
+      quantity: 800,
+      unit: "mL",
+      minStockLevel: 200,
+      expiryDate: day("2027-02-01T00:00:00"),
+      locationId: locationIdByName.get("Cold Room 1"),
+    },
+  });
+  await prisma.reagentTransaction.create({
+    data: { reagentId: peptone.id, type: "RECEIVED", quantityChange: 800, quantityAfter: 800, reason: "Initial stock", performedBy: "Dr. R. Kusuma", performedAt: day("2026-08-01T09:00:00") },
+  });
+  await prisma.reagentTransaction.create({
+    data: { reagentId: peptone.id, type: "CONSUMED", quantityChange: -50, quantityAfter: 750, reason: "TPC batch prep", performedBy: "Andi Wijaya", performedAt: day("2026-08-10T10:00:00") },
+  });
+
+  const naohSolution = await prisma.reagent.create({
+    data: {
+      name: "Sodium Hydroxide 1N",
+      category: "Chemical",
+      lotNumber: "NAOH-0093",
+      quantity: 45,
+      unit: "mL",
+      minStockLevel: 100,
+      expiryDate: day("2026-09-05T00:00:00"),
+      locationId: locationIdByName.get("Chemical Storage Cabinet"),
+    },
+  });
+  await prisma.reagentTransaction.create({
+    data: { reagentId: naohSolution.id, type: "RECEIVED", quantityChange: 500, quantityAfter: 500, reason: "Initial stock", performedBy: "Dr. R. Kusuma", performedAt: day("2026-06-15T09:00:00") },
+  });
+  await prisma.reagentTransaction.create({
+    data: { reagentId: naohSolution.id, type: "CONSUMED", quantityChange: -455, quantityAfter: 45, reason: "Titration use, multiple batches", performedBy: "B. Santoso", performedAt: day("2026-08-18T14:00:00") },
+  });
+
+  const dilutionTubes = await prisma.reagent.create({
+    data: {
+      name: "Sterile Dilution Tubes",
+      category: "Consumable",
+      lotNumber: "SDT-2210",
+      quantity: 320,
+      unit: "pcs",
+      minStockLevel: 100,
+      locationId: locationIdByName.get("Lab Room 2 — Shelf B"),
+    },
+  });
+  await prisma.reagentTransaction.create({
+    data: { reagentId: dilutionTubes.id, type: "RECEIVED", quantityChange: 320, quantityAfter: 320, reason: "Initial stock", performedBy: "Dr. R. Kusuma", performedAt: day("2026-08-05T09:00:00") },
+  });
+
+  const autoclave = await prisma.equipment.create({
+    data: {
+      name: "Autoclave",
+      assetTag: "EQ-014",
+      status: "Operational",
+      locationId: locationIdByName.get("Lab Room 2 — Shelf B"),
+      lastCalibratedAt: day("2026-06-20T00:00:00"),
+      nextCalibrationDue: day("2026-12-20T00:00:00"),
+    },
+  });
+  await prisma.equipmentEvent.create({
+    data: {
+      equipmentId: autoclave.id,
+      type: "CALIBRATION",
+      detail: "Passed — pressure and temperature within tolerance.",
+      performedBy: "Dr. R. Kusuma",
+      performedAt: day("2026-06-20T09:00:00"),
+      nextDueAt: day("2026-12-20T00:00:00"),
+    },
+  });
+
+  const incubator = await prisma.equipment.create({
+    data: {
+      name: "Incubator — 35°C",
+      assetTag: "EQ-021",
+      status: "Under Maintenance",
+      locationId: locationIdByName.get("Lab Room 2 — Shelf B"),
+      lastCalibratedAt: day("2026-05-10T00:00:00"),
+      nextCalibrationDue: day("2026-08-25T00:00:00"),
+    },
+  });
+  await prisma.equipmentEvent.create({
+    data: {
+      equipmentId: incubator.id,
+      type: "CALIBRATION",
+      detail: "Passed — temperature stable at 35.1°C.",
+      performedBy: "Dr. R. Kusuma",
+      performedAt: day("2026-05-10T09:00:00"),
+      nextDueAt: day("2026-08-25T00:00:00"),
+    },
+  });
+  await prisma.equipmentEvent.create({
+    data: {
+      equipmentId: incubator.id,
+      type: "MAINTENANCE",
+      detail: "Door seal replaced after temperature drift observed.",
+      performedBy: "B. Santoso",
+      performedAt: day("2026-08-20T11:00:00"),
+    },
+  });
+  await prisma.equipmentEvent.create({
+    data: {
+      equipmentId: incubator.id,
+      type: "STATUS_CHANGE",
+      detail: "Taken offline pending door seal replacement.",
+      performedBy: "B. Santoso",
+      performedAt: day("2026-08-20T11:05:00"),
+    },
+  });
 
   await prisma.deviation.create({
     data: {

@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { getSampleDetail } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth";
 import { canReviewAsSupervisor, canApproveAsQa } from "@/lib/roles";
 import { signedAttachmentUrl } from "@/lib/storage";
+import { formatAccessCode } from "@/lib/tracking";
 import SampleDetailClient from "@/components/SampleDetailClient";
 import {
   supervisorApproveAction,
@@ -39,12 +41,22 @@ export default async function SampleDetailPage({
     ),
   };
 
+  let trackingUrl: string | null = null;
+  if (sample.accessCode) {
+    const h = await headers();
+    const host = h.get("host");
+    const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+    trackingUrl = host ? `${proto}://${host}/track?id=${sample.id}&code=${sample.accessCode}` : null;
+  }
+
   return (
     <SampleDetailClient
       sample={sampleWithAttachmentUrls}
       targetHours={targetHours}
       dueAt={dueAt}
       isOverdue={isOverdue}
+      trackingUrl={trackingUrl}
+      accessCodeFormatted={sample.accessCode ? formatAccessCode(sample.accessCode) : null}
       actions={{
         canReviewAsSupervisor: canReviewAsSupervisor(user.accessRole),
         canApproveAsQa: canApproveAsQa(user.accessRole),

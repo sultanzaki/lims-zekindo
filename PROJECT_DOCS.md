@@ -105,17 +105,22 @@ migrations are new before deploying the new code:
   prefix, and run the `migration.sql` of any folder you haven't applied yet
   (oldest first) in Supabase's SQL Editor.
 
-This delivery adds three migrations on top of the last one:
-- **Multi-reading test results** (`TestReading` table + `resultMode` columns —
-  see [Section 5](#5-feature-walkthrough)).
-- **Login lockout** (`failedLoginAttempts` / `lockedUntil` on `User` — see
-  [Section 9](#9-security)).
-- **Sample Name** (`name` on `Sample` — see [Section 5](#5-feature-walkthrough)).
+This delivery adds two migrations on top of the last one:
+- `BusinessUnit`, `StorageLocation` (the Warehouse catalog), `EquipmentEvent`,
+  `ReagentTransaction`, plus new columns on `Sample` (`requestorName`,
+  `businessUnitId`), `Equipment` (`locationId`), and `Reagent` (`category`,
+  `locationId`) — see [Section 5a](#5a-latest-additions).
+- `Sample.accessCode` — the random code that gates the public tracking
+  portal — see [Section 5b](#5b-public-tracking-portal--analytics).
 
-All three are purely additive — existing rows keep working unchanged (new
-columns default to "off"/zero/null), nothing to backfill. Samples created
-before this update just won't have a name until someone fills it in (there's
-no edit-name UI yet — see [Section 6](#6-known-limitations)).
+Both are purely additive — existing rows keep working unchanged (new columns
+default to null or, for `Reagent.category`, `"Reagent"`), nothing to
+backfill. `Equipment.location` / `Reagent.location` (the old free-text
+fields) are kept as a fallback display for rows that predate the Warehouse
+feature and haven't been assigned a structured location yet. Samples created
+before this update won't have an `accessCode`, so the tracking portal can't
+look them up — that's fine, they just fall outside the feature, same as
+Sample Name did when it was first added.
 
 ---
 
@@ -215,8 +220,8 @@ record a root cause and CAPA, then close it.
 period) and their standard tests (name, unit, spec, method, and Result Mode —
 Single or Multiple Readings with a replicate count and/or interval plan).
 
-**Inventory** (QA Manager+) — reagents (stock, lot, expiry — flags low-stock
-and expiring-soon) and equipment (status, calibration due date).
+**Inventory** (QA Manager+) — reagents & chemicals and equipment, each with
+their own detail page and full history — see [Section 5a](#5a-latest-additions).
 
 **Users** (Admin) — create accounts, assign an access role, deactivate/reactivate,
 reset a forgotten password (a one-time temporary password is shown to the admin
@@ -228,12 +233,100 @@ to relay to the user).
 
 ---
 
+## 5a. Latest additions
+
+**Timezone — everything is WIB (Asia/Jakarta, UTC+7)** — every date/time shown
+in the app (`src/lib/format.ts`) is formatted in Jakarta local time regardless
+of the server's or viewer's own timezone, and is labeled "WIB" wherever a time
+is shown. The Collection Date & Time field on New Sample also *defaults to and
+parses as* Jakarta time (`src/lib/tz.ts`), so what a technician types there
+means the same instant no matter where the app happens to be deployed.
+
+**Requestor & Business Unit** — every sample now carries a Requestor (free
+text, defaults to the logged-in user) and a Business Unit (a fixed list
+managed by QA Manager+/Admin under Profile → Sample & Test Catalog →
+Business Units — same pattern as Sample Types). Both flow through to the
+sample's Details tab and the Certificate of Analysis.
+
+**Photo carousel & gated document downloads (Results tab)** — a test's photo
+attachments now show as a swipeable carousel with a tap-to-expand full-screen
+viewer (dot indicators when there's more than one). Non-image files
+(Excel/CSV) are listed separately and are only downloadable by
+Supervisor/QA Manager/Admin — a Technician sees the file name with a lock
+icon instead of a working link.
+
+**Equipment** (QA Manager+) — beyond the list, each piece of equipment now
+has its own detail page: current status with a reason-logged status-change
+form, a calibration form (next-due date, result notes, optional certificate
+file upload), a maintenance form (what was done, optional attachment), and a
+full chronological history of every calibration/maintenance/status event —
+not just a single "last calibrated" date that gets overwritten each time.
+
+**Reagents & Chemicals** (QA Manager+) — renamed from "Reagents" since it now
+also tracks general lab chemicals and consumables (a Category field: Reagent,
+Chemical, Media, Consumable). Each item has its own detail page with a full
+stock movement ledger — Receive / Consume / Adjust / Dispose, each with a
+reason and running balance — instead of a single quantity field that silently
+overwrites with no record of what changed or why.
+
+**Warehouse** (QA Manager+, Profile → Warehouse) — a shared catalog of
+physical storage locations. Reagents and Equipment are assigned a location
+from this list instead of typing free text, so every location can be opened
+to see everything stored there in one place — the actual "where is
+everything" view the lab asked for.
+
+**Mobile top bar cleanup** — the plain logo+bell utility bar that used to sit
+above the page title on Samples/Scan/Alerts/Profile has been removed; the
+page title is now the topmost element on mobile, matching the Dashboard's
+already-clean header. Desktop is unaffected (it never had that bar).
+
+**Favicon & browser chrome color** — the browser tab now shows a "Z" mark
+instead of the generic default, and the address bar/tab accent color was
+already set to the brand teal (`#2b8db8`) — confirmed unchanged.
+
+---
+
+## 5b. Public tracking portal & analytics
+
+**Public sample tracking** (`/track`, no login) — every sample gets a random
+8-character Access Code (`Sample.accessCode`, distinct from the sequential,
+guessable Sample ID) at creation. A requestor enters the Sample ID *and* the
+Access Code at `/track` to see a status timeline (Received → Testing In
+Progress → Under Review → Completed) plus basic sample info — never raw test
+results before the sample is Complete, and never any other party's data,
+since the ID alone is never enough. Once Complete, the portal links to a
+public, read-only view of the Certificate of Analysis at
+`/track/certificate`. Staff find a sample's Access Code and a ready-to-share
+tracking link (with a one-tap copy button) on the sample's Details tab,
+under "Requestor tracking" — that's the only place it's surfaced; there's no
+separate "send to requestor" notification yet (see
+[Section 6](#6-known-limitations)).
+
+A wrong ID/code combination and a *valid* ID with the *wrong* code both show
+the exact same generic error ("Sample ID or Access Code is incorrect") — the
+same anti-enumeration pattern already used on the staff login form, so the
+portal never confirms or denies that a given Sample ID exists.
+
+**Analytics** (Supervisor/QA Manager/Admin, Profile → Analytics) — a
+dashboard of KPI tiles (samples this month, TAT compliance, pass rate, open
+& overdue, equipment/reagent alerts) plus charts: sample volume trend,
+pass/reject trend, TAT compliance by sample type, current status
+distribution, volume by sample type and by Business Unit, deviation trend,
+and equipment/reagent stock health meters. Two-column on desktop, stacked on
+mobile. A Technician account is redirected away from `/analytics` the same
+way it's blocked from Inventory/Catalog.
+
+---
+
 ## 6. Known limitations
 
 Scoped out of this release deliberately, not oversights:
 
 - **Notifications are in-app only** — no email/push. The bell icon and Alerts
   tab are fully real; there's just no external delivery channel yet.
+- **Tracking link isn't auto-sent** — staff copy and relay the Access
+  Code/link to the requestor manually (e.g. by email, chat, or a printed
+  label); there's no automatic "send tracking link" delivery yet.
 - **Sample Name has no edit UI yet** — it's set once at New Sample and can't
   be changed afterward from the app (a database update is the only way, e.g.
   for the samples that existed before this field was added).
@@ -327,7 +420,8 @@ deliberately left as your responsibility to configure.
   + login-lockout tracking (`failedLoginAttempts`, `lockedUntil`)
 - `Sample` — one physical sample; `status` drives the whole workflow; `name`
   is the human-readable description set at intake (nullable — samples from
-  before this field existed just fall back to showing their type)
+  before this field existed just fall back to showing their type);
+  `accessCode` gates the public tracking portal (see §5b)
 - `Test` — one test on a sample (name/unit/spec/**final** result/status); carries
   a `resultMode` snapshot (Single/Multi) copied from the catalog at creation time
 - `TestReading` — one raw reading on a Multi-mode test (replicate #, checkpoint
@@ -339,8 +433,17 @@ deliberately left as your responsibility to configure.
 - `SampleTypeCatalog` / `TestCatalog` — the configurable catalog New Sample draws
   from; `TestCatalog` also holds each test's `resultMode` / `replicateCount` /
   `intervalPlan` configuration
+- `BusinessUnit` — the configurable Business Unit list a sample's requestor
+  belongs to (`Sample.requestorName` itself is free text)
 - `Deviation` — OOS record opened automatically on rejection
-- `Reagent` / `Equipment` — inventory
+- `Reagent` / `Equipment` — inventory; each links to a `StorageLocation`
+  (`locationId`) instead of free text going forward
+- `ReagentTransaction` — one stock movement (Receive/Consume/Adjust/Dispose)
+  against a Reagent, with the running balance after it applied
+- `EquipmentEvent` — one calibration/maintenance/status-change event against
+  a piece of Equipment, with an optional certificate/attachment
+- `StorageLocation` — the Warehouse catalog: physical locations shared by
+  Reagents and Equipment
 - `Notification` — in-app alerts
 - `AuditLog` — system-wide activity log
 

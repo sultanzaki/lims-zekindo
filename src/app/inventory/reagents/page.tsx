@@ -1,22 +1,26 @@
+import Link from "next/link";
 import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
-import { CreateReagentForm, UpdateQuantityForm } from "@/components/InventoryForms";
+import { CreateReagentForm } from "@/components/InventoryForms";
 import EmptyState from "@/components/ui/EmptyState";
 
 export default async function ReagentsPage() {
   await requirePageRole(canManageInventoryAndCatalog);
-  const reagents = await prisma.reagent.findMany({ orderBy: { name: "asc" } });
+  const [reagents, locations] = await Promise.all([
+    prisma.reagent.findMany({ orderBy: { name: "asc" }, include: { storageLocation: true } }),
+    prisma.storageLocation.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  ]);
   const now = new Date().getTime();
   const soonMs = 14 * 24 * 60 * 60 * 1000;
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
-      <BackHeader title="Reagents & Media" backHref="/profile" />
+      <BackHeader title="Reagents & Chemicals" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5">
-        <CreateReagentForm />
+        <CreateReagentForm locations={locations} />
 
         <div className="flex flex-col gap-2.5">
           {reagents.map((r) => {
@@ -31,15 +35,19 @@ export default async function ReagentsPage() {
               lowStock ? { label: "Low stock", bg: "#FDECEA", color: "#B00016" } :
               expiringSoon ? { label: "Expiring soon", bg: "#FEF3E0", color: "#9A6100" } :
               { label: "In stock", bg: "#E6F4EA", color: "#1E7A34" };
+            const locationName = r.storageLocation?.name || r.location;
 
             return (
-              <div key={r.id} className="bg-white border border-border rounded-2xl shadow-card-sm px-4 py-3.5">
+              <Link key={r.id} href={`/inventory/reagents/${r.id}`} className="bg-white border border-border rounded-2xl shadow-card-sm px-4 py-3.5 block">
                 <div className="flex items-start justify-between gap-2.5">
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-text leading-snug">{r.name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold text-text leading-snug">{r.name}</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-chip-bg text-muted shrink-0">{r.category}</span>
+                    </div>
                     <div className="text-xs text-muted mt-0.5 font-mono-data">
                       Lot {r.lotNumber} {r.expiryDate && `· exp ${formatDate(r.expiryDate)}`}
-                      {r.location && ` · ${r.location}`}
+                      {locationName && ` · ${locationName}`}
                     </div>
                   </div>
                   <span
@@ -57,10 +65,7 @@ export default async function ReagentsPage() {
                     {r.quantity} {r.unit}
                   </span>
                 </div>
-                <div className="mt-2.5 pt-2.5 border-t border-border-soft">
-                  <UpdateQuantityForm id={r.id} quantity={r.quantity} unit={r.unit} />
-                </div>
-              </div>
+              </Link>
             );
           })}
           {reagents.length === 0 && <EmptyState>No reagents tracked yet.</EmptyState>}

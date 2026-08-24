@@ -10,6 +10,8 @@ import { getNextSampleId } from "@/lib/data";
 import { logAudit } from "@/lib/audit";
 import { canReviewAsSupervisor, canApproveAsQa } from "@/lib/roles";
 import { uploadAttachment, deleteAttachment } from "@/lib/storage";
+import { parseJakartaLocalDateTime } from "@/lib/tz";
+import { generateAccessCode } from "@/lib/tracking";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set([
@@ -33,6 +35,8 @@ export async function createSampleAction(
   const name = String(formData.get("name") || "").trim();
   const sampleTypeId = String(formData.get("sampleTypeId") || "");
   const source = String(formData.get("source") || "").trim();
+  const requestorName = String(formData.get("requestorName") || "").trim();
+  const businessUnitId = String(formData.get("businessUnitId") || "").trim();
   const collectedBy = String(formData.get("collectedBy") || user.name).trim();
   const collectedDateRaw = String(formData.get("collectedDate") || "");
   const storageLocation = String(formData.get("storageLocation") || "").trim();
@@ -52,7 +56,7 @@ export async function createSampleAction(
   });
   if (!sampleType) return { error: "Sample type not found." };
 
-  const collectedDate = collectedDateRaw ? new Date(collectedDateRaw) : new Date();
+  const collectedDate = collectedDateRaw ? parseJakartaLocalDateTime(collectedDateRaw) : new Date();
   const now = new Date();
   const id = await getNextSampleId();
   const retentionUntil = new Date(now.getTime() + sampleType.retentionDays * 24 * 60 * 60 * 1000);
@@ -80,6 +84,9 @@ export async function createSampleAction(
       sampleTypeId: sampleType.id,
       source: source || "—",
       status: "Pending Login",
+      accessCode: generateAccessCode(),
+      requestorName: requestorName || null,
+      businessUnitId: businessUnitId || null,
       collectedBy: collectedBy || user.name,
       collectedDate,
       receivedDate: now,
@@ -486,6 +493,9 @@ export async function retestSampleAction(originalSampleId: string) {
       sampleTypeId: original.sampleTypeId,
       source: original.source,
       status: "Pending Login",
+      accessCode: generateAccessCode(),
+      requestorName: original.requestorName,
+      businessUnitId: original.businessUnitId,
       collectedBy: user.name,
       collectedDate: now,
       receivedDate: now,

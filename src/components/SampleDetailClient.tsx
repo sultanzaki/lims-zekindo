@@ -10,6 +10,7 @@ import { parseSpecVerdict, specNumericLimit } from "@/lib/spec";
 import StatusBadge from "@/components/StatusBadge";
 import StorageLocationForm from "@/components/StorageLocationForm";
 import ReviewPanel from "@/components/ReviewPanel";
+import AttachmentGallery from "@/components/AttachmentGallery";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Button from "@/components/ui/Button";
 import LinkButton from "@/components/ui/LinkButton";
@@ -20,16 +21,6 @@ type AttachmentWithUrl = BaseTest["attachments"][number] & { url: string | null 
 type TestWithAttachmentUrls = Omit<BaseTest, "attachments"> & { attachments: AttachmentWithUrl[] };
 type SampleDetail = Omit<SampleDetailBase, "tests"> & { tests: TestWithAttachmentUrls[] };
 type ServerAction = (prevState: FormState, formData: FormData) => Promise<FormState>;
-
-function isImageType(fileType: string) {
-  return fileType.startsWith("image/");
-}
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 const TABS = ["Results", "Details", "Custody"] as const;
 type Tab = (typeof TABS)[number];
@@ -45,12 +36,16 @@ export default function SampleDetailClient({
   targetHours,
   dueAt,
   isOverdue,
+  trackingUrl,
+  accessCodeFormatted,
   actions,
 }: {
   sample: SampleDetail;
   targetHours: number;
   dueAt: Date;
   isOverdue: boolean;
+  trackingUrl: string | null;
+  accessCodeFormatted: string | null;
   actions: {
     canReviewAsSupervisor: boolean;
     canApproveAsQa: boolean;
@@ -63,6 +58,7 @@ export default function SampleDetailClient({
   };
 }) {
   const [tab, setTab] = useState<Tab>("Results");
+  const canDownloadDocs = actions.canReviewAsSupervisor || actions.canApproveAsQa;
 
   const status = sample.status as SampleStatus;
   const statusStyle = STATUS_STYLES[status];
@@ -214,34 +210,7 @@ export default function SampleDetailClient({
                       <div className="text-[11px] text-faint tracking-wide uppercase font-semibold">
                         Attachments ({test.attachments.length})
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {test.attachments.map((a) =>
-                          a.url ? (
-                            <a
-                              key={a.id}
-                              href={a.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 bg-page-bg border border-border-soft rounded-[10px] px-2.5 py-1.5 max-w-[180px]"
-                            >
-                              {isImageType(a.fileType) ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={a.url} alt={a.fileName} className="w-6 h-6 rounded-[6px] object-cover shrink-0" />
-                              ) : (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                                  <path d="M14 2v6h6" />
-                                </svg>
-                              )}
-                              <span className="text-[11px] font-medium text-primary truncate">{a.fileName}</span>
-                            </a>
-                          ) : (
-                            <span key={a.id} className="text-[11px] text-faint px-2.5 py-1.5">
-                              {a.fileName} ({formatBytes(a.fileSize)})
-                            </span>
-                          )
-                        )}
-                      </div>
+                      <AttachmentGallery attachments={test.attachments} canDownloadDocs={canDownloadDocs} />
                     </div>
                   )}
                 </div>
@@ -315,6 +284,8 @@ export default function SampleDetailClient({
             <div className="bg-white border border-border rounded-[18px] shadow-card overflow-hidden">
               <InfoRow label="Sample type" value={sample.type} />
               <InfoRow label="Source" value={sample.source} />
+              <InfoRow label="Requestor" value={sample.requestorName || "Not set"} />
+              <InfoRow label="Business unit" value={sample.businessUnit?.name || "Not set"} />
               <InfoRow label="Priority" value={sample.priority} />
               <InfoRow label="Collected by" value={sample.collectedBy} />
               <InfoRow label="Collected" value={formatDateTime(sample.collectedDate)} />
@@ -344,6 +315,10 @@ export default function SampleDetailClient({
                 <div className="text-xs text-muted">Disposed {formatDateTime(sample.disposedAt)}</div>
               )}
             </div>
+
+            {trackingUrl && accessCodeFormatted && (
+              <TrackingLinkCard trackingUrl={trackingUrl} accessCodeFormatted={accessCodeFormatted} />
+            )}
           </>
         )}
 
@@ -371,6 +346,35 @@ export default function SampleDetailClient({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function TrackingLinkCard({ trackingUrl, accessCodeFormatted }: { trackingUrl: string; accessCodeFormatted: string }) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <div className="bg-white border border-border rounded-[18px] shadow-card p-[15px] flex flex-col gap-3">
+      <SectionLabel>Requestor tracking</SectionLabel>
+      <p className="text-xs text-muted -mt-1">
+        Share the Sample ID and this Access Code with the requestor so they can check status externally, without a login.
+      </p>
+      <div className="flex items-center justify-between gap-2 bg-page-bg border border-border-soft rounded-[13px] px-3.5 py-3">
+        <span className="text-sm font-bold text-text font-mono-data tracking-wide">{accessCodeFormatted}</span>
+        <span className="text-[11px] text-faint">Access Code</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          navigator.clipboard.writeText(trackingUrl).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          });
+        }}
+        className="text-[13px] font-semibold text-primary cursor-pointer text-left"
+      >
+        {copied ? "Link copied ✓" : "Copy tracking link"}
+      </button>
     </div>
   );
 }

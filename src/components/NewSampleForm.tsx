@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createSampleAction, type FormState } from "@/lib/actions/samples";
+import { nowAsJakartaLocalInput } from "@/lib/tz";
 import Field, { inputClass } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
 
@@ -16,19 +17,21 @@ const PRIORITIES = [
 export default function NewSampleForm({
   nextSampleId,
   defaultCollectedBy,
+  defaultRequestor,
   sampleTypes,
+  businessUnits,
 }: {
   nextSampleId: string;
   defaultCollectedBy: string;
+  defaultRequestor: string;
   sampleTypes: { id: string; name: string }[];
+  businessUnits: { id: string; name: string }[];
 }) {
   const [state, formAction, pending] = useActionState(createSampleAction, initialState);
   const [sampleTypeId, setSampleTypeId] = useState("");
   const [priority, setPriority] = useState<(typeof PRIORITIES)[number]["value"]>("Routine");
 
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  const defaultDateTime = now.toISOString().slice(0, 16);
+  const defaultDateTime = nowAsJakartaLocalInput();
 
   return (
     <form action={formAction} className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5">
@@ -92,11 +95,37 @@ export default function NewSampleForm({
         <input id="source" name="source" type="text" placeholder="e.g. Production Line 2" className={inputClass} />
       </Field>
 
+      <Field label="Requestor" htmlFor="requestorName">
+        <input
+          id="requestorName"
+          name="requestorName"
+          type="text"
+          defaultValue={defaultRequestor}
+          placeholder="Who requested this testing"
+          className={inputClass}
+        />
+      </Field>
+
+      <div className="flex flex-col gap-2">
+        <label className="text-[13px] font-semibold text-text">Business Unit</label>
+        <select name="businessUnitId" defaultValue="" className={inputClass}>
+          <option value="">Not specified</option>
+          {businessUnits.map((bu) => (
+            <option key={bu.id} value={bu.id}>
+              {bu.name}
+            </option>
+          ))}
+        </select>
+        {businessUnits.length === 0 && (
+          <div className="text-[11px] text-faint">No business units configured yet — ask an admin to add one under Catalog.</div>
+        )}
+      </div>
+
       <Field label="Collected By" htmlFor="collectedBy">
         <input id="collectedBy" name="collectedBy" type="text" defaultValue={defaultCollectedBy} className={inputClass} />
       </Field>
 
-      <Field label="Collection Date & Time" htmlFor="collectedDate">
+      <Field label="Collection Date & Time (WIB)" htmlFor="collectedDate">
         <input
           id="collectedDate"
           name="collectedDate"

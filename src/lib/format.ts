@@ -1,21 +1,25 @@
+import { APP_TIME_ZONE } from "@/lib/tz";
+
 export function formatDateTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const datePart = d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: APP_TIME_ZONE,
   });
   const timePart = d.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: APP_TIME_ZONE,
   });
-  return `${datePart} · ${timePart}`;
+  return `${datePart} · ${timePart} WIB`;
 }
 
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: APP_TIME_ZONE });
 }
 
 export function relativeTime(date: Date | string): string {
@@ -39,11 +43,24 @@ export function dueLabelFor(receivedDate: Date, targetTatHours: number): { label
   return { label: `Due in ${Math.round(hoursLeft / 24)}d`, color: "#7A8B94" };
 }
 
+// Compares calendar days in Jakarta local time (not the viewer's or
+// server's own timezone) so "Today"/"Yesterday" groupings match the lab's
+// actual working day.
+function jakartaDateKey(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 export function dayGroupLabel(date: Date): "Today" | "Yesterday" | "Earlier" {
   const now = new Date();
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / (24 * 60 * 60 * 1000));
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
+  const todayKey = jakartaDateKey(now);
+  const yesterdayKey = jakartaDateKey(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const key = jakartaDateKey(date);
+  if (key === todayKey) return "Today";
+  if (key === yesterdayKey) return "Yesterday";
   return "Earlier";
 }

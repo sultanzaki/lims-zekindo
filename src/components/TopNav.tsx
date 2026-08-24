@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signOutAction } from "@/lib/actions/auth";
-import { canReviewAsSupervisor, canManageInventoryAndCatalog, isAdmin } from "@/lib/roles";
+import { canReviewAsSupervisor, canManageInventoryAndCatalog, canViewAnalytics, isAdmin } from "@/lib/roles";
 
 type Tab = "home" | "samples" | "scan" | "notif" | "profile";
 
@@ -164,12 +164,14 @@ export default function TopNav({
             {showManagement && (
               <>
                 <div className="my-1.5 border-t border-border-soft" />
+                {canViewAnalytics(role) && <MenuLink href="/analytics" label="Analytics" onNavigate={close} />}
                 {canReviewAsSupervisor(role) && <MenuLink href="/deviations" label="Deviations" onNavigate={close} />}
                 {canManageInventoryAndCatalog(role) && (
                   <>
                     <MenuLink href="/admin/catalog" label="Sample & Test Catalog" onNavigate={close} />
-                    <MenuLink href="/inventory/reagents" label="Reagents" onNavigate={close} />
+                    <MenuLink href="/inventory/reagents" label="Reagents & Chemicals" onNavigate={close} />
                     <MenuLink href="/inventory/equipment" label="Equipment" onNavigate={close} />
+                    <MenuLink href="/inventory/warehouse" label="Warehouse" onNavigate={close} />
                   </>
                 )}
                 {isAdmin(role) && (

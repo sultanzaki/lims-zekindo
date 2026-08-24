@@ -1,13 +1,13 @@
+import Link from "next/link";
 import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
-import { CreateEquipmentForm, LogCalibrationForm } from "@/components/InventoryForms";
-import { setEquipmentStatusAction } from "@/lib/actions/inventory";
+import { CreateEquipmentForm } from "@/components/InventoryForms";
 import EmptyState from "@/components/ui/EmptyState";
+import Chevron from "@/components/ui/Chevron";
 
-const STATUS_OPTIONS = ["Operational", "Under Maintenance", "Out of Service"];
 const STATUS_STYLE: Record<string, { bg: string; color: string; dot: string }> = {
   Operational: { bg: "#E6F4EA", color: "#1E7A34", dot: "#28A745" },
   "Under Maintenance": { bg: "#FEF3E0", color: "#9A6100", dot: "#F5A623" },
@@ -16,35 +16,46 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; dot: string }> =
 
 export default async function EquipmentPage() {
   await requirePageRole(canManageInventoryAndCatalog);
-  const equipment = await prisma.equipment.findMany({ orderBy: { name: "asc" } });
+  const [equipment, locations] = await Promise.all([
+    prisma.equipment.findMany({ orderBy: { name: "asc" }, include: { storageLocation: true } }),
+    prisma.storageLocation.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  ]);
   const now = new Date().getTime();
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Equipment" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5">
-        <CreateEquipmentForm />
+        <CreateEquipmentForm locations={locations} />
 
         <div className="flex flex-col gap-2.5">
           {equipment.map((e) => {
             const overdue = e.nextCalibrationDue && e.nextCalibrationDue.getTime() < now;
             const style = STATUS_STYLE[e.status] ?? STATUS_STYLE.Operational;
+            const locationName = e.storageLocation?.name || e.location;
             return (
-              <div key={e.id} className="bg-white border border-border rounded-[18px] shadow-card px-4 py-3.5">
+              <Link
+                key={e.id}
+                href={`/inventory/equipment/${e.id}`}
+                className="bg-white border border-border rounded-[18px] shadow-card px-4 py-3.5"
+              >
                 <div className="flex items-center justify-between gap-2.5">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: style.dot }} />
                     <span className="text-xs font-semibold text-muted font-mono-data truncate">{e.assetTag}</span>
                   </div>
-                  <span
-                    className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0"
-                    style={{ background: style.bg, color: style.color }}
-                  >
-                    {e.status}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+                      style={{ background: style.bg, color: style.color }}
+                    >
+                      {e.status}
+                    </span>
+                    <Chevron />
+                  </div>
                 </div>
                 <div className="text-[15px] font-semibold text-text mt-2 leading-snug tracking-tight">{e.name}</div>
-                <div className="text-[13px] text-muted mt-0.5">{e.location || "—"}</div>
+                <div className="text-[13px] text-muted mt-0.5">{locationName || "—"}</div>
                 {e.nextCalibrationDue && (
                   <div className="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-border-soft">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={overdue ? "#D0021B" : "#7A8B94"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
@@ -58,17 +69,7 @@ export default async function EquipmentPage() {
                     </span>
                   </div>
                 )}
-                <div className="flex items-center gap-3 flex-wrap mt-2.5">
-                  {STATUS_OPTIONS.filter((s) => s !== e.status).map((s) => (
-                    <form key={s} action={setEquipmentStatusAction.bind(null, e.id, s)}>
-                      <button type="submit" className="text-xs font-semibold text-primary cursor-pointer">
-                        Mark {s}
-                      </button>
-                    </form>
-                  ))}
-                </div>
-                <LogCalibrationForm id={e.id} />
-              </div>
+              </Link>
             );
           })}
           {equipment.length === 0 && <EmptyState>No equipment tracked yet.</EmptyState>}

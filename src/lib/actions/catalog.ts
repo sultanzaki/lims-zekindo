@@ -91,3 +91,31 @@ export async function setTestCatalogActiveAction(id: string, active: boolean) {
   await logAudit({ userId: user.id, action: active ? "catalog.test_activated" : "catalog.test_deactivated", entityType: "TestCatalog", entityId: id });
   revalidatePath("/admin/catalog");
 }
+
+export async function createBusinessUnitAction(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const user = await requireRole(canManageInventoryAndCatalog);
+  const name = String(formData.get("name") || "").trim();
+  if (!name) return { error: "Name is required." };
+
+  const existing = await prisma.businessUnit.findUnique({ where: { name } });
+  if (existing) return { error: "That business unit already exists." };
+
+  const created = await prisma.businessUnit.create({ data: { name } });
+
+  await logAudit({ userId: user.id, action: "catalog.business_unit_created", entityType: "BusinessUnit", entityId: created.id, detail: name });
+
+  revalidatePath("/admin/catalog");
+  revalidatePath("/samples/new");
+  return {};
+}
+
+export async function setBusinessUnitActiveAction(id: string, active: boolean) {
+  const user = await requireRole(canManageInventoryAndCatalog);
+  await prisma.businessUnit.update({ where: { id }, data: { active } });
+  await logAudit({ userId: user.id, action: active ? "catalog.business_unit_activated" : "catalog.business_unit_deactivated", entityType: "BusinessUnit", entityId: id });
+  revalidatePath("/admin/catalog");
+  revalidatePath("/samples/new");
+}

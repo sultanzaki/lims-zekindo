@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createSampleTypeAction, createTestCatalogAction, type FormState } from "@/lib/actions/catalog";
+import { createSampleTypeAction, createTestCatalogAction, createBusinessUnitAction, type FormState } from "@/lib/actions/catalog";
 import { inputClassSm } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
 
@@ -79,6 +79,20 @@ export function CreateTestCatalogForm({ sampleTypes }: { sampleTypes: { id: stri
       {state.error && <div className="text-xs text-danger">{state.error}</div>}
       <Button type="submit" disabled={pending} size="sm">
         {pending ? "Adding…" : "Add Test"}
+      </Button>
+    </form>
+  );
+}
+
+export function CreateBusinessUnitForm() {
+  const [state, formAction, pending] = useActionState(createBusinessUnitAction, initialState);
+  return (
+    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
+      <div className="text-[13px] font-semibold text-text">Add Business Unit</div>
+      <input name="name" placeholder="e.g. Marketing, R&D, Production" required className={inputClassSm} />
+      {state.error && <div className="text-xs text-danger">{state.error}</div>}
+      <Button type="submit" disabled={pending} size="sm">
+        {pending ? "Adding…" : "Add Business Unit"}
       </Button>
     </form>
   );

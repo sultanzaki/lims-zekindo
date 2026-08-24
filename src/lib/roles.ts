@@ -23,3 +23,7 @@ export function isAdmin(role: string) {
 export function canManageInventoryAndCatalog(role: string) {
   return role === "ADMIN" || role === "QA_MANAGER";
 }
+
+export function canViewAnalytics(role: string) {
+  return role === "SUPERVISOR" || role === "QA_MANAGER" || role === "ADMIN";
+}

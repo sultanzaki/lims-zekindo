@@ -112,6 +112,7 @@ export async function getSampleDetail(id: string) {
       tests: { orderBy: { order: "asc" }, include: { attachments: { orderBy: { uploadedAt: "desc" } } } },
       custodyEvents: { orderBy: { order: "asc" } },
       sampleType: true,
+      businessUnit: true,
       deviations: { orderBy: { openedAt: "desc" } },
       retestOf: { select: { id: true, type: true } },
       retests: { select: { id: true, type: true, status: true } },
