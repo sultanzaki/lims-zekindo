@@ -24,7 +24,10 @@ export function jakartaDayKey(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
 }
 
-export function nowAsJakartaLocalInput(): string {
+// Formats any instant as a `datetime-local` input value in Jakarta time —
+// used both for "now" defaults and for prefilling a form that edits an
+// existing Jakarta-time timestamp.
+export function dateAsJakartaLocalInput(date: Date): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: APP_TIME_ZONE,
     year: "numeric",
@@ -33,7 +36,11 @@ export function nowAsJakartaLocalInput(): string {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).formatToParts(new Date());
+  }).formatToParts(date);
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+export function nowAsJakartaLocalInput(): string {
+  return dateAsJakartaLocalInput(new Date());
 }

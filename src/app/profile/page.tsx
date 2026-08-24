@@ -2,12 +2,13 @@ import Link from "next/link";
 import { getSessionUserId } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import { prisma } from "@/lib/db";
-import { ROLE_LABELS, AccessRole, canReviewAsSupervisor, canManageInventoryAndCatalog, canViewAnalytics, isAdmin } from "@/lib/roles";
+import { ROLE_LABELS, AccessRole, canReviewAsSupervisor, canManageInventoryAndCatalog } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
 import { signOutAction } from "@/lib/actions/auth";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Chevron from "@/components/ui/Chevron";
+import InstallPwaButton from "@/components/InstallPwaButton";
 
 export default async function ProfilePage() {
   const userId = await getSessionUserId();
@@ -54,23 +55,12 @@ export default async function ProfilePage() {
           <div>
             <SectionLabel className="mb-2.5 px-1">Lab Management</SectionLabel>
             <div className="bg-white border border-border rounded-[18px] shadow-card overflow-hidden">
-              {canViewAnalytics(role) && <SettingsRow label="Analytics" href="/analytics" />}
-              {canReviewAsSupervisor(role) && <SettingsRow label="Deviations" href="/deviations" />}
-              {canManageInventoryAndCatalog(role) && (
-                <>
-                  <SettingsRow label="Sample & Test Catalog" href="/admin/catalog" />
-                  <SettingsRow label="Business Units" href="/admin/business-units" />
-                  <SettingsRow label="Reagents & Chemicals" href="/inventory/reagents" />
-                  <SettingsRow label="Equipment" href="/inventory/equipment" />
-                  <SettingsRow label="Warehouse" href="/inventory/warehouse" />
-                </>
-              )}
-              {isAdmin(role) && (
-                <>
-                  <SettingsRow label="Users" href="/admin/users" />
-                  <SettingsRow label="Audit Log" href="/admin/audit" last />
-                </>
-              )}
+              <SettingsRow
+                label="Open Lab Management"
+                subtitle="Analytics, catalog, inventory & admin"
+                href="/admin"
+                last
+              />
             </div>
           </div>
         )}
@@ -78,6 +68,7 @@ export default async function ProfilePage() {
         <div>
           <SectionLabel className="mb-2.5 px-1">Settings</SectionLabel>
           <div className="bg-white border border-border rounded-[18px] shadow-card overflow-hidden">
+            <InstallPwaButton />
             <SettingsRow label="Change Password" href="/profile/change-password" />
             <SettingsRow label="Help & Support" href="/help" last />
           </div>
@@ -103,10 +94,13 @@ export default async function ProfilePage() {
   );
 }
 
-function SettingsRow({ label, href, last }: { label: string; href?: string; last?: boolean }) {
+function SettingsRow({ label, subtitle, href, last }: { label: string; subtitle?: string; href?: string; last?: boolean }) {
   const content = (
     <div className={`flex items-center justify-between px-4 py-3.5 min-h-[52px] ${last ? "" : "border-b border-border-soft"}`}>
-      <span className="text-sm font-medium text-text">{label}</span>
+      <div>
+        <span className="text-sm font-medium text-text block">{label}</span>
+        {subtitle && <span className="text-[11px] text-muted block mt-0.5">{subtitle}</span>}
+      </div>
       <Chevron />
     </div>
   );

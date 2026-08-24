@@ -605,6 +605,49 @@ export async function retestSampleAction(originalSampleId: string) {
   redirect(`/samples/${id}`);
 }
 
+const EDITABLE_STATUSES = new Set(["Pending Login", "In Testing"]);
+
+// Sample intake details are locked once a sample moves past In Testing —
+// Supervisor/QA review and the eventual CoA are built on top of what's
+// entered here, so later stages rely on it staying fixed for the audit
+// trail. Only the fields that are genuinely intake corrections (not results,
+// not custody) are editable, and only while the sample is still early.
+export async function updateSampleAction(
+  sampleId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const user = await requireUser();
+
+  const sample = await prisma.sample.findUnique({ where: { id: sampleId }, select: { status: true } });
+  if (!sample) return { error: "Sample not found." };
+  if (!EDITABLE_STATUSES.has(sample.status)) {
+    return { error: "This sample can no longer be edited — it has moved past In Testing." };
+  }
+
+  const name = String(formData.get("name") || "").trim();
+  const requestorName = String(formData.get("requestorName") || "").trim();
+  const source = String(formData.get("source") || "").trim();
+  const collectedDateRaw = String(formData.get("collectedDate") || "");
+
+  if (!name) return { error: "Enter a sample name." };
+  if (!source) return { error: "Enter a source / location." };
+  if (!collectedDateRaw) return { error: "Enter the collection date & time." };
+
+  const collectedDate = parseJakartaLocalDateTime(collectedDateRaw);
+  if (Number.isNaN(collectedDate.getTime())) return { error: "Invalid collection date & time." };
+
+  await prisma.sample.update({
+    where: { id: sampleId },
+    data: { name, requestorName: requestorName || null, source, collectedDate },
+  });
+
+  await logAudit({ userId: user.id, action: "sample.edited", entityType: "Sample", entityId: sampleId, detail: `name/requestor/source/collectedDate updated by ${user.name}` });
+
+  revalidatePath(`/samples/${sampleId}`);
+  redirect(`/samples/${sampleId}`);
+}
+
 export async function updateStorageAction(
   _prevState: FormState,
   formData: FormData

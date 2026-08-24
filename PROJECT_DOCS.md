@@ -455,6 +455,54 @@ requestor before the sample has cleared review.
 
 ---
 
+## 5e. WhatsApp share, technical labels, Admin hub, Edit Sample, and PWA
+
+No database migration in this delivery — every change here is code/UI only.
+
+**Share tracking link via WhatsApp** — next to "Copy tracking link" on a
+sample's Details tab, "Share via WhatsApp" opens `wa.me` with a pre-filled
+message (sample name/ID, access code, tracking link) so a staff member can
+pick a WhatsApp contact and send it in two taps, no manual retyping.
+
+**Barcode labels redesigned to be dense and technical** — all four label
+types (Sample, Equipment, Reagent, Warehouse Location) now render as a
+compact spec-sheet: a header bar (logo + document type), the primary ID and
+item name, then a dense key/value field block (e.g. a Sample label now also
+shows Priority, Container, and Received time; Equipment shows calibration
+dates; Reagent shows quantity and expiry; Warehouse shows full path and
+stored-item counts), and a footer with the print timestamp — instead of the
+previous big centered QR with a few lines under it.
+
+**Lab Management decluttered off Profile** — Profile now shows a single
+"Open Lab Management" row instead of a long flat list of admin links. It
+leads to a new `/admin` hub page that groups those same links into
+**Insights** (Analytics, Deviations), **Catalog & Inventory** (Sample & Test
+Catalog, Business Units, Reagents, Equipment, Warehouse), and
+**Administration** (Users, Audit Log — Admin only), each only shown to roles
+that already had access to it.
+
+**Edit Sample** — a sample's intake details are no longer fixed the moment
+it's logged in. An "Edit Sample" button appears on the Details tab, but only
+while the sample is still **Pending Login** or **In Testing** — once it
+enters Supervisor/QA review the button disappears and the fields lock, since
+later stages (and the eventual CoA) build on what was entered at intake.
+Editable: Sample Name, Requestor, Source/Location, and Collection Date &
+Time. Not editable from here: Sample ID, Sample Type, Business Unit,
+Priority, or anything tied to results/custody — those still go through their
+existing dedicated flows. Every edit is written to the Audit Log.
+
+**Installable as a PWA** — the app now has a web manifest and a minimal
+service worker, so "Install App" / "Add to Home Screen" is available from
+the browser (and a same-labeled row appears under Profile → Settings on
+Chrome/Edge/Android once the browser judges the app installable). The
+service worker deliberately does **not** cache any page or API response —
+lab data must always be fresh — it only caches the logo/icons and shows a
+branded offline page if a navigation fails with no network at all. iOS
+Safari has no install-prompt event, so on iPhone/iPad "Add to Home Screen"
+stays the normal manual step from the Share sheet.
+
+---
+
 ## 6. Known limitations
 
 Scoped out of this release deliberately, not oversights:

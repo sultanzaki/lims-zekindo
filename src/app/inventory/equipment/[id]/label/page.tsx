@@ -4,6 +4,7 @@ import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { pathForLocationId } from "@/lib/warehouse";
+import { formatDate, formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
 import LabelCard from "@/components/LabelCard";
@@ -17,7 +18,16 @@ export default async function EquipmentLabelPage({
   const { id } = await params;
   const equipment = await prisma.equipment.findUnique({
     where: { id },
-    select: { id: true, name: true, assetTag: true, status: true, location: true, storageLocation: true },
+    select: {
+      id: true,
+      name: true,
+      assetTag: true,
+      status: true,
+      location: true,
+      storageLocation: true,
+      lastCalibratedAt: true,
+      nextCalibrationDue: true,
+    },
   });
   if (!equipment) notFound();
 
@@ -33,9 +43,16 @@ export default async function EquipmentLabelPage({
       <div className="label-print-wrap flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
         <LabelCard
           qrDataUrl={qrDataUrl}
+          docType="Equipment Label"
           code={equipment.assetTag}
           title={equipment.name}
-          lines={[equipment.status, locationName]}
+          fields={[
+            { label: "Status", value: equipment.status },
+            { label: "Location", value: locationName },
+            { label: "Last Calibrated", value: equipment.lastCalibratedAt ? formatDate(equipment.lastCalibratedAt) : null },
+            { label: "Next Cal. Due", value: equipment.nextCalibrationDue ? formatDate(equipment.nextCalibrationDue) : null },
+          ]}
+          printedAt={formatDateTime(new Date())}
         />
         <div className="no-print w-full max-w-[280px]">
           <PrintButton label="Print Label" />

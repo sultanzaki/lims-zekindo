@@ -4,6 +4,7 @@ import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { pathForLocationId } from "@/lib/warehouse";
+import { formatDate, formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
 import LabelCard from "@/components/LabelCard";
@@ -17,7 +18,17 @@ export default async function ReagentLabelPage({
   const { id } = await params;
   const reagent = await prisma.reagent.findUnique({
     where: { id },
-    select: { id: true, name: true, lotNumber: true, category: true, location: true, storageLocation: true },
+    select: {
+      id: true,
+      name: true,
+      lotNumber: true,
+      category: true,
+      quantity: true,
+      unit: true,
+      expiryDate: true,
+      location: true,
+      storageLocation: true,
+    },
   });
   if (!reagent) notFound();
 
@@ -33,9 +44,16 @@ export default async function ReagentLabelPage({
       <div className="label-print-wrap flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
         <LabelCard
           qrDataUrl={qrDataUrl}
-          code={`Lot ${reagent.lotNumber}`}
+          docType="Reagent Label"
+          code={`LOT ${reagent.lotNumber}`}
           title={reagent.name}
-          lines={[reagent.category, locationName]}
+          fields={[
+            { label: "Category", value: reagent.category },
+            { label: "Quantity", value: `${reagent.quantity} ${reagent.unit}` },
+            { label: "Expiry", value: reagent.expiryDate ? formatDate(reagent.expiryDate) : null },
+            { label: "Location", value: locationName },
+          ]}
+          printedAt={formatDateTime(new Date())}
         />
         <div className="no-print w-full max-w-[280px]">
           <PrintButton label="Print Label" />

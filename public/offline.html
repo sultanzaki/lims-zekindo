@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>You're offline — Zekindo LIMS</title>
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: #F4F7F9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1A5F7A;
+    text-align: center;
+    padding: 24px;
+  }
+  img { height: 32px; margin-bottom: 8px; }
+  h1 { font-size: 17px; margin: 0; }
+  p { font-size: 13px; color: #5B6B74; margin: 0; max-width: 280px; }
+  button {
+    margin-top: 10px;
+    background: #1A5F7A;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <img src="/zekindo-logo.png" alt="Zekindo Chemicals" />
+  <h1>You're offline</h1>
+  <p>This page needs a network connection to load fresh lab data. Reconnect and try again.</p>
+  <button onclick="location.reload()">Retry</button>
+</body>
+</html>

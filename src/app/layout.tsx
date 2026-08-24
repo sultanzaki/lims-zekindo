@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins, Roboto_Mono } from "next/font/google";
+import PwaRegister from "@/components/PwaRegister";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -17,6 +18,11 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "LIMS Mobile",
   description: "Laboratory Information Management System",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Zekindo LIMS",
+  },
 };
 
 export const viewport: Viewport = {
@@ -28,7 +34,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${poppins.variable} ${robotoMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-page-bg">{children}</body>
+      <body className="min-h-full flex flex-col bg-page-bg">
+        <PwaRegister />
+        {children}
+      </body>
     </html>
   );
 }
