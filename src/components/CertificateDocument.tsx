@@ -96,6 +96,8 @@ export default function CertificateDocument({ sample, qrDataUrl }: { sample: Sam
         <div className="text-[8.5px] text-faint leading-relaxed max-w-[120mm]">
           This certificate relates only to the sample(s) identified above and shall not be reproduced except in full,
           without the written approval of the laboratory. Generated {formatDateTime(new Date())}.
+          <br />
+          Powered by Product Specialist Microbiology.
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qrDataUrl} alt="Verification code" width={52} height={52} className="shrink-0" />

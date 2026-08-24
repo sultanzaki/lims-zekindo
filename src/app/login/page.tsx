@@ -65,6 +65,10 @@ export default function LoginPage() {
             Forgot your password? Ask your Lab Manager to reset it.
           </div>
         </form>
+
+        <div className="text-center text-[10px] text-faint tracking-wide">
+          Powered by Product Specialist Microbiology
+        </div>
       </div>
     </div>
   );

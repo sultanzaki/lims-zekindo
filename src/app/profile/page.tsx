@@ -90,7 +90,11 @@ export default async function ProfilePage() {
             Sign Out
           </button>
         </form>
-        <div className="text-center text-[11px] text-faint mt-auto">LIMS Mobile · v1.4.2</div>
+        <div className="text-center text-[11px] text-faint mt-auto">
+          LIMS Mobile · v1.4.2
+          <br />
+          Powered by Product Specialist Microbiology
+        </div>
       </div>
 
       <BottomNav active="profile" unreadCount={unread} />
