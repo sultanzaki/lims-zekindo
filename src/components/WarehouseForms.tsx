@@ -7,12 +7,39 @@ import Button from "@/components/ui/Button";
 
 const initialState: FormState = {};
 
-export function CreateStorageLocationForm() {
+export function CreateStorageLocationForm({
+  parentOptions,
+  fixedParentId,
+  fixedParentLabel,
+}: {
+  parentOptions?: { id: string; label: string }[];
+  fixedParentId?: string;
+  fixedParentLabel?: string;
+} = {}) {
   const [state, formAction, pending] = useActionState(createStorageLocationAction, initialState);
   return (
     <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
-      <div className="text-[13px] font-semibold text-text">Add Location</div>
-      <input name="name" placeholder="e.g. Cold Room 1, Lab Room 2 - Shelf B" required className={inputClassSm} />
+      <div className="text-[13px] font-semibold text-text">
+        {fixedParentId ? `Add Sub-location in "${fixedParentLabel}"` : "Add Location"}
+      </div>
+      <input
+        name="name"
+        placeholder={fixedParentId ? "e.g. Rak X" : "e.g. KBI, Microbiology Lab"}
+        required
+        className={inputClassSm}
+      />
+      {fixedParentId ? (
+        <input type="hidden" name="parentId" value={fixedParentId} />
+      ) : parentOptions && parentOptions.length > 0 ? (
+        <select name="parentId" defaultValue="" className={inputClassSm}>
+          <option value="">Top level (no parent)</option>
+          {parentOptions.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      ) : null}
       <input name="notes" placeholder="Notes (optional)" className={inputClassSm} />
       {state.error && <div className="text-xs text-danger">{state.error}</div>}
       <Button type="submit" disabled={pending} size="sm">

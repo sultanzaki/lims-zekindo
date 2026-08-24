@@ -122,22 +122,27 @@ migrations are new before deploying the new code:
   prefix, and run the `migration.sql` of any folder you haven't applied yet
   (oldest first) in Supabase's SQL Editor.
 
-This delivery adds two migrations on top of the last one:
+This delivery adds three migrations on top of the last one:
 - `BusinessUnit`, `StorageLocation` (the Warehouse catalog), `EquipmentEvent`,
   `ReagentTransaction`, plus new columns on `Sample` (`requestorName`,
   `businessUnitId`), `Equipment` (`locationId`), and `Reagent` (`category`,
   `locationId`) — see [Section 5a](#5a-latest-additions).
 - `Sample.accessCode` — the random code that gates the public tracking
   portal — see [Section 5b](#5b-public-tracking-portal--analytics).
+- `StorageLocation.parentId` — lets a warehouse location nest under another
+  one; also swaps `StorageLocation.name`'s uniqueness from globally-unique to
+  unique-per-parent — see [Section 5c](#5c-multi-level-warehouse-barcodes-for-everything-calendar-and-bi).
 
-Both are purely additive — existing rows keep working unchanged (new columns
-default to null or, for `Reagent.category`, `"Reagent"`), nothing to
+All three are purely additive — existing rows keep working unchanged (new
+columns default to null or, for `Reagent.category`, `"Reagent"`), nothing to
 backfill. `Equipment.location` / `Reagent.location` (the old free-text
 fields) are kept as a fallback display for rows that predate the Warehouse
 feature and haven't been assigned a structured location yet. Samples created
 before this update won't have an `accessCode`, so the tracking portal can't
 look them up — that's fine, they just fall outside the feature, same as
-Sample Name did when it was first added.
+Sample Name did when it was first added. Existing `StorageLocation` rows
+default to `parentId = null` (top-level), so nothing already in your
+warehouse catalog moves or gets reorganized.
 
 ---
 
@@ -332,6 +337,50 @@ distribution, volume by sample type and by Business Unit, deviation trend,
 and equipment/reagent stock health meters. Two-column on desktop, stacked on
 mobile. A Technician account is redirected away from `/analytics` the same
 way it's blocked from Inventory/Catalog.
+
+---
+
+## 5c. Multi-level warehouse, barcodes for everything, calendar, and BI
+
+**Nested warehouse locations** — `StorageLocation` now has a `parentId`
+self-relation, so a location can nest arbitrarily deep (e.g. "KBI" >
+"Microbiology Lab" > "Rak X"). The Warehouse list shows only top-level
+locations; opening one shows a breadcrumb, its direct sub-locations, and the
+reagents/equipment stored directly in it. "Add Location" on the root page
+lets you place a new location anywhere in the tree via a parent dropdown; on
+a location's own page, "Add Sub-location" is pre-scoped to that location.
+Reagent/Equipment location pickers show the full indented tree so you can
+tell locations with the same short name (e.g. two different "Rak A"s) apart.
+
+**Barcodes beyond samples** — Equipment, Reagents/Chemicals, and Warehouse
+locations each get a "Print Barcode Label" page now (same QR + print
+pattern as the sample label). Their QR codes encode the full in-app path
+(e.g. `/inventory/equipment/<id>`) rather than a bare ID, so the Scan page
+(now titled "Scan Barcode") routes any of the four entity types to the
+right page automatically. Older, already-printed sample labels (which
+encode just the bare Sample ID) still work — the scanner falls back to
+`/samples/<id>` for any scanned text that isn't a path.
+
+**TAT Calendar** (`/calendar`, all roles) — a month view of every open
+sample's TAT due date, in Jakarta local time. Red dot = something overdue
+that day, amber = due but not yet overdue. Tapping a day lists its samples
+with a direct link into each one.
+
+**Advanced Insights** (`/analytics/insights`, same roles as Analytics) —
+three panels, each a plain statistical calculation rather than a trained
+model:
+- *TAT prediction by sample type*: historical average turnaround (last 20
+  completed samples of that type), scaled up when the lab's current open
+  queue is heavier than a baseline depth.
+- *Result anomalies*: a result submitted in the last 30 days is flagged if
+  it's more than 2.5 standard deviations from that test's own historical
+  mean (needs at least 5 prior numeric results for that test name to have a
+  baseline at all).
+- *Technician performance*: mined from `AuditLog` (the only record of who
+  submitted a result — `Test` itself carries no technician reference).
+  On-time rate compares each submission's timestamp to its sample's TAT
+  deadline; out-of-spec rate only counts tests with a comparable
+  numeric/exact spec.
 
 ---
 

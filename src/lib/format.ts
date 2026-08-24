@@ -1,4 +1,4 @@
-import { APP_TIME_ZONE } from "@/lib/tz";
+import { APP_TIME_ZONE, jakartaDayKey } from "@/lib/tz";
 
 export function formatDateTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -43,23 +43,11 @@ export function dueLabelFor(receivedDate: Date, targetTatHours: number): { label
   return { label: `Due in ${Math.round(hoursLeft / 24)}d`, color: "#7A8B94" };
 }
 
-// Compares calendar days in Jakarta local time (not the viewer's or
-// server's own timezone) so "Today"/"Yesterday" groupings match the lab's
-// actual working day.
-function jakartaDateKey(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: APP_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
-
 export function dayGroupLabel(date: Date): "Today" | "Yesterday" | "Earlier" {
   const now = new Date();
-  const todayKey = jakartaDateKey(now);
-  const yesterdayKey = jakartaDateKey(new Date(now.getTime() - 24 * 60 * 60 * 1000));
-  const key = jakartaDateKey(date);
+  const todayKey = jakartaDayKey(now);
+  const yesterdayKey = jakartaDayKey(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const key = jakartaDayKey(date);
   if (key === todayKey) return "Today";
   if (key === yesterdayKey) return "Yesterday";
   return "Earlier";

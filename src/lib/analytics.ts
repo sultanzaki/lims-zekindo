@@ -1,12 +1,8 @@
 import { prisma } from "@/lib/db";
-import { APP_TIME_ZONE } from "@/lib/tz";
+import { jakartaDayKey } from "@/lib/tz";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const OPEN_STATUSES = ["Pending Login", "In Testing", "Awaiting Supervisor Review", "Awaiting QA Approval"];
-
-function jakartaDayKey(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
-}
 
 function jakartaWeekKey(date: Date): string {
   // ISO-ish week key: the Monday of the week the date falls in, in Jakarta local time.

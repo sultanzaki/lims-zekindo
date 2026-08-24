@@ -269,17 +269,24 @@ model ReagentTransaction {
   @@index([reagentId])
 }
 
-// The "Warehouse" catalog — a browsable list of physical storage locations
-// shared by Reagents and Equipment, so both can be tracked to one place.
+// The "Warehouse" catalog — a browsable, nestable tree of physical storage
+// locations shared by Reagents and Equipment (e.g. "KBI" > "Microbiology
+// Lab" > "Rak X"), so both can be tracked down to an exact spot.
 model StorageLocation {
   id        String   @id @default(cuid())
-  name      String   @unique
+  name      String
   notes     String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
+  parentId  String?
+  parent    StorageLocation?  @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children  StorageLocation[] @relation("LocationHierarchy")
 
   reagents  Reagent[]
   equipment Equipment[]
+
+  @@unique([parentId, name])
+  @@index([parentId])
 }
 
 model AuditLog {

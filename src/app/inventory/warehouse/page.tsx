@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
+import { buildLocationTree, flattenForSelect } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
 import { CreateStorageLocationForm } from "@/components/WarehouseForms";
 import { setStorageLocationActiveAction } from "@/lib/actions/warehouse";
@@ -10,23 +11,36 @@ import Chevron from "@/components/ui/Chevron";
 
 export default async function WarehousePage() {
   await requirePageRole(canManageInventoryAndCatalog);
-  const locations = await prisma.storageLocation.findMany({
+  const all = await prisma.storageLocation.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { reagents: true, equipment: true } } },
   });
+  const nodes = all.map((l) => ({
+    id: l.id,
+    name: l.name,
+    parentId: l.parentId,
+    active: l.active,
+    notes: l.notes,
+    directReagents: l._count.reagents,
+    directEquipment: l._count.equipment,
+  }));
+  const tree = buildLocationTree(nodes);
+  const roots = tree.childrenOf(null);
+  const parentOptions = flattenForSelect(nodes);
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Warehouse" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5">
         <p className="text-xs text-muted -mt-1">
-          Physical storage locations shared by Reagents &amp; Chemicals and Equipment, so everything in the lab can be tracked to a place.
+          Physical storage locations shared by Reagents &amp; Chemicals and Equipment — nest them as deep as your lab is organized, e.g. KBI › Microbiology Lab › Rak X.
         </p>
-        <CreateStorageLocationForm />
+        <CreateStorageLocationForm parentOptions={parentOptions} />
 
         <div className="flex flex-col gap-2.5">
-          {locations.map((loc) => {
-            const itemCount = loc._count.reagents + loc._count.equipment;
+          {roots.map((loc) => {
+            const itemCount = tree.totalItems(loc.id);
+            const subCount = tree.subLocationCount(loc.id);
             return (
               <div key={loc.id} className="bg-white border border-border rounded-[18px] shadow-card px-4 py-3.5 flex items-center gap-3">
                 <Link href={`/inventory/warehouse/${loc.id}`} className="flex-1 min-w-0 flex items-center gap-3">
@@ -41,6 +55,7 @@ export default async function WarehousePage() {
                       {!loc.active && <span className="text-[10px] font-semibold text-danger shrink-0">(inactive)</span>}
                     </div>
                     <div className="text-xs text-muted mt-0.5">
+                      {subCount > 0 && `${subCount} sub-location${subCount === 1 ? "" : "s"} · `}
                       {itemCount} item{itemCount === 1 ? "" : "s"} stored
                       {loc.notes && ` · ${loc.notes}`}
                     </div>
@@ -60,7 +75,7 @@ export default async function WarehousePage() {
               </div>
             );
           })}
-          {locations.length === 0 && <EmptyState>No warehouse locations yet — add one above.</EmptyState>}
+          {roots.length === 0 && <EmptyState>No warehouse locations yet — add one above.</EmptyState>}
         </div>
       </div>
     </div>

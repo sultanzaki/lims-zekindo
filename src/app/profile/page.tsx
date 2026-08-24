@@ -43,6 +43,13 @@ export default async function ProfilePage() {
           </div>
         </div>
 
+        <div>
+          <SectionLabel className="mb-2.5 px-1">Tools</SectionLabel>
+          <div className="bg-white border border-border rounded-[18px] shadow-card overflow-hidden">
+            <SettingsRow label="TAT Calendar" href="/calendar" last />
+          </div>
+        </div>
+
         {(canReviewAsSupervisor(role) || canManageInventoryAndCatalog(role)) && (
           <div>
             <SectionLabel className="mb-2.5 px-1">Lab Management</SectionLabel>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePageRole } from "@/lib/auth";
 import { canViewAnalytics } from "@/lib/roles";
 import {
@@ -56,6 +57,19 @@ export default async function AnalyticsPage() {
     <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Analytics" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1100px] md:mx-auto md:w-full">
+        <Link
+          href="/analytics/insights"
+          className="flex items-center justify-between gap-2 bg-white border border-border rounded-[16px] shadow-card-sm px-4 py-3"
+        >
+          <div>
+            <div className="text-sm font-semibold text-text">Advanced Insights</div>
+            <div className="text-[11px] text-muted mt-0.5">TAT prediction, result anomalies, technician performance</div>
+          </div>
+          <svg width="8" height="14" viewBox="0 0 8 14" className="shrink-0">
+            <path d="M1 1l6 6-6 6" stroke="#C2D2DB" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
+
         <KpiTiles kpi={kpi} />
         <div className="flex flex-col gap-3.5 md:grid md:grid-cols-2 md:gap-4 md:items-start">
           <SampleVolumeTrend data={volumeTrend} />

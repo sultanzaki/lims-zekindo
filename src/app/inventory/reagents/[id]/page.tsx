@@ -3,7 +3,9 @@ import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { pathForLocationId } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
+import LinkButton from "@/components/ui/LinkButton";
 import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
 import { ReagentTransactionForm } from "@/components/ReagentDetailForms";
@@ -32,7 +34,9 @@ export default async function ReagentDetailPage({
   const now = new Date().getTime();
   const lowStock = reagent.quantity <= reagent.minStockLevel;
   const expired = reagent.expiryDate && reagent.expiryDate.getTime() < now;
-  const locationName = reagent.storageLocation?.name || reagent.location;
+  const locationName = reagent.storageLocation
+    ? await pathForLocationId(reagent.storageLocation.id)
+    : reagent.location;
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
@@ -53,6 +57,10 @@ export default async function ReagentDetailPage({
             last
           />
         </div>
+
+        <LinkButton href={`/inventory/reagents/${reagent.id}/label`} variant="secondary" size="sm">
+          Print Barcode Label
+        </LinkButton>
 
         <ReagentTransactionForm id={reagent.id} quantity={reagent.quantity} unit={reagent.unit} />
 

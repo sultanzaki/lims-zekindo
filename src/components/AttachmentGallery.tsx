@@ -66,14 +66,14 @@ export default function AttachmentGallery({
             }}
           >
             {images.map((img, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <div
                 key={img.id}
-                src={img.url!}
-                alt={img.fileName}
                 onClick={() => setLightboxIndex(i)}
-                className="w-full aspect-[4/3] object-cover rounded-[12px] shrink-0 snap-center cursor-zoom-in border border-border-soft"
-              />
+                className="w-full aspect-[4/3] shrink-0 snap-center cursor-zoom-in rounded-[12px] border border-border-soft bg-page-bg flex items-center justify-center overflow-hidden"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url!} alt={img.fileName} className="max-w-full max-h-full object-contain" />
+              </div>
             ))}
           </div>
           {images.length > 1 && (
@@ -170,13 +170,17 @@ export default function AttachmentGallery({
               </button>
             </>
           )}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={images[lightboxIndex].url!}
-            alt={images[lightboxIndex].fileName}
+          <div
             onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-[85vh] object-contain rounded-[8px]"
-          />
+            className="w-[min(92vw,640px)] h-[min(80vh,640px)] flex items-center justify-center"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={images[lightboxIndex].url!}
+              alt={images[lightboxIndex].fileName}
+              className="max-w-full max-h-full object-contain rounded-[8px]"
+            />
+          </div>
         </div>
       )}
     </div>

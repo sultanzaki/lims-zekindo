@@ -3,6 +3,7 @@ import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
+import { buildLocationTree, flattenForSelect } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
 import { CreateEquipmentForm } from "@/components/InventoryForms";
 import EmptyState from "@/components/ui/EmptyState";
@@ -16,10 +17,13 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; dot: string }> =
 
 export default async function EquipmentPage() {
   await requirePageRole(canManageInventoryAndCatalog);
-  const [equipment, locations] = await Promise.all([
+  const [equipment, allLocations] = await Promise.all([
     prisma.equipment.findMany({ orderBy: { name: "asc" }, include: { storageLocation: true } }),
-    prisma.storageLocation.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.storageLocation.findMany({ select: { id: true, name: true, parentId: true, active: true, notes: true } }),
   ]);
+  const locationNodes = allLocations.map((l) => ({ ...l, directReagents: 0, directEquipment: 0 }));
+  const locationTree = buildLocationTree(locationNodes);
+  const locations = flattenForSelect(locationNodes, { activeOnly: true });
   const now = new Date().getTime();
 
   return (
@@ -32,7 +36,7 @@ export default async function EquipmentPage() {
           {equipment.map((e) => {
             const overdue = e.nextCalibrationDue && e.nextCalibrationDue.getTime() < now;
             const style = STATUS_STYLE[e.status] ?? STATUS_STYLE.Operational;
-            const locationName = e.storageLocation?.name || e.location;
+            const locationName = e.storageLocation ? locationTree.pathFor(e.storageLocation.id) : e.location;
             return (
               <Link
                 key={e.id}

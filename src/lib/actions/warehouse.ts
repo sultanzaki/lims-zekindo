@@ -15,17 +15,25 @@ export async function createStorageLocationAction(
   const user = await requireRole(canManageInventoryAndCatalog);
   const name = String(formData.get("name") || "").trim();
   const notes = String(formData.get("notes") || "").trim();
+  const parentIdRaw = String(formData.get("parentId") || "").trim();
+  const parentId = parentIdRaw || null;
 
   if (!name) return { error: "Name is required." };
 
-  const existing = await prisma.storageLocation.findUnique({ where: { name } });
-  if (existing) return { error: "That location already exists." };
+  if (parentId) {
+    const parent = await prisma.storageLocation.findUnique({ where: { id: parentId } });
+    if (!parent) return { error: "Parent location not found." };
+  }
 
-  const created = await prisma.storageLocation.create({ data: { name, notes: notes || null } });
+  const existing = await prisma.storageLocation.findFirst({ where: { parentId, name } });
+  if (existing) return { error: "A location with that name already exists here." };
+
+  const created = await prisma.storageLocation.create({ data: { name, notes: notes || null, parentId } });
 
   await logAudit({ userId: user.id, action: "warehouse.location_created", entityType: "StorageLocation", entityId: created.id, detail: name });
 
   revalidatePath("/inventory/warehouse");
+  if (parentId) revalidatePath(`/inventory/warehouse/${parentId}`);
   revalidatePath("/inventory/reagents");
   revalidatePath("/inventory/equipment");
   return {};

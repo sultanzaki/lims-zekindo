@@ -4,7 +4,9 @@ import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { signedAttachmentUrl } from "@/lib/storage";
+import { pathForLocationId } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
+import LinkButton from "@/components/ui/LinkButton";
 import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
 import { ChangeStatusForm, LogCalibrationForm, LogMaintenanceForm } from "@/components/EquipmentDetailForms";
@@ -44,7 +46,9 @@ export default async function EquipmentDetailPage({
 
   const style = STATUS_STYLE[equipment.status] ?? STATUS_STYLE.Operational;
   const overdue = equipment.nextCalibrationDue && equipment.nextCalibrationDue.getTime() < new Date().getTime();
-  const locationName = equipment.storageLocation?.name || equipment.location;
+  const locationName = equipment.storageLocation
+    ? await pathForLocationId(equipment.storageLocation.id)
+    : equipment.location;
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
@@ -66,6 +70,10 @@ export default async function EquipmentDetailPage({
             last
           />
         </div>
+
+        <LinkButton href={`/inventory/equipment/${equipment.id}/label`} variant="secondary" size="sm">
+          Print Barcode Label
+        </LinkButton>
 
         <ChangeStatusForm id={equipment.id} currentStatus={equipment.status} />
         <LogCalibrationForm id={equipment.id} />

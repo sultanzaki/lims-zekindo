@@ -16,10 +16,10 @@ export default async function SampleLabelPage({
   });
   if (!sample) notFound();
 
-  const qrDataUrl = await QRCode.toDataURL(sample.id, { margin: 1, width: 240 });
+  const qrDataUrl = await QRCode.toDataURL(`/samples/${sample.id}`, { margin: 1, width: 240 });
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen print:min-h-0 flex flex-col bg-white">
       <div className="no-print">
         <BackHeader title="Barcode Label" backHref={`/samples/${sample.id}`} />
       </div>

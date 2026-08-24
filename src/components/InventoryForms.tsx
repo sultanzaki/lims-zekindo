@@ -24,14 +24,14 @@ function LabeledField({
   );
 }
 
-function LocationSelect({ locations }: { locations: { id: string; name: string }[] }) {
+function LocationSelect({ locations }: { locations: { id: string; label: string }[] }) {
   return (
     <LabeledField label="Location">
       <select name="locationId" defaultValue="" className={inputClassSm}>
         <option value="">Not set</option>
         {locations.map((l) => (
           <option key={l.id} value={l.id}>
-            {l.name}
+            {l.label}
           </option>
         ))}
       </select>
@@ -39,7 +39,7 @@ function LocationSelect({ locations }: { locations: { id: string; name: string }
   );
 }
 
-export function CreateReagentForm({ locations }: { locations: { id: string; name: string }[] }) {
+export function CreateReagentForm({ locations }: { locations: { id: string; label: string }[] }) {
   const [state, formAction, pending] = useActionState(createReagentAction, initialState);
   return (
     <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
@@ -82,7 +82,7 @@ export function CreateReagentForm({ locations }: { locations: { id: string; name
   );
 }
 
-export function CreateEquipmentForm({ locations }: { locations: { id: string; name: string }[] }) {
+export function CreateEquipmentForm({ locations }: { locations: { id: string; label: string }[] }) {
   const [state, formAction, pending] = useActionState(createEquipmentAction, initialState);
   return (
     <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">

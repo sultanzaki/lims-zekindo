@@ -3,16 +3,20 @@ import { requirePageRole } from "@/lib/auth";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
+import { buildLocationTree, flattenForSelect } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
 import { CreateReagentForm } from "@/components/InventoryForms";
 import EmptyState from "@/components/ui/EmptyState";
 
 export default async function ReagentsPage() {
   await requirePageRole(canManageInventoryAndCatalog);
-  const [reagents, locations] = await Promise.all([
+  const [reagents, allLocations] = await Promise.all([
     prisma.reagent.findMany({ orderBy: { name: "asc" }, include: { storageLocation: true } }),
-    prisma.storageLocation.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.storageLocation.findMany({ select: { id: true, name: true, parentId: true, active: true, notes: true } }),
   ]);
+  const locationNodes = allLocations.map((l) => ({ ...l, directReagents: 0, directEquipment: 0 }));
+  const locationTree = buildLocationTree(locationNodes);
+  const locations = flattenForSelect(locationNodes, { activeOnly: true });
   const now = new Date().getTime();
   const soonMs = 14 * 24 * 60 * 60 * 1000;
 
@@ -35,7 +39,7 @@ export default async function ReagentsPage() {
               lowStock ? { label: "Low stock", bg: "#FDECEA", color: "#B00016" } :
               expiringSoon ? { label: "Expiring soon", bg: "#FEF3E0", color: "#9A6100" } :
               { label: "In stock", bg: "#E6F4EA", color: "#1E7A34" };
-            const locationName = r.storageLocation?.name || r.location;
+            const locationName = r.storageLocation ? locationTree.pathFor(r.storageLocation.id) : r.location;
 
             return (
               <Link key={r.id} href={`/inventory/reagents/${r.id}`} className="bg-white border border-border rounded-2xl shadow-card-sm px-4 py-3.5 block">

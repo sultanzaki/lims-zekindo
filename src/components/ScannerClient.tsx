@@ -25,7 +25,12 @@ export default function ScannerClient() {
         if (result) {
           setStatus("found");
           controls.stop();
-          router.push(`/samples/${result.getText().trim()}`);
+          const text = result.getText().trim();
+          // Newer labels (equipment/reagent/location, and re-printed sample
+          // labels) encode the full app path directly, e.g.
+          // "/inventory/equipment/abc123". Older sample labels just encode
+          // the bare Sample ID, so fall back to the sample route for those.
+          router.push(text.startsWith("/") ? text : `/samples/${text}`);
         }
       })
       .then(() => {

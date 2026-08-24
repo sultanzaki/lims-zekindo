@@ -6,7 +6,7 @@ import Link from "next/link";
 import { signOutAction } from "@/lib/actions/auth";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog, canViewAnalytics, isAdmin } from "@/lib/roles";
 
-type Tab = "home" | "samples" | "scan" | "notif" | "profile";
+type Tab = "home" | "samples" | "scan" | "calendar" | "notif" | "profile";
 
 function BellIcon() {
   return (
@@ -116,6 +116,7 @@ export default function TopNav({
           <NavLink href="/dashboard" label="Dashboard" active={active === "home"} />
           <NavLink href="/samples" label="Samples" active={active === "samples"} />
           <NavLink href="/scan" label="Scan" active={active === "scan"} />
+          <NavLink href="/calendar" label="Calendar" active={active === "calendar"} />
         </nav>
       </div>
 
@@ -160,6 +161,7 @@ export default function TopNav({
             <div className="px-4 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider">{userName}</div>
 
             <MenuLink href="/notifications" label="Alerts" active={active === "notif"} badge={hasUnread} onNavigate={close} />
+            <MenuLink href="/calendar" label="TAT Calendar" active={active === "calendar"} onNavigate={close} />
 
             {showManagement && (
               <>

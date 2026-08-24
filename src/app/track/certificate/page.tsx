@@ -27,7 +27,7 @@ export default async function PublicCertificatePage({
   );
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-page-bg print:bg-white print:block">
+    <div className="min-h-screen print:min-h-0 flex flex-col items-center bg-page-bg print:bg-white print:block">
       <div className="no-print w-full sticky top-0 bg-white border-b border-border flex items-center gap-3 px-4 py-3.5 z-10">
         <Link
           href={`/track?id=${sample.id}&code=${code}`}

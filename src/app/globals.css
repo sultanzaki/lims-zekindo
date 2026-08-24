@@ -121,6 +121,15 @@ input.field-plain:focus {
   font-variant-numeric: tabular-nums;
 }
 
+/* Recharts makes its root SVG focusable for keyboard accessibility
+   (tabIndex=0, role="application"). Clicking it focuses it, and Chrome's
+   default focus ring on an SVG with no explicit outline color renders as a
+   solid black box around the whole chart — jarring and not useful here
+   since none of these charts have keyboard interactions to navigate to. */
+.recharts-surface:focus {
+  outline: none;
+}
+
 /* Print styles for Certificate of Analysis.
    The COA is laid out at a fixed A4-equivalent width (210mm) so its two-column
    grid never reflows. On screens narrower than that, `zoom` shrinks the whole

@@ -21,7 +21,7 @@ export default async function CertificatePage({
   );
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-page-bg print:bg-white print:block">
+    <div className="min-h-screen print:min-h-0 flex flex-col items-center bg-page-bg print:bg-white print:block">
       <div className="no-print w-full">
         <BackHeader title="Certificate of Analysis" backHref={`/samples/${id}`} />
       </div>
