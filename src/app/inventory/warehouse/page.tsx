@@ -28,7 +28,7 @@ export default async function WarehousePage() {
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Warehouse" backHref="/profile" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5">
+      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1100px] md:mx-auto md:w-full">
         <p className="text-xs text-muted -mt-1">
           Physical storage locations shared by Reagents &amp; Chemicals and Equipment — nest them as deep as your lab is organized, e.g. KBI › Microbiology Lab › Rak X.
         </p>

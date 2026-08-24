@@ -31,13 +31,23 @@ export default async function SampleDetailPage({
   const isOpenStatus = !["Complete", "Rejected"].includes(sample.status);
   const isOverdue = isOpenStatus && dueAt.getTime() < new Date().getTime();
 
+  // Photos are visible to anyone (carousel), but non-image working docs
+  // (Excel/CSV etc.) are Supervisor/QA-only per the lab's documentation
+  // access rule — so only mint a signed URL for those when the viewer is
+  // actually allowed to download them, instead of relying on the client
+  // to just hide a link that's already sitting in the page payload.
+  const canDownloadDocs = canReviewAsSupervisor(user.accessRole) || canApproveAsQa(user.accessRole);
+
   const sampleWithAttachmentUrls = {
     ...sample,
     tests: await Promise.all(
       sample.tests.map(async (test) => ({
         ...test,
         attachments: await Promise.all(
-          test.attachments.map(async (a) => ({ ...a, url: await signedAttachmentUrl(a.storagePath) }))
+          test.attachments.map(async (a) => ({
+            ...a,
+            url: a.fileType.startsWith("image/") || canDownloadDocs ? await signedAttachmentUrl(a.storagePath) : null,
+          }))
         ),
       }))
     ),

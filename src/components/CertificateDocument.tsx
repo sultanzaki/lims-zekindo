@@ -59,7 +59,7 @@ export default function CertificateDocument({ sample, qrDataUrl }: { sample: Sam
           {sample.tests.map((test) => {
             const verdict = parseSpecVerdict(test.spec, test.result);
             return (
-              <tr key={test.id} className="border-b border-border-soft">
+              <tr key={test.id} className="border-b border-border-soft break-inside-avoid">
                 <td className="py-1.5 pr-2 font-medium">{test.name}</td>
                 <td className="py-1.5 pr-2 text-muted">{test.spec}</td>
                 <td className="py-1.5 pr-2 text-right font-semibold whitespace-nowrap">
@@ -77,12 +77,12 @@ export default function CertificateDocument({ sample, qrDataUrl }: { sample: Sam
         </tbody>
       </table>
 
-      <div className="border-[1.5px] border-success text-success-dark text-center text-[12px] font-bold tracking-wide uppercase py-2 mb-6">
+      <div className="border-[1.5px] border-success text-success-dark text-center text-[12px] font-bold tracking-wide uppercase py-2 mb-6 break-inside-avoid">
         Approved for Release
       </div>
 
       {/* Signatures */}
-      <div className="grid grid-cols-2 gap-8 mt-auto text-[10px]">
+      <div className="grid grid-cols-2 gap-8 mt-auto text-[10px] break-inside-avoid">
         <SignatureBlock
           role="Reviewed By — Supervisor"
           name={reviewedByName}

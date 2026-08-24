@@ -33,7 +33,7 @@ export default function LabelCard({
         <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-muted">{docType}</span>
       </div>
 
-      <div className="flex gap-2.5 p-2.5">
+      <div className="flex items-start gap-2.5 p-2.5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qrDataUrl} alt={`QR code for ${code}`} width={84} height={84} className="border border-border-soft shrink-0" />
 

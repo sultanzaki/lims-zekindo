@@ -144,6 +144,10 @@ export async function submitTestResultAction(
   });
   if (!sample) return { error: "Sample not found." };
 
+  const test = sample.tests.find((t) => t.id === testId);
+  if (!test) return { error: "Test not found on this sample." };
+  if (test.status !== "pending") return { error: "This test has already been submitted." };
+
   await prisma.test.update({
     where: { id: testId },
     data: { status: "awaiting", result, notes: notes || null },
@@ -474,23 +478,26 @@ export async function qaApproveAction(
   if (!sample || sample.status !== "Awaiting QA Approval") return { error: "This sample is no longer awaiting QA approval." };
 
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
-  await prisma.sample.update({
-    where: { id: sampleId },
-    data: {
-      status: "Complete",
-      approvedBy: `${user.name}, ${user.role}`,
-      approvedAt: new Date(),
-      custodyEvents: { create: [{ label: "QA Approved", time: new Date(), order: eventCount }] },
-      notifications: {
-        create: {
-          userId: user.id,
-          title: `Result approved — ${sampleId}`,
-          body: `${sample.type} passed QA review and is ready for release.`,
-          unread: true,
+  await prisma.$transaction([
+    prisma.test.updateMany({ where: { sampleId, status: "awaiting" }, data: { status: "complete" } }),
+    prisma.sample.update({
+      where: { id: sampleId },
+      data: {
+        status: "Complete",
+        approvedBy: `${user.name}, ${user.role}`,
+        approvedAt: new Date(),
+        custodyEvents: { create: [{ label: "QA Approved", time: new Date(), order: eventCount }] },
+        notifications: {
+          create: {
+            userId: user.id,
+            title: `Result approved — ${sampleId}`,
+            body: `${sample.type} passed QA review and is ready for release.`,
+            unread: true,
+          },
         },
       },
-    },
-  });
+    }),
+  ]);
 
   await logAudit({ userId: user.id, action: "sample.qa_approved", entityType: "Sample", entityId: sampleId, detail: `e-signed by ${user.email}` });
 
@@ -546,9 +553,9 @@ export async function retestSampleAction(originalSampleId: string) {
   const user = await requireUser();
   const original = await prisma.sample.findUnique({
     where: { id: originalSampleId },
-    include: { tests: true },
+    include: { tests: true, retests: { select: { id: true } } },
   });
-  if (!original || original.status !== "Rejected") return;
+  if (!original || original.status !== "Rejected" || original.retests.length > 0) return;
 
   const id = await getNextSampleId();
   const now = new Date();
@@ -669,6 +676,8 @@ export async function updateStorageAction(
 
 export async function markDisposedAction(sampleId: string) {
   const user = await requireUser();
+  const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
+  if (!sample || sample.status !== "Complete" || sample.disposedAt) return;
   await prisma.sample.update({
     where: { id: sampleId },
     data: { disposedAt: new Date() },

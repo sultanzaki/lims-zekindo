@@ -92,7 +92,7 @@ export default async function DashboardPage() {
       <TopNav active="home" unreadCount={unread} role={user.accessRole} userName={user.name} />
       <DashboardMobileHeader unreadCount={unread} userName={user.name} />
 
-      <div className="flex-1 px-5 pb-5 pt-4 md:pt-5 flex flex-col gap-5">
+      <div className="flex-1 px-5 pb-5 pt-4 md:pt-5 flex flex-col gap-5 md:max-w-[1100px] md:mx-auto md:w-full">
         <div
           className="rounded-[20px] p-[18px]"
           style={{
@@ -163,6 +163,7 @@ export default async function DashboardPage() {
                 const rejected = a.tag === "REJECTED";
                 const iconBg = rejected ? "#FDECEA" : "#FEF3E0";
                 const iconColor = rejected ? "#D0021B" : "#F5A623";
+                const textColor = rejected ? "#B00016" : "#9A6100";
                 return (
                   <Link
                     key={`${a.tag}-${a.id}`}
@@ -190,7 +191,7 @@ export default async function DashboardPage() {
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-bold tracking-wide uppercase" style={{ color: iconColor }}>
+                      <div className="text-[11px] font-bold tracking-wide uppercase" style={{ color: textColor }}>
                         {a.tag}
                       </div>
                       <div className="text-sm font-semibold text-text leading-snug mt-0.5 truncate">{a.title}</div>

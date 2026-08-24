@@ -147,15 +147,29 @@ input.field-plain:focus {
   body {
     background: #fff;
   }
-  /* .coa-page's own mm padding IS the visual page margin (the @page rule below
-     sets margin: 0), so only reset sizing/decoration here — never padding. */
+  /* On screen, .coa-page's own mm padding stands in for a page margin (nothing
+     else provides one). Under print that padding is a normal box property, so
+     CSS fragmentation only honors it on the fragment holding the first/last
+     part of the content — a certificate that spans 2+ physical pages ends up
+     with no top margin on page 2 onward. Zeroing it in print and putting the
+     margin on the named `coa` page below instead means the margin is a
+     property of every physical page, so it correctly repeats on each one.
+     Scoped to a named page (not the default @page) so it doesn't also apply
+     to the barcode label print flow, which needs a flush top-left @page. */
   .coa-page {
     box-shadow: none !important;
     border: none !important;
     width: 100% !important;
     min-height: 0 !important;
     margin: 0 !important;
+    padding: 0 !important;
+    page: coa;
   }
+}
+
+@page coa {
+  size: A4;
+  margin: 12mm 14mm;
 }
 
 @page {

@@ -29,7 +29,7 @@ export default async function EquipmentPage() {
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Equipment" backHref="/profile" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5">
+      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1100px] md:mx-auto md:w-full">
         <CreateEquipmentForm locations={locations} />
 
         <div className="flex flex-col gap-2.5">

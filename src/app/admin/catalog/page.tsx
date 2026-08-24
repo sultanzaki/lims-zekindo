@@ -15,7 +15,7 @@ export default async function AdminCatalogPage() {
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <BackHeader title="Sample & Test Catalog" backHref="/profile" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
+      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[1100px] md:mx-auto md:w-full">
         <CreateSampleTypeForm />
         <CreateTestCatalogForm sampleTypes={sampleTypes.map((s) => ({ id: s.id, name: s.name }))} />
 
