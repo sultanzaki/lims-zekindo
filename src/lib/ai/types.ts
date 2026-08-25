@@ -16,3 +16,12 @@ export type ActionProposal = {
   description: string;
   args: Record<string, unknown>;
 };
+
+// Emitted for every read tool the assistant runs, so the client can render a
+// proper card (sample list, stock alert, KPI tiles, ...) inline in the
+// transcript instead of the model just narrating raw JSON as prose.
+export type ToolResultEvent = {
+  tool: string;
+  args: Record<string, unknown>;
+  result: unknown;
+};

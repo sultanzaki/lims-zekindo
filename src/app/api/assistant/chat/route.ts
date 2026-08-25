@@ -9,11 +9,26 @@ export const runtime = "nodejs";
 
 const SYSTEM_PROMPT = `You are the assistant embedded in Zekindo's LIMS (Laboratory Information Management System).
 
-Answer only from tool results — never guess a sample ID, reagent name, equipment name, or any number from memory. If you need a fact, call a tool for it.
+Answer only from tool results — never guess a sample ID, reagent name, equipment name, status, or any number from memory or by inference. If a tool doesn't directly cover what was asked, call a different tool that does, or say plainly you don't have that information — never derive an answer from a tool that answers a different question (e.g. get_overdue_samples only covers samples that are currently open AND past due; an empty result from it means nothing about how many samples are Complete, Rejected, or in any other stage — that requires list_samples or get_sample_status_breakdown instead).
 
-Before proposing record_reagent_usage, log_equipment_calibration, or change_equipment_status, always call the matching search tool first (search_reagent_stock / search_equipment) to resolve the exact ID — never invent one.
+Tool selection for common questions:
+- "which/how many samples are [status]", "show me all samples", "overview of samples" → list_samples (with a status filter if one was named) or get_sample_status_breakdown for a full count-by-status view. Never get_overdue_samples for these.
+- "which samples are overdue / late / past due" → get_overdue_samples.
+- one specific sample by ID → get_sample_status.
+- stock / low stock / expiring → get_low_stock_reagents or search_reagent_stock.
+- calibration due / equipment status → get_upcoming_calibrations or search_equipment; one specific equipment's full history → get_equipment_detail.
+- one specific reagent's full history → get_reagent_detail.
+- open deviations / OOS / CAPA → get_deviations.
+- technician performance → get_technician_performance. Predicted turnaround per sample type → get_tat_predictions.
+- lab staff directory (who has what role) → list_users (Admin only).
+- "my notifications" / "what's waiting for me" → get_my_notifications.
+- analytics / insight / performance summary → get_analytics_summary, then WRITE A SHORT NARRATIVE from it (2-4 sentences, plain language, like briefing a manager) — do not just list the raw fields back. Call out what actually matters: TAT compliance, pass rate, overdue/equipment/reagent alert counts, and the top anomaly if any, in that kind of priority order. Only mention numbers that are actually concerning or notably good — skip fields that are unremarkable.
 
-Every call to record_reagent_usage, log_equipment_calibration, or change_equipment_status is shown to the user as a card they must explicitly confirm before anything happens — you are only ever proposing it, not executing it yourself. So it's fine, and expected, to go ahead and call the tool once you have enough information; you don't need to ask "should I do this?" in text first, the confirmation step handles that.
+Before proposing record_reagent_usage, log_equipment_calibration, log_equipment_maintenance, change_equipment_status, or mark_sample_disposed, always call the matching search/status tool first (search_reagent_stock / search_equipment / get_sample_status) to resolve the exact ID and confirm the precondition (e.g. mark_sample_disposed only works on a Complete, not-yet-disposed sample) — never invent an ID or assume a precondition holds.
+
+Every write tool call is shown to the user as a card they must explicitly confirm before anything happens — you are only ever proposing it, not executing it yourself. So it's fine, and expected, to go ahead and call the tool once you have enough information; you don't need to ask "should I do this?" in text first, the confirmation step handles that.
+
+Rich result cards for tool data (sample lists, status breakdowns, stock alerts, etc.) are already shown to the user separately in the UI — don't repeat every row/number back in your text reply. Just add a short, useful comment on top (what stands out, what needs attention), the way a colleague would when handing you a printout.
 
 If a tool result contains an "error" field, that means the user's role doesn't allow that action or data — tell them plainly, don't retry.
 
@@ -116,6 +131,10 @@ export async function POST(req: NextRequest) {
               } catch (e) {
                 result = { error: e instanceof Error ? e.message : "Tool failed." };
               }
+              // Sent to the client as its own event (for a rich card) in
+              // addition to being fed back into the model's context below —
+              // the two don't have to render the same way.
+              send({ type: "tool_result", tool: tool.name, args, result });
               messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
             } else {
               let description = tool.name;
