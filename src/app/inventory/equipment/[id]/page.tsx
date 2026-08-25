@@ -10,6 +10,7 @@ import LinkButton from "@/components/ui/LinkButton";
 import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
 import { ChangeStatusForm, LogCalibrationForm, LogMaintenanceForm } from "@/components/EquipmentDetailForms";
+import NfcTagPanel from "@/components/NfcTagPanel";
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Operational: { bg: "#E6F4EA", color: "#1E7A34" },
@@ -31,10 +32,16 @@ export default async function EquipmentDetailPage({
   await requirePageRole(canManageInventoryAndCatalog);
   const { id } = await params;
 
-  const equipment = await prisma.equipment.findUnique({
-    where: { id },
-    include: { storageLocation: true, events: { orderBy: { performedAt: "desc" } } },
-  });
+  const [equipment, activeNfcTag] = await Promise.all([
+    prisma.equipment.findUnique({
+      where: { id },
+      include: { storageLocation: true, events: { orderBy: { performedAt: "desc" } } },
+    }),
+    prisma.nfcTag.findFirst({
+      where: { entityType: "EQUIPMENT", entityId: id, active: true },
+      select: { registeredBy: true, registeredAt: true },
+    }),
+  ]);
   if (!equipment) notFound();
 
   const events = await Promise.all(
@@ -74,6 +81,8 @@ export default async function EquipmentDetailPage({
         <LinkButton href={`/inventory/equipment/${equipment.id}/label`} variant="secondary" size="sm">
           Print Barcode Label
         </LinkButton>
+
+        <NfcTagPanel entityType="EQUIPMENT" entityId={equipment.id} activeTag={activeNfcTag} />
 
         <ChangeStatusForm id={equipment.id} currentStatus={equipment.status} />
         <LogCalibrationForm id={equipment.id} />

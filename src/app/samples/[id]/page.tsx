@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { getSampleDetail } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { canReviewAsSupervisor, canApproveAsQa, isAdmin } from "@/lib/roles";
 import { signedAttachmentUrl } from "@/lib/storage";
 import { formatAccessCode } from "@/lib/tracking";
@@ -23,7 +24,14 @@ export default async function SampleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [sample, user] = await Promise.all([getSampleDetail(id), getCurrentUser()]);
+  const [sample, user, activeNfcTag] = await Promise.all([
+    getSampleDetail(id),
+    getCurrentUser(),
+    prisma.nfcTag.findFirst({
+      where: { entityType: "SAMPLE", entityId: id, active: true },
+      select: { registeredBy: true, registeredAt: true },
+    }),
+  ]);
   if (!sample || !user) notFound();
 
   const targetHours = sample.sampleType?.targetTatHours ?? 48;
@@ -72,6 +80,7 @@ export default async function SampleDetailPage({
       isOverdue={isOverdue}
       trackingUrl={trackingUrl}
       accessCodeFormatted={sample.accessCode ? formatAccessCode(sample.accessCode) : null}
+      activeNfcTag={activeNfcTag}
       actions={{
         canReviewAsSupervisor: canReviewAsSupervisor(user.accessRole),
         canApproveAsQa: canApproveAsQa(user.accessRole),

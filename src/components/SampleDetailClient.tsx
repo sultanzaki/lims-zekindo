@@ -12,6 +12,7 @@ import StorageLocationForm from "@/components/StorageLocationForm";
 import ReviewPanel from "@/components/ReviewPanel";
 import AttachmentGallery from "@/components/AttachmentGallery";
 import SampleReportPanel from "@/components/SampleReportPanel";
+import NfcTagPanel from "@/components/NfcTagPanel";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Button from "@/components/ui/Button";
 import LinkButton from "@/components/ui/LinkButton";
@@ -41,6 +42,7 @@ export default function SampleDetailClient({
   isOverdue,
   trackingUrl,
   accessCodeFormatted,
+  activeNfcTag,
   actions,
 }: {
   sample: SampleDetail;
@@ -49,6 +51,7 @@ export default function SampleDetailClient({
   isOverdue: boolean;
   trackingUrl: string | null;
   accessCodeFormatted: string | null;
+  activeNfcTag: { registeredBy: string; registeredAt: Date } | null;
   actions: {
     canReviewAsSupervisor: boolean;
     canApproveAsQa: boolean;
@@ -335,6 +338,8 @@ export default function SampleDetailClient({
                 <div className="text-xs text-muted">Disposed {formatDateTime(sample.disposedAt)}</div>
               )}
             </div>
+
+            <NfcTagPanel entityType="SAMPLE" entityId={sample.id} activeTag={activeNfcTag} />
 
             {trackingUrl && accessCodeFormatted && (
               <TrackingLinkCard

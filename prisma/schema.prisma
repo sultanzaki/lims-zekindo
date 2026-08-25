@@ -322,6 +322,31 @@ model AuditLog {
   @@index([createdAt])
 }
 
+// entityType values: "SAMPLE" | "EQUIPMENT" | "REAGENT"
+// Polymorphic like AuditLog (no FK — one tag maps to a row in one of three
+// different tables). `token` is the opaque value written into the physical
+// tag's NDEF payload and is what a scan looks up; `serialNumber` is the
+// chip's own hardware UID, captured at registration time so a tag whose
+// NDEF content later gets overwritten or wiped by something else can still
+// be recognized as "known, but tampered" on next read instead of just
+// "unknown tag".
+model NfcTag {
+  id                String    @id @default(cuid())
+  token             String    @unique
+  serialNumber      String?
+  entityType        String
+  entityId          String
+  active            Boolean   @default(true)
+  registeredBy      String
+  registeredAt      DateTime  @default(now())
+  deactivatedBy     String?
+  deactivatedAt     DateTime?
+  deactivatedReason String?
+
+  @@index([entityType, entityId])
+  @@index([entityType, entityId, active])
+}
+
 // status values: "Open" | "Investigating" | "Closed"
 model Deviation {
   id          String    @id @default(cuid())

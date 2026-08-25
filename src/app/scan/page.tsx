@@ -2,7 +2,7 @@ import { requirePageUser } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
-import ScannerClient from "@/components/ScannerClient";
+import ScanModeSwitch from "@/components/ScanModeSwitch";
 
 export default async function ScanPage() {
   const user = await requirePageUser();
@@ -15,7 +15,7 @@ export default async function ScanPage() {
         <div className="text-[19px] font-bold text-text tracking-tight">Scan Barcode</div>
         <div className="text-xs text-muted mt-0.5">Samples, equipment, reagents, and warehouse locations</div>
       </div>
-      <ScannerClient />
+      <ScanModeSwitch />
       <BottomNav active="scan" unreadCount={unread} />
     </div>
   );

@@ -307,6 +307,26 @@ input.field-plain:focus {
   animation: scan-sweep 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 
+/* Expanding pulse rings for the NFC "tap to scan/write" prompt (register
+   panel on entity detail pages, and the NFC mode on the scan page). */
+@keyframes nfc-pulse {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+.nfc-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid #2b8db8;
+  animation: nfc-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

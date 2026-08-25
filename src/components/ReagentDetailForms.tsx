@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { recordReagentTransactionAction, type FormState } from "@/lib/actions/inventory";
 import { inputClassSm } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
@@ -18,6 +19,16 @@ export function ReagentTransactionForm({ id, quantity, unit }: { id: string; qua
   const [state, formAction, pending] = useActionState(recordReagentTransactionAction, initialState);
   const [type, setType] = useState<(typeof TX_TYPES)[number]["value"]>("RECEIVED");
   const formRef = useRef<HTMLFormElement>(null);
+  const searchParams = useSearchParams();
+
+  // Arriving here from an NFC scan on a chemical/reagent tag (?action=log)
+  // should land the user straight in this form rather than just the
+  // read-only info card above it.
+  useEffect(() => {
+    if (searchParams.get("action") === "log") {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [searchParams]);
 
   return (
     <form

@@ -9,6 +9,7 @@ import LinkButton from "@/components/ui/LinkButton";
 import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
 import { ReagentTransactionForm } from "@/components/ReagentDetailForms";
+import NfcTagPanel from "@/components/NfcTagPanel";
 
 const TX_STYLE: Record<string, { label: string; bg: string; color: string }> = {
   RECEIVED: { label: "Received", bg: "#E6F4EA", color: "#1E7A34" },
@@ -25,10 +26,16 @@ export default async function ReagentDetailPage({
   await requirePageRole(canManageInventoryAndCatalog);
   const { id } = await params;
 
-  const reagent = await prisma.reagent.findUnique({
-    where: { id },
-    include: { storageLocation: true, transactions: { orderBy: { performedAt: "desc" } } },
-  });
+  const [reagent, activeNfcTag] = await Promise.all([
+    prisma.reagent.findUnique({
+      where: { id },
+      include: { storageLocation: true, transactions: { orderBy: { performedAt: "desc" } } },
+    }),
+    prisma.nfcTag.findFirst({
+      where: { entityType: "REAGENT", entityId: id, active: true },
+      select: { registeredBy: true, registeredAt: true },
+    }),
+  ]);
   if (!reagent) notFound();
 
   const now = new Date().getTime();
@@ -61,6 +68,8 @@ export default async function ReagentDetailPage({
         <LinkButton href={`/inventory/reagents/${reagent.id}/label`} variant="secondary" size="sm">
           Print Barcode Label
         </LinkButton>
+
+        <NfcTagPanel entityType="REAGENT" entityId={reagent.id} activeTag={activeNfcTag} />
 
         <ReagentTransactionForm id={reagent.id} quantity={reagent.quantity} unit={reagent.unit} />
 
