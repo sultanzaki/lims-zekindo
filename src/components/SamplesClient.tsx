@@ -2,12 +2,17 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
 import Chevron from "@/components/ui/Chevron";
+import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import { inputClassSm } from "@/components/ui/Field";
 import { SAMPLE_STATUSES, STATUS_STYLES, CUSTODY_DOT_COLOR, SAMPLE_STATUS_SHORT, type SampleStatus } from "@/lib/status";
 import { dueLabelFor, dayGroupLabel, formatDate } from "@/lib/format";
+import { canReviewAsSupervisor, canApproveAsQa } from "@/lib/roles";
+import { bulkApproveSamplesAction, type BulkApproveResult } from "@/lib/actions/samples";
 
 type SampleRow = {
   id: string;
@@ -65,11 +70,60 @@ export default function SamplesClient({
   userName: string;
   initialStatus?: string;
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
   const [showFilters, setShowFilters] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [approving, setApproving] = useState(false);
+  const [approvePassword, setApprovePassword] = useState("");
+  const [approveError, setApproveError] = useState("");
+  const [approveResult, setApproveResult] = useState<BulkApproveResult | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const isApprovable = (s: SampleRow) =>
+    (s.status === "Awaiting Supervisor Review" && canReviewAsSupervisor(role)) ||
+    (s.status === "Awaiting QA Approval" && canApproveAsQa(role));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setApproveResult(null);
+    setApproveError("");
+    setApprovePassword("");
+  }
+
+  async function submitBulkApprove() {
+    setApproveError("");
+    if (!approvePassword) {
+      setApproveError("Enter your password to sign this action.");
+      return;
+    }
+    setApproving(true);
+    const result = await bulkApproveSamplesAction(Array.from(selectedIds), approvePassword);
+    setApproving(false);
+    if ("error" in result) {
+      setApproveError(result.error);
+      return;
+    }
+    setApproveResult(result);
+    setApprovePassword("");
+    setShowConfirm(false);
+    router.refresh();
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -112,17 +166,41 @@ export default function SamplesClient({
       <div className="sticky top-0 md:top-16 bg-white border-b border-border-soft px-5 pt-6 pb-2.5 z-10 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Samples</h1>
-          <Link
-            href="/samples/new"
-            className="inline-flex items-center gap-1.5 bg-primary text-white rounded-full px-3.5 py-2 text-[13px] font-semibold shrink-0"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+              className="inline-flex items-center gap-1.5 border border-border bg-white rounded-full px-3.5 py-2 text-[13px] font-semibold text-text cursor-pointer"
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+            {!selectMode && (
+              <Link
+                href="/samples/new"
+                className="inline-flex items-center gap-1.5 bg-primary text-white rounded-full px-3.5 py-2 text-[13px] font-semibold shrink-0"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                New
+              </Link>
+            )}
+          </div>
         </div>
+        {approveResult && "approved" in approveResult && (
+          <div className="bg-primary-soft border border-primary/30 rounded-[13px] px-3.5 py-2.5 text-xs text-primary-dark flex items-start justify-between gap-2">
+            <div>
+              <span className="font-semibold">{approveResult.approved} approved.</span>
+              {approveResult.skipped.length > 0 && (
+                <span> {approveResult.skipped.length} skipped — {approveResult.skipped.map((s) => `${s.id} (${s.reason})`).join(", ")}.</span>
+              )}
+            </div>
+            <button type="button" onClick={() => setApproveResult(null)} className="shrink-0 font-semibold cursor-pointer">
+              Dismiss
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2 bg-chip-bg border border-border rounded-[13px] px-3.5 py-2.5">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7A8B94" strokeWidth="2" className="shrink-0">
             <circle cx="11" cy="11" r="7" />
@@ -218,20 +296,46 @@ export default function SamplesClient({
                     : "#B00016"
                   : due!.color;
 
+                const selected = selectedIds.has(s.id);
                 return (
                   <Link
                     key={s.id}
                     href={`/samples/${s.id}`}
-                    className="stagger-item bg-white border border-border rounded-[18px] shadow-card px-4 pt-3.5 pb-3"
-                    style={{ "--stagger": i } as React.CSSProperties}
+                    onClick={(e) => {
+                      if (!selectMode) return;
+                      e.preventDefault();
+                      toggleSelect(s.id);
+                    }}
+                    className="stagger-item bg-white border rounded-[18px] shadow-card px-4 pt-3.5 pb-3"
+                    style={{ "--stagger": i, borderColor: selected ? "var(--color-primary)" : undefined } as React.CSSProperties}
                   >
                     <div className="flex items-center justify-between gap-2.5">
                       <div className="flex items-center gap-1.5 min-w-0">
+                        {selectMode && (
+                          <span
+                            className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+                            style={{
+                              borderColor: selected ? "var(--color-primary)" : "var(--color-border)",
+                              background: selected ? "var(--color-primary)" : "transparent",
+                            }}
+                          >
+                            {selected && (
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </span>
+                        )}
                         <div
                           className="w-1.5 h-1.5 rounded-full shrink-0"
                           style={{ background: CUSTODY_DOT_COLOR[s.status as SampleStatus] }}
                         />
                         <span className="text-xs font-semibold text-muted font-mono-data truncate">{s.id}</span>
+                        {selectMode && isApprovable(s) && (
+                          <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-success/15 text-success-dark shrink-0">
+                            Approvable
+                          </span>
+                        )}
                       </div>
                       <span
                         className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0"
@@ -273,6 +377,59 @@ export default function SamplesClient({
           </div>
         )}
       </div>
+
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed left-0 right-0 bottom-[76px] md:bottom-4 z-30 px-5 flex justify-center">
+          <div className="w-full max-w-[420px] bg-white border border-border rounded-[16px] shadow-[0_8px_28px_rgba(16,42,58,0.18)] px-4 py-3 flex items-center gap-2.5">
+            <span className="text-xs font-semibold text-text shrink-0">{selectedIds.size} selected</span>
+            <div className="flex-1" />
+            <Link
+              href={`/samples/label-batch?ids=${Array.from(selectedIds).join(",")}`}
+              className="text-xs font-semibold text-primary px-2.5 py-2 rounded-full border border-border shrink-0"
+            >
+              Print Labels
+            </Link>
+            <Button size="sm" fullWidth={false} className="shrink-0 px-3.5" onClick={() => setShowConfirm(true)}>
+              Approve
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-5" onClick={() => !approving && setShowConfirm(false)}>
+          <div
+            className="w-full max-w-[360px] bg-white rounded-[18px] p-4 flex flex-col gap-2.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[13px] font-semibold text-text">Approve {selectedIds.size} samples</div>
+            <div className="text-xs text-muted">
+              Only samples you have permission to approve at their current stage will actually be approved — others will be
+              skipped and listed afterward.
+            </div>
+            <label className="text-[11px] font-semibold text-text" htmlFor="bulk-approve-password">
+              Enter your password to sign this action
+            </label>
+            <input
+              id="bulk-approve-password"
+              type="password"
+              value={approvePassword}
+              onChange={(e) => setApprovePassword(e.target.value)}
+              className={inputClassSm}
+              autoFocus
+            />
+            {approveError && <div className="text-xs text-danger">{approveError}</div>}
+            <div className="flex gap-2 mt-1">
+              <Button variant="secondary" size="sm" disabled={approving} onClick={() => setShowConfirm(false)}>
+                Cancel
+              </Button>
+              <Button size="sm" disabled={approving} onClick={submitBulkApprove}>
+                {approving ? "Signing…" : "Confirm Approve"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav active="samples" unreadCount={unreadCount} />
     </div>

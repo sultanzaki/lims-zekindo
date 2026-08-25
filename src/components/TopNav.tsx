@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOutAction } from "@/lib/actions/auth";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog, canViewAnalytics, isAdmin } from "@/lib/roles";
+import { GlobalSearchDesktop } from "@/components/GlobalSearch";
 
 type Tab = "home" | "samples" | "scan" | "calendar" | "notif" | "profile";
 
@@ -121,6 +122,8 @@ export default function TopNav({
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
+        <GlobalSearchDesktop />
+
         <span
           className="text-[13px] text-muted whitespace-nowrap transition-opacity duration-300"
           style={{ opacity: greeting ? 1 : 0 }}

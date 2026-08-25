@@ -3,6 +3,7 @@ import { requirePageUser } from "@/lib/auth";
 import { getDashboardData, getUnreadCount } from "@/lib/data";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
+import AssistantWidget from "@/components/AssistantWidget";
 import TopNav from "@/components/TopNav";
 import DashboardMobileHeader from "@/components/DashboardMobileHeader";
 import Card from "@/components/ui/Card";
@@ -266,6 +267,7 @@ export default async function DashboardPage() {
       </div>
 
       <BottomNav active="home" unreadCount={unread} />
+      <AssistantWidget />
     </div>
   );
 }

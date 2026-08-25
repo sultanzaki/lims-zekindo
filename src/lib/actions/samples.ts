@@ -389,6 +389,49 @@ async function verifySignature(userId: string, formData: FormData): Promise<{ us
   return { user };
 }
 
+// Shared with bulkApproveSamplesAction below, so a batch approval writes the
+// exact same status transition, custody event, and audit entry as approving
+// one sample at a time through the review panel — the only thing bulk mode
+// changes is how many samples get looped through, not what happens to each.
+async function performSupervisorApprove(sample: { id: string }, user: { id: string; name: string; email: string }) {
+  const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
+  await prisma.sample.update({
+    where: { id: sample.id },
+    data: {
+      status: "Awaiting QA Approval",
+      custodyEvents: {
+        create: [{ label: `Supervisor Reviewed (${user.name})`, time: new Date(), order: eventCount }],
+      },
+    },
+  });
+  await logAudit({ userId: user.id, action: "sample.supervisor_approved", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
+}
+
+async function performQaApprove(sample: { id: string; type: string }, user: { id: string; name: string; role: string; email: string }) {
+  const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
+  await prisma.$transaction([
+    prisma.test.updateMany({ where: { sampleId: sample.id, status: "awaiting" }, data: { status: "complete" } }),
+    prisma.sample.update({
+      where: { id: sample.id },
+      data: {
+        status: "Complete",
+        approvedBy: `${user.name}, ${user.role}`,
+        approvedAt: new Date(),
+        custodyEvents: { create: [{ label: "QA Approved", time: new Date(), order: eventCount }] },
+        notifications: {
+          create: {
+            userId: user.id,
+            title: `Result approved — ${sample.id}`,
+            body: `${sample.type} passed QA review and is ready for release.`,
+            unread: true,
+          },
+        },
+      },
+    }),
+  ]);
+  await logAudit({ userId: user.id, action: "sample.qa_approved", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
+}
+
 export async function supervisorApproveAction(
   sampleId: string,
   _prevState: FormState,
@@ -402,18 +445,7 @@ export async function supervisorApproveAction(
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting Supervisor Review") return { error: "This sample is no longer awaiting supervisor review." };
 
-  const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
-  await prisma.sample.update({
-    where: { id: sampleId },
-    data: {
-      status: "Awaiting QA Approval",
-      custodyEvents: {
-        create: [{ label: `Supervisor Reviewed (${user.name})`, time: new Date(), order: eventCount }],
-      },
-    },
-  });
-
-  await logAudit({ userId: user.id, action: "sample.supervisor_approved", entityType: "Sample", entityId: sampleId, detail: `e-signed by ${user.email}` });
+  await performSupervisorApprove(sample, user);
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
@@ -477,35 +509,58 @@ export async function qaApproveAction(
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting QA Approval") return { error: "This sample is no longer awaiting QA approval." };
 
-  const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
-  await prisma.$transaction([
-    prisma.test.updateMany({ where: { sampleId, status: "awaiting" }, data: { status: "complete" } }),
-    prisma.sample.update({
-      where: { id: sampleId },
-      data: {
-        status: "Complete",
-        approvedBy: `${user.name}, ${user.role}`,
-        approvedAt: new Date(),
-        custodyEvents: { create: [{ label: "QA Approved", time: new Date(), order: eventCount }] },
-        notifications: {
-          create: {
-            userId: user.id,
-            title: `Result approved — ${sampleId}`,
-            body: `${sample.type} passed QA review and is ready for release.`,
-            unread: true,
-          },
-        },
-      },
-    }),
-  ]);
-
-  await logAudit({ userId: user.id, action: "sample.qa_approved", entityType: "Sample", entityId: sampleId, detail: `e-signed by ${user.email}` });
+  await performQaApprove(sample, user);
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
   revalidatePath(`/samples/${sampleId}`);
   revalidatePath("/notifications");
   return {};
+}
+
+export type BulkApproveResult = { error: string } | { approved: number; skipped: { id: string; reason: string }[] };
+
+// Bulk-select on the Samples list feeds this one action regardless of which
+// stage each selected sample is actually in — Supervisor-review and
+// QA-approval samples can be mixed in one selection, and each one is routed
+// to whichever transition it's actually eligible for (or skipped with a
+// reason) rather than requiring the caller to separate them first.
+export async function bulkApproveSamplesAction(sampleIds: string[], password: string): Promise<BulkApproveResult> {
+  const user = await requireUser();
+
+  if (!password) return { error: "Enter your password to sign this action." };
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if (!ok) return { error: "Incorrect password — signature not applied." };
+
+  if (sampleIds.length === 0) return { error: "No samples selected." };
+  if (sampleIds.length > 100) return { error: "Too many samples selected at once (max 100)." };
+
+  let approved = 0;
+  const skipped: { id: string; reason: string }[] = [];
+
+  for (const sampleId of sampleIds) {
+    const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
+    if (!sample) {
+      skipped.push({ id: sampleId, reason: "Sample not found" });
+      continue;
+    }
+    if (sample.status === "Awaiting Supervisor Review" && canReviewAsSupervisor(user.accessRole)) {
+      await performSupervisorApprove(sample, user);
+      approved++;
+    } else if (sample.status === "Awaiting QA Approval" && canApproveAsQa(user.accessRole)) {
+      await performQaApprove(sample, user);
+      approved++;
+    } else if (sample.status === "Awaiting Supervisor Review" || sample.status === "Awaiting QA Approval") {
+      skipped.push({ id: sampleId, reason: "You don't have permission to approve this stage" });
+    } else {
+      skipped.push({ id: sampleId, reason: `No longer awaiting review (now ${sample.status})` });
+    }
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/samples");
+  revalidatePath("/notifications");
+  return { approved, skipped };
 }
 
 export async function qaRejectAction(

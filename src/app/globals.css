@@ -190,6 +190,15 @@ input.field-plain:focus {
   .label-card {
     page-break-inside: avoid;
   }
+  /* Batch label print: each label is meant to go on its own physical
+     sticker/page, same as printing one label at a time — just looped. The
+     last one doesn't need a trailing blank page after it. */
+  .label-batch-item {
+    break-after: page;
+  }
+  .label-batch-item:last-child {
+    break-after: auto;
+  }
 }
 
 /* ---- Motion ----
