@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
+import { generatePortalToken } from "@/lib/tracking";
 
 export type FormState = { error?: string };
 
@@ -118,4 +119,32 @@ export async function setBusinessUnitActiveAction(id: string, active: boolean) {
   await logAudit({ userId: user.id, action: active ? "catalog.business_unit_activated" : "catalog.business_unit_deactivated", entityType: "BusinessUnit", entityId: id });
   revalidatePath("/admin/catalog");
   revalidatePath("/samples/new");
+}
+
+// Client portal is opt-in per BU — enabling it is the one moment a token
+// gets minted; every other read just looks one up, never generates one.
+export async function enableBusinessUnitPortalAction(id: string) {
+  const user = await requireRole(canManageInventoryAndCatalog);
+  const token = generatePortalToken();
+  await prisma.businessUnit.update({ where: { id }, data: { portalToken: token } });
+  await logAudit({ userId: user.id, action: "catalog.business_unit_portal_enabled", entityType: "BusinessUnit", entityId: id });
+  revalidatePath("/admin/business-units");
+}
+
+// Swaps in a fresh token, immediately invalidating the old link — the way
+// to cut off a portal URL that was shared with the wrong person, without
+// disturbing any other BU's portal or the per-sample tracking links.
+export async function regenerateBusinessUnitPortalTokenAction(id: string) {
+  const user = await requireRole(canManageInventoryAndCatalog);
+  const token = generatePortalToken();
+  await prisma.businessUnit.update({ where: { id }, data: { portalToken: token } });
+  await logAudit({ userId: user.id, action: "catalog.business_unit_portal_regenerated", entityType: "BusinessUnit", entityId: id });
+  revalidatePath("/admin/business-units");
+}
+
+export async function disableBusinessUnitPortalAction(id: string) {
+  const user = await requireRole(canManageInventoryAndCatalog);
+  await prisma.businessUnit.update({ where: { id }, data: { portalToken: null } });
+  await logAudit({ userId: user.id, action: "catalog.business_unit_portal_disabled", entityType: "BusinessUnit", entityId: id });
+  revalidatePath("/admin/business-units");
 }

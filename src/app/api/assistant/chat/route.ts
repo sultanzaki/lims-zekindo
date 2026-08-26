@@ -22,11 +22,12 @@ Tool selection for common questions:
 - technician performance → get_technician_performance. Predicted turnaround per sample type → get_tat_predictions.
 - lab staff directory (who has what role) → list_users (Admin only).
 - "my notifications" / "what's waiting for me" → get_my_notifications.
+- "where is X stored" / storage locations → list_storage_locations. Business units / clients → list_business_units.
 - analytics / insight / performance summary → get_analytics_summary, then WRITE A SHORT NARRATIVE from it (2-4 sentences, plain language, like briefing a manager) — do not just list the raw fields back. Call out what actually matters: TAT compliance, pass rate, overdue/equipment/reagent alert counts, and the top anomaly if any, in that kind of priority order. Only mention numbers that are actually concerning or notably good — skip fields that are unremarkable.
 
-Before proposing record_reagent_usage, log_equipment_calibration, log_equipment_maintenance, change_equipment_status, or mark_sample_disposed, always call the matching search/status tool first (search_reagent_stock / search_equipment / get_sample_status) to resolve the exact ID and confirm the precondition (e.g. mark_sample_disposed only works on a Complete, not-yet-disposed sample) — never invent an ID or assume a precondition holds.
+Before proposing record_reagent_usage, log_equipment_calibration, log_equipment_maintenance, change_equipment_status, mark_sample_disposed, approve_sample, or reject_sample, always call the matching search/status tool first (search_reagent_stock / search_equipment / get_sample_status) to resolve the exact ID and confirm the precondition (e.g. mark_sample_disposed only works on a Complete, not-yet-disposed sample; approve_sample/reject_sample only work on a sample currently awaiting review) — never invent an ID or assume a precondition holds. approve_sample and reject_sample never take a password argument — the confirm card collects that directly from the user.
 
-Every write tool call is shown to the user as a card they must explicitly confirm before anything happens — you are only ever proposing it, not executing it yourself. So it's fine, and expected, to go ahead and call the tool once you have enough information; you don't need to ask "should I do this?" in text first, the confirmation step handles that.
+Every write tool call is shown to the user as a card they must explicitly confirm before anything happens — you are only ever proposing it, not executing it yourself. So it's fine, and expected, to go ahead and call the tool once you have enough information; you don't need to ask "should I do this?" in text first, the confirmation step handles that. If the user asks for several actions in one message (e.g. "catat pemakaian 3 reagen ini"), go ahead and call all the corresponding write tools in that same turn — each gets shown as its own confirm card, the user can act on them independently.
 
 Rich result cards for tool data (sample lists, status breakdowns, stock alerts, etc.) are already shown to the user separately in the UI — don't repeat every row/number back in your text reply. Just add a short, useful comment on top (what stands out, what needs attention), the way a colleague would when handing you a printout.
 
@@ -110,6 +111,12 @@ export async function POST(req: NextRequest) {
 
           let pausedForConfirmation = false;
 
+          // Every tool call in this round gets processed — a write tool no
+          // longer short-circuits the rest of the batch. Read tools execute
+          // immediately as before; every write tool gets its own proposal
+          // card sent to the client (the model can propose several actions
+          // in one turn, e.g. "catat pemakaian 3 reagen sekaligus"). The
+          // round only pauses for confirmation, it doesn't drop anything.
           for (const tc of toolCalls) {
             const tool = findTool(tc.name);
             let args: Record<string, unknown> = {};
@@ -143,9 +150,8 @@ export async function POST(req: NextRequest) {
               } catch {
                 // fall back to the raw tool name
               }
-              send({ type: "action_proposal", toolCallId: tc.id, tool: tool.name, description, args });
+              send({ type: "action_proposal", toolCallId: tc.id, tool: tool.name, description, args, needsPassword: tool.needsPassword ?? false });
               pausedForConfirmation = true;
-              break;
             }
           }
 

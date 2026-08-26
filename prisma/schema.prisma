@@ -92,10 +92,15 @@ model SampleReport {
 }
 
 model BusinessUnit {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String   @unique
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  // Null until staff explicitly enables the no-login client portal for this
+  // BU (opt-in, not automatic) — a long random token, distinct from any
+  // sample's accessCode, that lists every sample belonging to this BU.
+  // Regenerating it (new random value) is how a leaked link gets cut off.
+  portalToken String?  @unique
 
   samples Sample[]
 }

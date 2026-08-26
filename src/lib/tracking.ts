@@ -17,6 +17,13 @@ export function formatAccessCode(code: string): string {
   return code.match(/.{1,4}/g)?.join("-") ?? code;
 }
 
+// A Business Unit portal token unlocks every sample belonging to that BU at
+// once (not just one), so it carries a bigger blast radius than a single
+// sample's accessCode — meaningfully longer for that reason.
+export function generatePortalToken(): string {
+  return generateAccessCode(16);
+}
+
 export function normalizeAccessCode(raw: string): string {
   return raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
@@ -36,4 +43,16 @@ export async function verifyTrackingAccess(rawId: string, rawCode: string): Prom
   const sample = await prisma.sample.findUnique({ where: { id }, select: { id: true, accessCode: true } });
   if (!sample?.accessCode || sample.accessCode !== code) return null;
   return sample.id;
+}
+
+// Business Unit client portal: the token alone is the whole lookup key (no
+// separate ID to pair it with, unlike sample tracking) — a BU only becomes
+// reachable this way once staff has explicitly generated a portalToken for
+// it, so a bare `findUnique` naturally returns null for every BU that never
+// opted in.
+export async function verifyPortalAccess(rawToken: string): Promise<{ id: string; name: string } | null> {
+  const token = normalizeAccessCode(rawToken);
+  if (!token) return null;
+  const bu = await prisma.businessUnit.findUnique({ where: { portalToken: token }, select: { id: true, name: true } });
+  return bu;
 }

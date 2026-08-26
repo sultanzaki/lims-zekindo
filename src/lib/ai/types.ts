@@ -15,6 +15,10 @@ export type ActionProposal = {
   tool: string;
   description: string;
   args: Record<string, unknown>;
+  // True for approve_sample/reject_sample: the confirm card collects a
+  // password directly from the human before executing — the model never
+  // sees or generates it.
+  needsPassword: boolean;
 };
 
 // Emitted for every read tool the assistant runs, so the client can render a

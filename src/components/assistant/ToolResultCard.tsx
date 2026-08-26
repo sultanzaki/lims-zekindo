@@ -213,6 +213,13 @@ export default function ToolResultCard({ tool, result, onNavigate }: { tool: str
               {sampleBadge(String(r.status)).label}
             </span>
           </Link>
+          {Boolean(r.requestorName || r.businessUnit || r.storageLocation) && (
+            <div className="flex flex-wrap gap-x-3 gap-y-1 px-3 py-2 border-b border-border-soft text-[10.5px] text-muted">
+              {r.requestorName ? <span><span className="text-faint">Requestor:</span> {String(r.requestorName)}</span> : null}
+              {r.businessUnit ? <span><span className="text-faint">Unit:</span> {String(r.businessUnit)}</span> : null}
+              {r.storageLocation ? <span><span className="text-faint">Location:</span> {String(r.storageLocation)}</span> : null}
+            </div>
+          )}
           <div className="flex flex-col divide-y divide-border-soft max-h-[200px] overflow-y-auto">
             {rows.length === 0 ? <div className="px-3 py-3 text-[11.5px] text-muted text-center">No tests yet.</div> : rows.map((row) => <RowLine key={row.key} row={row} onNavigate={onNavigate} />)}
           </div>
@@ -392,6 +399,29 @@ export default function ToolResultCard({ tool, result, onNavigate }: { tool: str
 
     case "get_analytics_summary":
       return <AnalyticsSummaryCard result={r} ctx={ctx} />;
+
+    case "list_storage_locations": {
+      const locations = (r.locations as Array<Record<string, unknown>>) ?? [];
+      const rows: Row[] = locations.map((l) => ({
+        key: String(l.id),
+        primary: String(l.name),
+        secondary: `${l.reagentCount} reagents · ${l.equipmentCount} equipment`,
+        href: `/inventory/warehouse/${l.id}`,
+        badge: l.active ? undefined : { label: "Inactive", ...TONE.neutral },
+      }));
+      return <ListCard title="Storage Locations" count={rows.length} rows={rows} emptyText="No locations found." onNavigate={onNavigate} />;
+    }
+
+    case "list_business_units": {
+      const units = (r.units as Array<Record<string, unknown>>) ?? [];
+      const rows: Row[] = units.map((u) => ({
+        key: String(u.id),
+        primary: String(u.name),
+        secondary: `${u.sampleCount} samples`,
+        badge: u.active ? undefined : { label: "Inactive", ...TONE.neutral },
+      }));
+      return <ListCard title="Business Units" count={rows.length} rows={rows} emptyText="No business units yet." onNavigate={onNavigate} />;
+    }
 
     default:
       return null;

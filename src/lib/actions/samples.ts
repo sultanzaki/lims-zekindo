@@ -453,6 +453,29 @@ export async function supervisorApproveAction(
   return {};
 }
 
+async function performSupervisorReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }) {
+  const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
+  await prisma.sample.update({
+    where: { id: sample.id },
+    data: {
+      status: "Rejected",
+      custodyEvents: {
+        create: [{ label: `Supervisor Rejected (${user.name})`, time: new Date(), order: eventCount }],
+      },
+      notifications: {
+        create: {
+          userId: user.id,
+          title: `Supervisor rejected ${sample.id}`,
+          body: `${sample.type} did not pass supervisor review. Recollection may be required.`,
+          unread: true,
+        },
+      },
+    },
+  });
+  await openDeviationForRejection(sample.id, sample.type, user.id, "supervisor");
+  await logAudit({ userId: user.id, action: "sample.supervisor_rejected", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
+}
+
 export async function supervisorRejectAction(
   sampleId: string,
   _prevState: FormState,
@@ -466,27 +489,7 @@ export async function supervisorRejectAction(
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting Supervisor Review") return { error: "This sample is no longer awaiting supervisor review." };
 
-  const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
-  await prisma.sample.update({
-    where: { id: sampleId },
-    data: {
-      status: "Rejected",
-      custodyEvents: {
-        create: [{ label: `Supervisor Rejected (${user.name})`, time: new Date(), order: eventCount }],
-      },
-      notifications: {
-        create: {
-          userId: user.id,
-          title: `Supervisor rejected ${sampleId}`,
-          body: `${sample.type} did not pass supervisor review. Recollection may be required.`,
-          unread: true,
-        },
-      },
-    },
-  });
-
-  await openDeviationForRejection(sampleId, sample.type, user.id, "supervisor");
-  await logAudit({ userId: user.id, action: "sample.supervisor_rejected", entityType: "Sample", entityId: sampleId, detail: `e-signed by ${user.email}` });
+  await performSupervisorReject(sample, user);
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
@@ -563,6 +566,97 @@ export async function bulkApproveSamplesAction(sampleIds: string[], password: st
   return { approved, skipped };
 }
 
+type AssistantActingUser = Awaited<ReturnType<typeof requireUser>>;
+type AssistantActionResult = { ok: true; message: string } | { ok: false; error: string };
+
+// The AI assistant's approve/reject tools call these directly — the password
+// here always comes from a field the human typed into the confirm card
+// itself (never something the model generated), collected client-side and
+// passed straight through by the /api/assistant/confirm route. Everything
+// past that point is identical to the manual flow: same role gate, same
+// status transition, same audit entry, same notification.
+export async function approveSampleForAssistant(sampleId: string, actingUser: AssistantActingUser, password: string): Promise<AssistantActionResult> {
+  if (!password) return { ok: false, error: "Enter your password to sign this action." };
+  const ok = await bcrypt.compare(password, actingUser.passwordHash);
+  if (!ok) return { ok: false, error: "Incorrect password — signature not applied." };
+
+  const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
+  if (!sample) return { ok: false, error: "Sample not found." };
+
+  if (sample.status === "Awaiting Supervisor Review" && canReviewAsSupervisor(actingUser.accessRole)) {
+    await performSupervisorApprove(sample, actingUser);
+    revalidatePath("/dashboard");
+    revalidatePath("/samples");
+    revalidatePath(`/samples/${sampleId}`);
+    return { ok: true, message: "Supervisor review approved — now awaiting QA." };
+  }
+  if (sample.status === "Awaiting QA Approval" && canApproveAsQa(actingUser.accessRole)) {
+    await performQaApprove(sample, actingUser);
+    revalidatePath("/dashboard");
+    revalidatePath("/samples");
+    revalidatePath(`/samples/${sampleId}`);
+    revalidatePath("/notifications");
+    return { ok: true, message: "QA approved — sample marked Complete." };
+  }
+  if (sample.status === "Awaiting Supervisor Review" || sample.status === "Awaiting QA Approval") {
+    return { ok: false, error: "You don't have permission to approve this stage." };
+  }
+  return { ok: false, error: `Sample is not awaiting review (current status: ${sample.status}).` };
+}
+
+export async function rejectSampleForAssistant(sampleId: string, actingUser: AssistantActingUser, password: string): Promise<AssistantActionResult> {
+  if (!password) return { ok: false, error: "Enter your password to sign this action." };
+  const ok = await bcrypt.compare(password, actingUser.passwordHash);
+  if (!ok) return { ok: false, error: "Incorrect password — signature not applied." };
+
+  const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
+  if (!sample) return { ok: false, error: "Sample not found." };
+
+  if (sample.status === "Awaiting Supervisor Review" && canReviewAsSupervisor(actingUser.accessRole)) {
+    await performSupervisorReject(sample, actingUser);
+    revalidatePath("/dashboard");
+    revalidatePath("/samples");
+    revalidatePath(`/samples/${sampleId}`);
+    revalidatePath("/notifications");
+    revalidatePath("/deviations");
+    return { ok: true, message: "Rejected at supervisor review." };
+  }
+  if (sample.status === "Awaiting QA Approval" && canApproveAsQa(actingUser.accessRole)) {
+    await performQaReject(sample, actingUser);
+    revalidatePath("/dashboard");
+    revalidatePath("/samples");
+    revalidatePath(`/samples/${sampleId}`);
+    revalidatePath("/notifications");
+    revalidatePath("/deviations");
+    return { ok: true, message: "Rejected at QA approval." };
+  }
+  if (sample.status === "Awaiting Supervisor Review" || sample.status === "Awaiting QA Approval") {
+    return { ok: false, error: "You don't have permission to reject this stage." };
+  }
+  return { ok: false, error: `Sample is not awaiting review (current status: ${sample.status}).` };
+}
+
+async function performQaReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }) {
+  const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
+  await prisma.sample.update({
+    where: { id: sample.id },
+    data: {
+      status: "Rejected",
+      custodyEvents: { create: [{ label: "QA Rejected", time: new Date(), order: eventCount }] },
+      notifications: {
+        create: {
+          userId: user.id,
+          title: `QA rejected ${sample.id}`,
+          body: `${sample.type} did not meet spec. Recollection requested.`,
+          unread: true,
+        },
+      },
+    },
+  });
+  await openDeviationForRejection(sample.id, sample.type, user.id, "QA");
+  await logAudit({ userId: user.id, action: "sample.qa_rejected", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
+}
+
 export async function qaRejectAction(
   sampleId: string,
   _prevState: FormState,
@@ -576,25 +670,7 @@ export async function qaRejectAction(
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting QA Approval") return { error: "This sample is no longer awaiting QA approval." };
 
-  const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
-  await prisma.sample.update({
-    where: { id: sampleId },
-    data: {
-      status: "Rejected",
-      custodyEvents: { create: [{ label: "QA Rejected", time: new Date(), order: eventCount }] },
-      notifications: {
-        create: {
-          userId: user.id,
-          title: `QA rejected ${sampleId}`,
-          body: `${sample.type} did not meet spec. Recollection requested.`,
-          unread: true,
-        },
-      },
-    },
-  });
-
-  await openDeviationForRejection(sampleId, sample.type, user.id, "QA");
-  await logAudit({ userId: user.id, action: "sample.qa_rejected", entityType: "Sample", entityId: sampleId, detail: `e-signed by ${user.email}` });
+  await performQaReject(sample, user);
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");

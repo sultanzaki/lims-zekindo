@@ -3,13 +3,14 @@ import type { requireUser } from "@/lib/auth";
 import { canManageInventoryAndCatalog, canViewAnalytics, canReviewAsSupervisor, isAdmin } from "@/lib/roles";
 import { getKpiSummary } from "@/lib/analytics";
 import { getResultAnomalies, getTechnicianPerformance, getTatPredictions } from "@/lib/bi";
+import { getSampleDetail } from "@/lib/data";
 import {
   recordReagentTransactionAction,
   changeEquipmentStatusAction,
   logCalibrationAction,
   logMaintenanceAction,
 } from "@/lib/actions/inventory";
-import { markDisposedAction } from "@/lib/actions/samples";
+import { markDisposedAction, approveSampleForAssistant, rejectSampleForAssistant } from "@/lib/actions/samples";
 
 export type AiUser = Awaited<ReturnType<typeof requireUser>>;
 
@@ -29,6 +30,11 @@ type WriteTool = {
   name: string;
   description: string;
   parameters: JsonSchema;
+  // When true, the confirm card collects a password directly from the human
+  // (never from the model) and the route merges it into args as `password`
+  // right before calling run — used for the two actions that carry a real
+  // e-signature requirement (approve/reject).
+  needsPassword?: boolean;
   describe: (args: ToolArgs) => Promise<string>;
   run: (args: ToolArgs, user: AiUser) => Promise<{ ok: true; message: string } | { ok: false; error: string }>;
 };
@@ -72,25 +78,42 @@ const getOverdueSamples: ReadTool = {
 const getSampleStatus: ReadTool = {
   readonly: true,
   name: "get_sample_status",
-  description: "Get the current status and test results for one sample by its exact ID.",
+  description:
+    "Get FULL detail for one sample by its exact ID — status, type, priority, source, container, requestor, business unit, who collected it and when, received date, storage location, retention date, who approved/disposed it and when, every test with its result/spec, the full custody trail, linked deviations, uploaded reports, and retest links. Use this for any question about a specific sample beyond just its status (e.g. \"who's the requestor\", \"where is it stored\", \"when was it received\").",
   parameters: {
     type: "object",
     properties: { sampleId: { type: "string", description: "e.g. LAB-24-0144" } },
     required: ["sampleId"],
   },
   run: async (args) => {
-    const sample = await prisma.sample.findUnique({
-      where: { id: String(args.sampleId) },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        status: true,
-        tests: { select: { name: true, status: true, result: true, unit: true, spec: true } },
-      },
-    });
+    const sample = await getSampleDetail(String(args.sampleId));
     if (!sample) return { found: false };
-    return { found: true, ...sample };
+    return {
+      found: true,
+      id: sample.id,
+      name: sample.name,
+      type: sample.type,
+      status: sample.status,
+      priority: sample.priority,
+      source: sample.source,
+      container: sample.container,
+      requestorName: sample.requestorName,
+      businessUnit: sample.businessUnit?.name ?? null,
+      collectedBy: sample.collectedBy,
+      collectedDate: sample.collectedDate,
+      receivedDate: sample.receivedDate,
+      storageLocation: sample.storageLocation,
+      retentionUntil: sample.retentionUntil,
+      approvedBy: sample.approvedBy,
+      approvedAt: sample.approvedAt,
+      disposedAt: sample.disposedAt,
+      retestOf: sample.retestOf?.id ?? null,
+      retests: sample.retests.map((r) => ({ id: r.id, type: r.type, status: r.status })),
+      tests: sample.tests.map((t) => ({ name: t.name, status: t.status, result: t.result, unit: t.unit, spec: t.spec })),
+      custodyEvents: sample.custodyEvents.map((c) => ({ label: c.label, time: c.time })),
+      deviations: sample.deviations.map((d) => ({ description: d.description, status: d.status, openedAt: d.openedAt })),
+      reports: sample.reports.map((r) => ({ fileName: r.fileName, uploadedAt: r.uploadedAt })),
+    };
   },
 };
 
@@ -275,6 +298,42 @@ const getMyNotificationsTool: ReadTool = {
       take: 20,
     });
     return { count: notifications.length, notifications };
+  },
+};
+
+const listStorageLocations: ReadTool = {
+  readonly: true,
+  name: "list_storage_locations",
+  description:
+    "List warehouse storage locations (optionally filtered by name), with how many reagents and equipment are directly stored in each. Use this for \"where is X stored\" or \"what storage locations do we have\" type questions.",
+  parameters: { type: "object", properties: { search: { type: "string" } }, required: [] },
+  run: async (args, user) => {
+    if (!canManageInventoryAndCatalog(user.accessRole)) return { error: "You don't have permission to view warehouse locations." };
+    const search = args.search ? String(args.search) : "";
+    const locations = await prisma.storageLocation.findMany({
+      where: search ? { name: { contains: search, mode: "insensitive" } } : undefined,
+      select: { id: true, name: true, active: true, _count: { select: { reagents: true, equipment: true } } },
+      orderBy: { name: "asc" },
+      take: 30,
+    });
+    return {
+      count: locations.length,
+      locations: locations.map((l) => ({ id: l.id, name: l.name, active: l.active, reagentCount: l._count.reagents, equipmentCount: l._count.equipment })),
+    };
+  },
+};
+
+const listBusinessUnits: ReadTool = {
+  readonly: true,
+  name: "list_business_units",
+  description: "List business units (client/internal departments samples are logged against), with how many samples each has.",
+  parameters: { type: "object", properties: {}, required: [] },
+  run: async () => {
+    const units = await prisma.businessUnit.findMany({
+      select: { id: true, name: true, active: true, _count: { select: { samples: true } } },
+      orderBy: { name: "asc" },
+    });
+    return { count: units.length, units: units.map((u) => ({ id: u.id, name: u.name, active: u.active, sampleCount: u._count.samples })) };
   },
 };
 
@@ -543,6 +602,42 @@ const markSampleDisposed: WriteTool = {
   },
 };
 
+const approveSample: WriteTool = {
+  readonly: false,
+  name: "approve_sample",
+  description:
+    "Approve a sample at whichever review stage it's currently at (Supervisor review or QA approval — detected automatically). Call get_sample_status first to confirm it's actually awaiting review and that the requestor/details look right.",
+  parameters: { type: "object", properties: { sampleId: { type: "string" } }, required: ["sampleId"] },
+  needsPassword: true,
+  describe: async (args) => {
+    const sample = await prisma.sample.findUnique({ where: { id: String(args.sampleId) }, select: { name: true, type: true, status: true } });
+    const label = sample?.name || sample?.type || String(args.sampleId);
+    return `Approve ${label} (${String(args.sampleId)}) — currently "${sample?.status ?? "unknown"}"`;
+  },
+  run: async (args, user) => {
+    const password = String(args.password ?? "");
+    return approveSampleForAssistant(String(args.sampleId ?? ""), user, password);
+  },
+};
+
+const rejectSample: WriteTool = {
+  readonly: false,
+  name: "reject_sample",
+  description:
+    "Reject a sample at whichever review stage it's currently at (Supervisor review or QA approval — detected automatically). This opens a deviation record automatically. Call get_sample_status first.",
+  parameters: { type: "object", properties: { sampleId: { type: "string" } }, required: ["sampleId"] },
+  needsPassword: true,
+  describe: async (args) => {
+    const sample = await prisma.sample.findUnique({ where: { id: String(args.sampleId) }, select: { name: true, type: true, status: true } });
+    const label = sample?.name || sample?.type || String(args.sampleId);
+    return `Reject ${label} (${String(args.sampleId)}) — currently "${sample?.status ?? "unknown"}"`;
+  },
+  run: async (args, user) => {
+    const password = String(args.password ?? "");
+    return rejectSampleForAssistant(String(args.sampleId ?? ""), user, password);
+  },
+};
+
 export const AI_TOOLS: AnyTool[] = [
   getOverdueSamples,
   getSampleStatus,
@@ -553,6 +648,8 @@ export const AI_TOOLS: AnyTool[] = [
   getTatPredictionsTool,
   getEquipmentDetailTool,
   getReagentDetailTool,
+  listStorageLocations,
+  listBusinessUnits,
   listUsersTool,
   getMyNotificationsTool,
   getLowStockReagents,
@@ -565,6 +662,8 @@ export const AI_TOOLS: AnyTool[] = [
   logEquipmentMaintenance,
   changeEquipmentStatus,
   markSampleDisposed,
+  approveSample,
+  rejectSample,
 ];
 
 export function findTool(name: string): AnyTool | undefined {
