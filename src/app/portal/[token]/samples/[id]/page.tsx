@@ -3,6 +3,7 @@ import Link from "next/link";
 import { verifyPortalAccess } from "@/lib/tracking";
 import { loadPublicSample, preparePublicSampleView } from "@/lib/publicSample";
 import PublicSampleCard from "@/components/PublicSampleCard";
+import PublicPageHeader from "@/components/PublicPageHeader";
 
 function NotFoundScreen() {
   return (
@@ -13,6 +14,15 @@ function NotFoundScreen() {
         This sample doesn&apos;t exist or isn&apos;t part of this portal. Please contact the lab if you believe this is a mistake.
       </div>
     </div>
+  );
+}
+
+function BackArrowIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 12H5" />
+      <path d="M12 19l-7-7 7-7" />
+    </svg>
   );
 }
 
@@ -34,20 +44,20 @@ export default async function BusinessUnitPortalSamplePage({
   const view = await preparePublicSampleView(sample);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg px-5">
-      <div className="flex-1 flex flex-col gap-6 py-8 max-w-md mx-auto w-full">
-        <div className="flex flex-col items-center gap-2">
-          <Image src="/zekindo-logo.png" alt="Zekindo Chemicals" width={90} height={30} style={{ height: 30, width: "auto" }} priority />
-          <div className="text-[10.5px] font-semibold text-muted tracking-[0.14em] uppercase">{bu.name} — Sample Portal</div>
-        </div>
-
+    <div className="min-h-screen flex flex-col bg-page-bg">
+      <PublicPageHeader label={`${bu.name} — Sample Portal`} />
+      <div className="flex-1 flex flex-col gap-4 px-5 pb-8 max-w-md mx-auto w-full">
         <PublicSampleCard
           sample={sample}
           view={view}
           certificateHref={`/track/certificate?id=${sample.id}&code=${sample.accessCode ?? ""}`}
         />
 
-        <Link href={`/portal/${token}`} className="text-center text-xs font-semibold text-primary">
+        <Link
+          href={`/portal/${token}`}
+          className="inline-flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-primary py-1"
+        >
+          <BackArrowIcon />
           Back to all samples
         </Link>
 
