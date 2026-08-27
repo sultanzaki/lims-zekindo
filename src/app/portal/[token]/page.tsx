@@ -36,8 +36,8 @@ export default async function BusinessUnitPortalPage({
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <PublicPageHeader label="Sample Portal" />
-      <div className="flex-1 flex flex-col gap-4 px-5 pb-8 max-w-md mx-auto w-full">
-        <div className="bg-white rounded-[18px] shadow-card border border-border px-5 py-4 -mt-8 relative">
+      <div className="flex-1 flex flex-col gap-4 px-5 pt-6 pb-8 max-w-md mx-auto w-full">
+        <div className="bg-white rounded-[16px] shadow-card-sm border border-border px-5 py-4">
           <div className="text-lg font-bold text-text tracking-tight">{bu.name}</div>
           <div className="text-[13px] text-muted mt-0.5">
             {samples.length} sample{samples.length === 1 ? "" : "s"} on record

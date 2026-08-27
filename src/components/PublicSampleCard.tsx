@@ -150,17 +150,18 @@ export default function PublicSampleCard({
 
   return (
     <>
-      <div className="bg-white rounded-[20px] shadow-card border border-border p-5 flex flex-col gap-5 -mt-8 relative">
+      <div className="bg-white rounded-[16px] shadow-card-sm border border-border p-5 flex flex-col gap-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[11px] font-semibold text-faint font-mono-data tracking-wide">{sample.id}</div>
-            <div className="text-[19px] font-bold text-text mt-1 tracking-tight leading-snug">{sample.name || sample.type}</div>
+            <div className="text-[20px] font-bold text-text mt-1 tracking-tight leading-snug">{sample.name || sample.type}</div>
             <div className="text-[13px] text-muted mt-0.5">{sample.type}</div>
           </div>
           <span
-            className="text-[11px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap shrink-0"
-            style={{ background: badge.bg, color: badge.color }}
+            className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap shrink-0 border"
+            style={{ borderColor: badge.color, color: badge.color }}
           >
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: badge.color }} />
             {clientStageLabel(sample.status)}
           </span>
         </div>
@@ -178,11 +179,11 @@ export default function PublicSampleCard({
               {STAGES.map(({ label, Icon }, i) => (
                 <div key={label} className="flex items-center flex-1 last:flex-none">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all"
+                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all border-2"
                     style={{
-                      background: i <= stageIndex ? "#1A5F7A" : "#EEF2F5",
+                      background: i <= stageIndex ? "#1A5F7A" : "#fff",
+                      borderColor: i <= stageIndex ? "#1A5F7A" : "#EEF2F5",
                       color: i <= stageIndex ? "#fff" : "#93A6B0",
-                      boxShadow: i === stageIndex ? "0 0 0 4px #E8F4FA" : "none",
                     }}
                   >
                     {i < stageIndex ? (
@@ -236,7 +237,7 @@ export default function PublicSampleCard({
       </div>
 
       {completed && reportsWithUrls.length > 0 && (
-        <div className="bg-white rounded-[18px] shadow-card border border-border p-5 flex flex-col gap-3">
+        <div className="bg-white rounded-[16px] shadow-card-sm border border-border p-5 flex flex-col gap-3">
           <div className="text-[15px] font-bold text-text tracking-tight">Report</div>
           <div className="flex flex-col gap-2">
             {reportsWithUrls.map((r) => (
@@ -259,7 +260,7 @@ export default function PublicSampleCard({
       )}
 
       {!rejected && totalCount > 0 && (
-        <div className="bg-white rounded-[18px] shadow-card border border-border p-5 flex flex-col gap-4">
+        <div className="bg-white rounded-[16px] shadow-card-sm border border-border p-5 flex flex-col gap-4">
           <div>
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <div className="text-[15px] font-bold text-text tracking-tight">Test Parameters</div>

@@ -65,36 +65,28 @@ export default function PortalSampleList({ token, samples }: { token: string; sa
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-3 gap-2">
-        {tiles.map((t) => {
+      <div className="flex bg-white border border-border rounded-[14px] overflow-hidden">
+        {tiles.map((t, i) => {
           const active = filter === t.key;
           return (
             <button
               key={t.key}
               type="button"
               onClick={() => setFilter(active ? "All" : t.key)}
-              className="flex flex-col items-center gap-0.5 rounded-[14px] py-3 px-1.5 border transition-colors cursor-pointer"
-              style={{
-                background: active ? t.color : "#ffffff",
-                borderColor: active ? t.color : "#ECF1F4",
-              }}
+              className={`flex-1 flex flex-col items-center gap-0.5 py-3 px-1.5 transition-colors cursor-pointer ${i > 0 ? "border-l border-border" : ""}`}
+              style={{ borderBottom: active ? `2px solid ${t.color}` : "2px solid transparent" }}
             >
-              <span className="text-lg font-bold font-mono-data" style={{ color: active ? "#ffffff" : t.color }}>
+              <span className="text-lg font-bold font-mono-data" style={{ color: active ? t.color : "#111111" }}>
                 {t.count}
               </span>
-              <span
-                className="text-[10px] font-semibold text-center leading-tight"
-                style={{ color: active ? "rgba(255,255,255,0.85)" : "#7A8B94" }}
-              >
-                {t.label}
-              </span>
+              <span className="text-[10px] font-semibold text-center leading-tight text-faint">{t.label}</span>
             </button>
           );
         })}
       </div>
 
       {samples.length > 4 && (
-        <div className="flex items-center gap-2 bg-chip-bg border border-border rounded-[13px] px-3.5 py-2.5">
+        <div className="flex items-center gap-2 bg-white border border-border rounded-[10px] px-3.5 py-2.5">
           <SearchIcon />
           <input
             type="text"
@@ -107,29 +99,27 @@ export default function PortalSampleList({ token, samples }: { token: string; sa
       )}
 
       {filtered.length === 0 ? (
-        <div className="bg-white border border-border rounded-2xl shadow-card-sm p-6 text-[13px] text-muted text-center">
+        <div className="bg-white border border-border rounded-[14px] p-6 text-[13px] text-muted text-center">
           {samples.length === 0 ? "No samples have been logged for this business unit yet." : "No samples match your search."}
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5">
+        <div className="bg-white border border-border rounded-[14px] overflow-hidden">
           {filtered.map((s) => {
             const badge = clientStageColors(s.status);
             return (
               <Link
                 key={s.id}
                 href={`/portal/${token}/samples/${s.id}`}
-                className="bg-white border border-border rounded-[16px] shadow-card-sm p-4 flex items-center justify-between gap-3 transition-colors active:bg-page-bg"
+                className="border-b border-border-soft last:border-b-0 px-4 py-3.5 flex items-center justify-between gap-3 transition-colors hover:bg-page-bg active:bg-page-bg"
               >
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-muted font-mono-data tracking-tight">{s.id}</div>
                   <div className="text-sm font-bold text-text mt-0.5 truncate">{s.name || s.type}</div>
                   <div className="text-[11px] text-faint mt-0.5">Received {formatDate(s.receivedDate)}</div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span
-                    className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
-                    style={{ background: badge.bg, color: badge.color }}
-                  >
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap" style={{ color: badge.color }}>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: badge.color }} />
                     {clientStageLabel(s.status)}
                   </span>
                   <ChevronRightIcon />

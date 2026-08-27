@@ -1,18 +1,17 @@
 import Image from "next/image";
 
 /**
- * Branded header band shared by every public, no-login surface (/track and
- * /portal). Gives external clients an immediate "this is really from
- * Zekindo" signal instead of a plain white bar with a small logo.
+ * Plain masthead bar shared by every public, no-login surface (/track and
+ * /portal). Deliberately flat — no color block or shadow — so it never
+ * competes with the content card below it; just a quiet, permanent brand
+ * mark plus the current section label.
  */
 export default function PublicPageHeader({ label }: { label: string }) {
   return (
-    <div
-      className="px-5 pt-8 pb-9 flex flex-col items-center gap-2.5"
-      style={{ background: "linear-gradient(155deg, #1A5F7A 0%, #2B8DB8 100%)" }}
-    >
-      <Image src="/zekindo-logo-white.png" alt="Zekindo Chemicals" width={110} height={37} style={{ height: 34, width: "auto" }} priority />
-      <div className="text-[11px] font-semibold text-white/80 tracking-[0.16em] uppercase text-center px-4">{label}</div>
+    <div className="border-b border-border bg-white px-5 py-4 flex items-center gap-3">
+      <Image src="/zekindo-logo.png" alt="Zekindo Chemicals" width={92} height={31} style={{ height: 24, width: "auto" }} priority />
+      <div className="h-4 w-px bg-border" />
+      <div className="text-[11px] font-semibold text-muted tracking-[0.14em] uppercase">{label}</div>
     </div>
   );
 }

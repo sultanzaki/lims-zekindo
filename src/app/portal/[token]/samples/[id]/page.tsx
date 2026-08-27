@@ -46,7 +46,7 @@ export default async function BusinessUnitPortalSamplePage({
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <PublicPageHeader label={`${bu.name} — Sample Portal`} />
-      <div className="flex-1 flex flex-col gap-4 px-5 pb-8 max-w-md mx-auto w-full">
+      <div className="flex-1 flex flex-col gap-4 px-5 pt-6 pb-8 max-w-md mx-auto w-full">
         <PublicSampleCard
           sample={sample}
           view={view}

@@ -22,7 +22,7 @@ export default function TrackLookupForm({ showError }: { showError?: boolean }) 
       method="GET"
       action="/track"
       onSubmit={() => setSubmitting(true)}
-      className="flex flex-col gap-4 bg-white rounded-[20px] shadow-card p-6 border border-border -mt-8 relative"
+      className="flex flex-col gap-4 bg-white rounded-[16px] shadow-card-sm p-6 border border-border"
     >
       <div>
         <div className="text-[19px] font-bold text-text mb-1 tracking-tight">Track your sample</div>

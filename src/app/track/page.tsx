@@ -35,7 +35,7 @@ export default async function TrackPage({
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <PublicPageHeader label="Sample Tracking" />
-      <div className="flex-1 flex flex-col gap-4 px-5 pb-8 max-w-md mx-auto w-full">
+      <div className="flex-1 flex flex-col gap-4 px-5 pt-6 pb-8 max-w-md mx-auto w-full">
         <PublicSampleCard sample={sample} view={view} certificateHref={`/track/certificate?id=${sample.id}&code=${code}`} />
 
         <Link href="/track" className="text-center text-xs font-semibold text-primary py-1">
@@ -54,7 +54,7 @@ function LookupForm({ showError }: { showError?: boolean }) {
   return (
     <div className="min-h-screen flex flex-col bg-page-bg">
       <PublicPageHeader label="Sample Tracking" />
-      <div className="flex-1 flex flex-col gap-7 px-6 pb-10 max-w-sm mx-auto w-full">
+      <div className="flex-1 flex flex-col gap-7 px-6 pt-8 pb-10 max-w-sm mx-auto w-full">
         <TrackLookupForm showError={showError} />
 
         <a
