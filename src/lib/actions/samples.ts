@@ -12,6 +12,7 @@ import { canReviewAsSupervisor, canApproveAsQa, isAdmin } from "@/lib/roles";
 import { uploadAttachment, deleteAttachment } from "@/lib/storage";
 import { parseJakartaLocalDateTime } from "@/lib/tz";
 import { generateAccessCode } from "@/lib/tracking";
+import { submitTestResultCore, addTestReadingCore, deleteTestReadingCore } from "@/lib/sample-actions-core";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set([
@@ -131,58 +132,11 @@ export async function submitTestResultAction(
 
   const sampleId = String(formData.get("sampleId") || "");
   const testId = String(formData.get("testId") || "");
-  const result = String(formData.get("result") || "").trim();
-  const notes = String(formData.get("notes") || "").trim();
+  const result = String(formData.get("result") || "");
+  const notes = String(formData.get("notes") || "");
 
-  if (!result) {
-    return { error: "Enter a result before submitting." };
-  }
-
-  const sample = await prisma.sample.findUnique({
-    where: { id: sampleId },
-    include: { tests: true },
-  });
-  if (!sample) return { error: "Sample not found." };
-
-  const test = sample.tests.find((t) => t.id === testId);
-  if (!test) return { error: "Test not found on this sample." };
-  if (test.status !== "pending") return { error: "This test has already been submitted." };
-
-  await prisma.test.update({
-    where: { id: testId },
-    data: { status: "awaiting", result, notes: notes || null },
-  });
-
-  const otherTests = sample.tests.filter((t) => t.id !== testId);
-  const allSubmitted = otherTests.every((t) => t.status !== "pending");
-
-  if (allSubmitted && sample.status !== "Awaiting Supervisor Review") {
-    const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
-    const events = [];
-    if (sample.status === "Pending Login") {
-      events.push({ label: "Testing Started", time: new Date(), order: eventCount + events.length });
-    }
-    events.push({ label: "Result Submitted", time: new Date(), order: eventCount + events.length });
-
-    await prisma.sample.update({
-      where: { id: sampleId },
-      data: {
-        status: "Awaiting Supervisor Review",
-        custodyEvents: { create: events },
-      },
-    });
-  } else if (sample.status === "Pending Login") {
-    const eventCount = await prisma.custodyEvent.count({ where: { sampleId } });
-    await prisma.sample.update({
-      where: { id: sampleId },
-      data: {
-        status: "In Testing",
-        custodyEvents: { create: [{ label: "Testing Started", time: new Date(), order: eventCount }] },
-      },
-    });
-  }
-
-  await logAudit({ userId: user.id, action: "test.result_submitted", entityType: "Test", entityId: testId, detail: result });
+  const outcome = await submitTestResultCore(user, sampleId, testId, result, notes);
+  if (!outcome.ok) return { error: outcome.error };
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
@@ -197,31 +151,14 @@ export async function addTestReadingAction(
   formData: FormData
 ): Promise<FormState> {
   const user = await requireUser();
-  const value = String(formData.get("value") || "").trim();
+  const value = String(formData.get("value") || "");
   const intervalLabel = String(formData.get("intervalLabel") || "").trim() || null;
   const replicateIndexRaw = String(formData.get("replicateIndex") || "").trim();
-  const note = String(formData.get("note") || "").trim();
-
-  if (!value) return { error: "Enter a reading value." };
-
-  const test = await prisma.test.findUnique({ where: { id: testId } });
-  if (!test || test.sampleId !== sampleId) return { error: "Test not found." };
-  if (test.status !== "pending") return { error: "This test has already been submitted — readings are locked." };
-
+  const note = String(formData.get("note") || "");
   const replicateIndex = replicateIndexRaw ? Number(replicateIndexRaw) : null;
 
-  await prisma.testReading.create({
-    data: {
-      testId,
-      intervalLabel,
-      replicateIndex: replicateIndex && Number.isFinite(replicateIndex) ? replicateIndex : null,
-      value,
-      note: note || null,
-      enteredBy: user.name,
-    },
-  });
-
-  await logAudit({ userId: user.id, action: "test.reading_added", entityType: "Test", entityId: testId, detail: value });
+  const outcome = await addTestReadingCore(user, sampleId, testId, { value, intervalLabel, replicateIndex, note });
+  if (!outcome.ok) return { error: outcome.error };
 
   revalidatePath(`/samples/${sampleId}/tests/${testId}`);
   return {};
@@ -229,14 +166,7 @@ export async function addTestReadingAction(
 
 export async function deleteTestReadingAction(sampleId: string, testId: string, readingId: string) {
   const user = await requireUser();
-  const test = await prisma.test.findUnique({ where: { id: testId } });
-  if (!test || test.sampleId !== sampleId || test.status !== "pending") return;
-
-  // Scope the delete to this test (not just the reading's own id) so a
-  // readingId can never remove a row belonging to a different test.
-  await prisma.testReading.deleteMany({ where: { id: readingId, testId } });
-  await logAudit({ userId: user.id, action: "test.reading_removed", entityType: "Test", entityId: testId, detail: readingId });
-
+  await deleteTestReadingCore(sampleId, testId, readingId, user);
   revalidatePath(`/samples/${sampleId}/tests/${testId}`);
 }
 
