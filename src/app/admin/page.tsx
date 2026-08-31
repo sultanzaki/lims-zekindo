@@ -16,7 +16,7 @@ export default async function AdminHubPage() {
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={role} userName={user.name} unreadCount={unread} />
       <BackHeader title="Lab Management" backHref="/profile" />
-      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-5 md:max-w-[640px] md:w-full">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-5 md:grid md:grid-cols-3 md:gap-4 md:items-start md:max-w-[1100px] md:w-full">
         {(canViewAnalytics(role) || canReviewAsSupervisor(role)) && (
           <div>
             <SectionLabel className="mb-2.5 px-1">Insights</SectionLabel>

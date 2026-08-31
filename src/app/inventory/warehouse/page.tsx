@@ -34,11 +34,13 @@ export default async function WarehousePage() {
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Warehouse" backHref="/profile" />
-      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1100px] md:w-full">
-        <p className="text-xs text-muted -mt-1">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1400px] md:w-full">
+        <p className="text-xs text-muted -mt-1 md:max-w-[720px]">
           Physical storage locations shared by Reagents &amp; Chemicals and Equipment — nest them as deep as your lab is organized, e.g. KBI › Microbiology Lab › Rak X.
         </p>
-        <CreateStorageLocationForm parentOptions={parentOptions} />
+        <div className="md:max-w-[720px]">
+          <CreateStorageLocationForm parentOptions={parentOptions} />
+        </div>
 
         {nodes.length > 0 ? <WarehouseTree tree={tree} /> : <EmptyState>No warehouse locations yet — add one above.</EmptyState>}
       </div>

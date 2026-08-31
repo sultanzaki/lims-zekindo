@@ -43,7 +43,7 @@ export default function BusinessUnitPortalRow({
 
   return (
     <div className="flex flex-col gap-1.5 items-end">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap justify-end">
         <button
           type="button"
           onClick={() => {
