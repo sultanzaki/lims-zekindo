@@ -113,31 +113,7 @@ export default function LoginPage() {
               Management System
             </div>
 
-            <div className="flex flex-col gap-3.5 mt-2">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-[9px] bg-white/10 flex items-center justify-center shrink-0">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 3h6M10 3v5.2a3 3 0 01-.6 1.8L5.7 15.4A3 3 0 008 20.5h8a3 3 0 002.3-5.1L14.6 10a3 3 0 01-.6-1.8V3" />
-                    <path d="M6.5 15.5h11" />
-                  </svg>
-                </div>
-                <span className="text-[13.5px] text-white/80">Chain of custody from collection to certificate</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-[9px] bg-white/10 flex items-center justify-center shrink-0">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="17" rx="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                    <path d="M12 14.5v3l2 1.2" />
-                  </svg>
-                </div>
-                <span className="text-[13.5px] text-white/80">TAT tracking and calibration alerts</span>
-              </div>
-            </div>
-
-            <div className="text-[11px] text-white/50 tracking-wide mt-4">Powered by Product Specialist Microbiology</div>
+            <div className="text-[11px] text-white/50 tracking-wide mt-2">Powered by Product Specialist Microbiology</div>
           </div>
         </div>
 
