@@ -60,8 +60,8 @@ export default async function CalendarPage({
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="TAT Calendar" backHref="/dashboard" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[560px] md:mx-auto md:w-full">
-        <div className="bg-white border border-border rounded-[18px] shadow-card p-4">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-4 md:grid md:grid-cols-[380px_1fr] md:gap-5 md:items-start md:max-w-[960px] md:mx-auto md:w-full">
+        <div className="bg-white border border-border rounded-[18px] md:rounded-2xl shadow-card p-4">
           <div className="flex items-center justify-between mb-3">
             <Link
               href={`/calendar?month=${prevMonthKey}&day=${selectedDay}`}
