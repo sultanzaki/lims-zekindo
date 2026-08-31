@@ -27,8 +27,31 @@ model User {
 
   notifications Notification[]
   auditLogs     AuditLog[]
+  mobileRefreshTokens MobileRefreshToken[]
 
   @@index([accessRole])
+}
+
+// Refresh tokens for the mobile app's Bearer-token auth (separate from the
+// web's cookie session in auth.ts). The raw token is only ever returned to
+// the client once, at issuance/rotation — only its hash is stored here, so a
+// DB leak doesn't hand out usable tokens. Rotated on every use (the old row
+// gets revokedAt + replacedById set, a fresh row is inserted) so a stolen
+// token that gets replayed after the legitimate client already rotated it is
+// detectable (it'll match a revoked row) instead of silently accepted.
+model MobileRefreshToken {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash     String    @unique
+  deviceLabel   String?
+  createdAt     DateTime  @default(now())
+  lastUsedAt    DateTime?
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  replacedById  String?
+
+  @@index([userId])
 }
 
 // Sample status values (plain string, kept in sync with src/lib/status.ts):
