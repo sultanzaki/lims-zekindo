@@ -6,6 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import AssistantWidget from "@/components/AssistantWidget";
 import Sidebar from "@/components/Sidebar";
 import DashboardMobileHeader from "@/components/DashboardMobileHeader";
+import DashboardDesktopHeader from "@/components/DashboardDesktopHeader";
 import Card from "@/components/ui/Card";
 
 type QuickAction = { href: string; label: string; icon: React.ReactNode };
@@ -81,19 +82,199 @@ function quickActionsFor(role: string): QuickAction[] {
 export default async function DashboardPage() {
   const user = await requirePageUser();
   const [
-    { pendingLogin, inTesting, awaitingReview, attentionItems, queueSamples, approvedLast7, rejectedLast7, passRate },
+    {
+      pendingLogin,
+      inTesting,
+      awaitingReview,
+      overdueCount,
+      attentionItems,
+      queueSamples,
+      approvedLast7,
+      rejectedLast7,
+      passRate,
+    },
     unread,
   ] = await Promise.all([getDashboardData(), getUnreadCount(user.id)]);
 
   const totalActive = pendingLogin + inTesting + awaitingReview;
   const pct = (n: number) => (totalActive > 0 ? `${(n / totalActive) * 100}%` : "0%");
+  const quickActions = quickActionsFor(user.accessRole);
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <DashboardMobileHeader unreadCount={unread} userName={user.name} />
+      <DashboardDesktopHeader userName={user.name} />
 
-      <div className="flex-1 px-5 pb-5 pt-4 md:pt-10 flex flex-col gap-5 md:max-w-[1100px] md:mx-auto md:w-full">
+      {/* ============ Desktop ============ */}
+      <div className="hidden md:flex md:flex-1 md:flex-col md:px-9 md:pt-7 md:pb-9 md:gap-[22px] md:max-w-[1176px] md:w-full">
+        <div className="grid grid-cols-4 gap-3.5">
+          <KpiCard dotColor="#93A6B0" label="Pending Login" value={pendingLogin} caption={`of ${totalActive} active samples`} />
+          <KpiCard dotColor="#2B8DB8" label="In Testing" value={inTesting} caption={`of ${totalActive} active samples`} />
+          <KpiCard dotColor="#F5A623" label="Awaiting QA" value={awaitingReview} caption={`of ${totalActive} active samples`} />
+          <KpiCard dotColor="#D0021B" label="Overdue" value={overdueCount} caption="needs attention today" danger />
+        </div>
+
+        <div className="grid grid-cols-[1.85fr_1fr] gap-[22px] items-start">
+          <div className="flex flex-col gap-[22px] min-w-0">
+            {attentionItems.length > 0 && (
+              <div>
+                <div className="flex items-baseline justify-between mb-2.5">
+                  <span className="text-sm font-semibold text-text">Needs attention</span>
+                  <Link href="/samples" className="text-[12.5px] font-semibold text-primary">
+                    View all
+                  </Link>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {attentionItems.map((a) => {
+                    const rejected = a.tag === "REJECTED";
+                    const iconBg = rejected ? "#FDECEA" : "#FEF3E0";
+                    const iconColor = rejected ? "#D0021B" : "#9A6100";
+                    const textColor = rejected ? "#D0021B" : "#9A6100";
+                    return (
+                      <Link
+                        key={`${a.tag}-${a.id}`}
+                        href={`/samples/${a.id}`}
+                        className="bg-white border border-border rounded-2xl shadow-card px-4 py-3.5 flex items-center gap-3"
+                      >
+                        <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: iconBg }}>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            {rejected ? (
+                              <>
+                                <path d="M12 4.5L21 20H3z" />
+                                <path d="M12 10.5v4" />
+                                <path d="M12 17.4h.01" />
+                              </>
+                            ) : (
+                              <>
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 7v5l3 2" />
+                              </>
+                            )}
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10.5px] font-bold tracking-wide uppercase" style={{ color: textColor }}>
+                            {a.tag === "REJECTED" ? "Rejected" : "Overdue"}
+                          </div>
+                          <div className="text-[13.5px] font-semibold text-text leading-snug mt-px truncate">{a.title}</div>
+                          <div className="text-xs text-muted mt-px truncate">{a.body}</div>
+                        </div>
+                        <svg width="7" height="12" viewBox="0 0 8 14" className="shrink-0">
+                          <path d="M1 1l6 6-6 6" stroke="#C2D2DB" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div className="flex items-baseline justify-between mb-2.5">
+                <span className="text-sm font-semibold text-text">My queue</span>
+                <Link href="/samples" className="text-[12.5px] font-semibold text-primary">
+                  See all
+                </Link>
+              </div>
+              <div className="bg-white border border-border rounded-2xl shadow-card overflow-hidden">
+                <div className="grid grid-cols-[110px_1fr_110px_90px] gap-2 px-4 py-2.5 bg-[#FAFCFD] border-b border-border-soft">
+                  <span className="text-[10.5px] font-bold tracking-wider text-faint uppercase">Sample</span>
+                  <span className="text-[10.5px] font-bold tracking-wider text-faint uppercase">Type / source</span>
+                  <span className="text-[10.5px] font-bold tracking-wider text-faint uppercase">Due</span>
+                  <span className="text-[10.5px] font-bold tracking-wider text-faint uppercase">Status</span>
+                </div>
+                {queueSamples.map((s, i) => (
+                  <Link
+                    key={s.id}
+                    href={`/samples/${s.id}`}
+                    className={`grid grid-cols-[110px_1fr_110px_90px] gap-2 items-center px-4 py-2.5 hover:bg-chip-bg transition-colors ${
+                      i < queueSamples.length - 1 ? "border-b border-border-soft" : ""
+                    }`}
+                  >
+                    <span className="text-[12.5px] font-semibold font-mono-data flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: s.dotColor }} />
+                      {s.id}
+                    </span>
+                    <span className="text-[12.5px] text-[#444] truncate">
+                      {s.type} &middot; {s.source}
+                    </span>
+                    <span className="text-[11.5px] font-semibold" style={{ color: s.dueColor }}>
+                      {s.dueLabel}
+                    </span>
+                    <span className="text-[11px] text-faint">{s.statusShort}</span>
+                  </Link>
+                ))}
+                {queueSamples.length === 0 && (
+                  <div className="px-4 py-6 text-center text-xs text-muted">No open samples right now.</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-[22px] min-w-0">
+            <div>
+              <div className="text-sm font-semibold text-text mb-2.5">Quick actions</div>
+              <div className="bg-white border border-border rounded-2xl shadow-card p-1.5">
+                {quickActions.map((a) => (
+                  <Link
+                    key={a.href + a.label}
+                    href={a.href}
+                    className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-[10px] hover:bg-chip-bg transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-[9px] bg-primary-soft flex items-center justify-center shrink-0">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        {a.icon}
+                      </svg>
+                    </div>
+                    <span className="text-[13px] font-semibold text-text">{a.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-baseline justify-between mb-2.5">
+                <span className="text-sm font-semibold text-text">Today&apos;s workload</span>
+                <span className="text-xs text-faint">{totalActive} active</span>
+              </div>
+              <div className="bg-white border border-border rounded-2xl shadow-card p-4">
+                <div className="flex h-2 rounded-full overflow-hidden bg-[#EEF2F5]">
+                  <div style={{ width: pct(pendingLogin), background: "#93A6B0" }} />
+                  <div style={{ width: pct(inTesting), background: "#2B8DB8" }} />
+                  <div style={{ width: pct(awaitingReview), background: "#F5A623" }} />
+                </div>
+                <div className="flex flex-col gap-2.5 mt-3.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-xs text-[#5B6B74]">
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#93A6B0" }} />
+                      Pending login
+                    </span>
+                    <span className="text-[12.5px] font-semibold font-mono-data">{pendingLogin}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-xs text-[#5B6B74]">
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#2B8DB8" }} />
+                      In testing
+                    </span>
+                    <span className="text-[12.5px] font-semibold font-mono-data">{inTesting}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-xs text-[#5B6B74]">
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#F5A623" }} />
+                      Awaiting QA
+                    </span>
+                    <span className="text-[12.5px] font-semibold font-mono-data">{awaitingReview}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============ Mobile ============ */}
+      <div className="md:hidden flex-1 px-5 pb-5 pt-4 flex flex-col gap-5">
         <div
           className="rounded-[20px] p-[18px]"
           style={{
@@ -248,7 +429,7 @@ export default async function DashboardPage() {
         <div>
           <div className="text-[13px] font-semibold text-text mb-2.5">Quick actions</div>
           <div className="grid grid-cols-2 gap-2.5">
-            {quickActionsFor(user.accessRole).map((a) => (
+            {quickActions.map((a) => (
               <Link
                 key={a.href + a.label}
                 href={a.href}
@@ -268,6 +449,33 @@ export default async function DashboardPage() {
 
       <BottomNav active="home" unreadCount={unread} />
       <AssistantWidget />
+    </div>
+  );
+}
+
+function KpiCard({
+  dotColor,
+  label,
+  value,
+  caption,
+  danger = false,
+}: {
+  dotColor: string;
+  label: string;
+  value: number;
+  caption: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className={`bg-white border rounded-2xl shadow-card px-[18px] py-4 ${danger ? "border-[#F6D9DC]" : "border-border"}`}>
+      <div className="flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dotColor }} />
+        <span className="text-[11.5px] font-semibold text-muted uppercase tracking-wide">{label}</span>
+      </div>
+      <div className={`font-mono-data text-[30px] font-semibold leading-none mt-2 ${danger ? "text-[#B00016]" : "text-text"}`}>
+        {value}
+      </div>
+      <div className="text-[11.5px] text-faint mt-1.5">{caption}</div>
     </div>
   );
 }

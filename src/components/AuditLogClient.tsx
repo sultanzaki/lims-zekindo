@@ -105,15 +105,50 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
   );
 
   return (
-    <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1300px] md:w-full">
-      <div className="flex items-center justify-between gap-3">
+    <div className="flex-1 px-5 md:px-9 pt-4.5 md:pt-7 pb-7 md:pb-9 flex flex-col gap-3.5 md:gap-5 md:max-w-[1300px] md:w-full">
+      {/* Desktop header + toolbar */}
+      <div className="hidden md:flex md:items-start md:justify-between md:gap-6 md:pr-10">
+        <div>
+          <div className="text-[20px] font-bold text-text tracking-tight">Audit Log</div>
+          <div className="text-[13px] text-muted mt-0.5">Most recent {entries.length} events</div>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 h-[38px] px-3 rounded-[10px] bg-white border border-border w-[260px]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#93A6B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by actor, action, or entity…"
+              className="border-none bg-transparent text-[13px] text-text flex-1 outline-none placeholder:text-faint min-w-0"
+            />
+          </div>
+          <button
+            onClick={() => downloadCsv(filtered)}
+            className="flex items-center gap-1.5 h-[38px] px-4 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-primary-dark cursor-pointer"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile header + search (unchanged) */}
+      <div className="md:hidden flex items-center justify-between gap-3">
         <div className="text-[11px] text-muted">Most recent {entries.length} events</div>
         <button onClick={() => downloadCsv(filtered)} className="text-xs font-semibold text-primary cursor-pointer">
           Export CSV
         </button>
       </div>
 
-      <div className="flex items-center gap-2 bg-chip-bg border border-border rounded-[13px] px-3.5 py-2.5 md:max-w-[420px]">
+      <div className="md:hidden flex items-center gap-2 bg-chip-bg border border-border rounded-[13px] px-3.5 py-2.5">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7A8B94" strokeWidth="2" className="shrink-0">
           <circle cx="11" cy="11" r="7" />
           <path d="M21 21l-4.35-4.35" />
@@ -219,35 +254,44 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((e) => {
-              const style = AUDIT_CATEGORY_STYLE[e.category];
-              return (
-                <tr key={e.id} className="border-b border-border-soft last:border-b-0 hover:bg-chip-bg transition-colors">
-                  <td className="py-2.5 px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-[7px] flex items-center justify-center shrink-0" style={{ background: style.bg }}>
-                        <CategoryIcon category={e.category} color={style.color} />
+            {groups.flatMap((group) => [
+              <tr key={`${group.label}-header`}>
+                <td colSpan={5} className="p-0">
+                  <div className="px-4 pt-2.5 pb-1 text-[11px] font-bold text-faint uppercase tracking-wider bg-[#FAFBFC]">
+                    {group.label}
+                  </div>
+                </td>
+              </tr>,
+              ...group.items.map((e) => {
+                const style = AUDIT_CATEGORY_STYLE[e.category];
+                return (
+                  <tr key={e.id} className="border-b border-border-soft last:border-b-0 hover:bg-chip-bg transition-colors">
+                    <td className="py-2.5 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-[7px] flex items-center justify-center shrink-0" style={{ background: style.bg }}>
+                          <CategoryIcon category={e.category} color={style.color} />
+                        </div>
+                        <span className="text-[13px] font-semibold text-text whitespace-nowrap">{e.label}</span>
                       </div>
-                      <span className="text-[13px] font-semibold text-text whitespace-nowrap">{e.label}</span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-3 text-[13px] text-muted whitespace-nowrap">{e.actorName}</td>
-                  <td className="py-2.5 px-3 text-[13px] whitespace-nowrap">
-                    {e.entityType === "Sample" ? (
-                      <Link href={`/samples/${e.entityId}`} className="font-mono-data text-primary font-semibold hover:underline">
-                        {e.entityType} {e.entityId}
-                      </Link>
-                    ) : e.entityLabel ? (
-                      <span className="text-muted">{e.entityType} · {e.entityLabel}</span>
-                    ) : (
-                      <span className="text-muted font-mono-data">{e.entityType} {e.entityId}</span>
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 text-[12px] text-faint max-w-[320px] truncate">{e.detail ?? "—"}</td>
-                  <td className="py-2.5 px-3 pr-4 text-[12px] text-faint whitespace-nowrap">{formatDateTime(e.createdAt)}</td>
-                </tr>
-              );
-            })}
+                    </td>
+                    <td className="py-2.5 px-3 text-[13px] text-muted whitespace-nowrap">{e.actorName}</td>
+                    <td className="py-2.5 px-3 text-[13px] whitespace-nowrap">
+                      {e.entityType === "Sample" ? (
+                        <Link href={`/samples/${e.entityId}`} className="font-mono-data text-primary font-semibold hover:underline">
+                          {e.entityType} {e.entityId}
+                        </Link>
+                      ) : e.entityLabel ? (
+                        <span className="text-muted">{e.entityType} · {e.entityLabel}</span>
+                      ) : (
+                        <span className="text-muted font-mono-data">{e.entityType} {e.entityId}</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-[12px] text-faint max-w-[320px] truncate">{e.detail ?? "—"}</td>
+                    <td className="py-2.5 px-3 pr-4 text-[12px] text-faint whitespace-nowrap">{formatDateTime(e.createdAt)}</td>
+                  </tr>
+                );
+              }),
+            ])}
           </tbody>
         </table>
         </div>

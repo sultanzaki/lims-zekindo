@@ -1,6 +1,14 @@
 import Link from "next/link";
 
-export default function BackHeader({ title, backHref }: { title: string; backHref: string }) {
+export default function BackHeader({
+  title,
+  backHref,
+  hideDesktop = false,
+}: {
+  title: string;
+  backHref: string;
+  hideDesktop?: boolean;
+}) {
   return (
     <>
       <div className="md:hidden sticky top-0 bg-white border-b border-border flex items-center gap-3 px-4 py-3.5 z-10">
@@ -16,10 +24,13 @@ export default function BackHeader({ title, backHref }: { title: string; backHre
         <div className="text-[16px] font-bold text-text tracking-tight">{title}</div>
       </div>
 
-      {/* Desktop: navigation lives in the sidebar, so no back button — just the page title. */}
-      <div className="hidden md:block sticky top-0 bg-white border-b border-border px-8 pt-10 pb-4 z-10">
-        <h1 className="text-[19px] font-bold text-text tracking-tight">{title}</h1>
-      </div>
+      {/* Desktop: navigation lives in the sidebar, so no back button — just the page title.
+          Pages with their own richer desktop header (title+subtitle+toolbar) set hideDesktop. */}
+      {!hideDesktop && (
+        <div className="hidden md:block sticky top-0 bg-white border-b border-border px-8 pt-10 pb-4 z-10">
+          <h1 className="text-[19px] font-bold text-text tracking-tight">{title}</h1>
+        </div>
+      )}
     </>
   );
 }
