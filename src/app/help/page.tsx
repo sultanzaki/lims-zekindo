@@ -10,7 +10,7 @@ export default async function HelpPage() {
   const unread = user ? await getUnreadCount(user.id) : 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={role} userName={user?.name ?? ""} unreadCount={unread} />
       <BackHeader title="Help & Support" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3 text-sm text-text">

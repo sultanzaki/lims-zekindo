@@ -25,6 +25,11 @@
   --shadow-card: 0 1px 2px rgba(16, 42, 58, 0.04), 0 8px 22px rgba(16, 42, 58, 0.05);
   --shadow-card-sm: 0 1px 2px rgba(16, 42, 58, 0.04), 0 4px 12px rgba(16, 42, 58, 0.04);
   --shadow-glow-primary: 0 6px 16px rgba(43, 141, 184, 0.26);
+
+  /* Sidebar width, mirrored on every page's content offset (md:pl-[var(--sidebar-w)])
+     so toggling collapse in Sidebar.tsx resizes both at once without prop drilling
+     through a shared layout (this app has none — each page composes its own chrome). */
+  --sidebar-w: 16rem;
 }
 
 @theme inline {

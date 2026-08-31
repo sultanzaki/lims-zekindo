@@ -15,9 +15,9 @@ export default async function ProfilePage() {
   const role = user.accessRole;
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
-      <div className="px-5 pt-6 pb-4 bg-white border-b border-border">
+      <div className="px-5 pt-6 md:pt-10 pb-4 bg-white border-b border-border">
         <h1 className="text-[19px] font-bold text-text tracking-tight">Profile</h1>
       </div>
 

@@ -161,9 +161,9 @@ export default function SamplesClient({
   }, [filtered]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={role} userName={userName} unreadCount={unreadCount} />
-      <div className="sticky top-0 bg-white border-b border-border-soft px-5 pt-6 pb-2.5 z-10 flex flex-col gap-3">
+      <div className="sticky top-0 bg-white border-b border-border-soft px-5 pt-6 md:pt-10 pb-2.5 z-10 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Samples</h1>
           <div className="flex items-center gap-2 shrink-0">

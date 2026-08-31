@@ -28,9 +28,9 @@ export default async function NotificationsPage() {
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unreadCount} />
-      <div className="sticky top-0 md:top-16 bg-white border-b border-border-soft px-5 pt-6 pb-3.5 z-10 flex items-center justify-between">
+      <div className="sticky top-0 bg-white border-b border-border-soft px-5 pt-6 md:pt-10 pb-3.5 z-10 flex items-center justify-between">
         <h1 className="text-[19px] font-bold text-text tracking-tight">Alerts</h1>
         <form action={markAllReadAction}>
           <button type="submit" className="text-[13px] font-semibold text-primary cursor-pointer">

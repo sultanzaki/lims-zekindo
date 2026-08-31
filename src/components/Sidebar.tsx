@@ -23,11 +23,17 @@ import {
   CircleHelp,
   LogOut,
   ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
   type LucideIcon,
 } from "lucide-react";
 import { signOutAction } from "@/lib/actions/auth";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog, canViewAnalytics, isAdmin } from "@/lib/roles";
 import { GlobalSearchDesktop } from "@/components/GlobalSearch";
+
+const EXPANDED_W = "16rem";
+const COLLAPSED_W = "4.5rem";
+const STORAGE_KEY = "lims-sidebar-collapsed";
 
 type NavItem = {
   href: string;
@@ -131,7 +137,13 @@ export default function Sidebar({
   const pathname = usePathname();
   const groups = buildGroups(role, unreadCount > 0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1");
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--sidebar-w", collapsed ? COLLAPSED_W : EXPANDED_W);
+    localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
+  }, [collapsed]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -152,21 +164,42 @@ export default function Sidebar({
   const close = () => setMenuOpen(false);
 
   return (
-    <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-64 bg-white border-r border-border z-20">
-      <Link href="/dashboard" className="flex items-center px-5 h-16 shrink-0 border-b border-border">
-        <Image src="/zekindo-logo.png" alt="Zekindo" width={92} height={30} style={{ height: 28, width: "auto" }} />
-      </Link>
-
-      <div className="px-4 pt-4">
-        <GlobalSearchDesktop />
+    <aside
+      style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
+      className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-border z-20 transition-[width] duration-200 overflow-hidden"
+    >
+      <div className="flex items-center h-16 shrink-0 border-b border-border px-3.5 gap-1.5">
+        {!collapsed && (
+          <Link href="/dashboard" className="flex-1 min-w-0 flex items-center px-1.5">
+            <Image src="/zekindo-logo.png" alt="Zekindo" width={92} height={30} style={{ height: 26, width: "auto" }} />
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={() => setCollapsed((v) => !v)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={`w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:bg-chip-bg hover:text-text transition-colors shrink-0 cursor-pointer ${
+            collapsed ? "mx-auto" : ""
+          }`}
+        >
+          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-5">
+      {!collapsed && (
+        <div className="px-4 pt-4">
+          <GlobalSearchDesktop />
+        </div>
+      )}
+
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 flex flex-col gap-5">
         {groups.map((group) => (
           <div key={group.label}>
-            <div className="px-2.5 mb-1.5 text-[11px] font-semibold text-faint uppercase tracking-wider">
-              {group.label}
-            </div>
+            {!collapsed && (
+              <div className="px-2.5 mb-1.5 text-[11px] font-semibold text-faint uppercase tracking-wider whitespace-nowrap">
+                {group.label}
+              </div>
+            )}
             <div className="flex flex-col gap-0.5">
               {group.items.map((item) => {
                 const active = isItemActive(pathname, item.href);
@@ -175,13 +208,18 @@ export default function Sidebar({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors ${
-                      active ? "bg-primary-soft text-primary-dark" : "text-muted hover:bg-chip-bg hover:text-text"
-                    }`}
+                    title={collapsed ? item.label : undefined}
+                    className={`relative flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors ${
+                      collapsed ? "justify-center" : ""
+                    } ${active ? "bg-primary-soft text-primary-dark" : "text-muted hover:bg-chip-bg hover:text-text"}`}
                   >
                     <Icon size={18} strokeWidth={2} className="shrink-0" />
-                    <span className="flex-1 truncate">{item.label}</span>
-                    {item.badge && <span className="w-1.5 h-1.5 rounded-full bg-danger shrink-0" />}
+                    {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+                    {item.badge && (
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full bg-danger shrink-0 ${collapsed ? "absolute top-2 right-2" : ""}`}
+                      />
+                    )}
                   </Link>
                 );
               })}
@@ -192,7 +230,11 @@ export default function Sidebar({
 
       <div className="relative border-t border-border p-3 shrink-0" ref={menuRef}>
         {menuOpen && (
-          <div className="menu-pop absolute left-3 right-3 bottom-[64px] bg-white border border-border rounded-[16px] shadow-[0_8px_28px_rgba(16,42,58,0.14)] py-1.5 overflow-hidden">
+          <div
+            className={`menu-pop absolute bg-white border border-border rounded-[16px] shadow-[0_8px_28px_rgba(16,42,58,0.14)] py-1.5 overflow-hidden ${
+              collapsed ? "left-[calc(100%+8px)] bottom-3 w-56" : "left-3 right-3 bottom-[64px]"
+            }`}
+          >
             <AccountMenuAction href="/profile/change-password" label="Reset Password" icon={KeyRound} onNavigate={close} />
             <AccountMenuAction href="/help" label="Help & Support" icon={CircleHelp} onNavigate={close} />
             <div className="my-1.5 border-t border-border-soft" />
@@ -212,8 +254,8 @@ export default function Sidebar({
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
           className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-xl transition-colors cursor-pointer ${
-            menuOpen ? "bg-primary-soft" : "hover:bg-chip-bg"
-          }`}
+            collapsed ? "justify-center" : ""
+          } ${menuOpen ? "bg-primary-soft" : "hover:bg-chip-bg"}`}
           aria-label="Account menu"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
@@ -221,8 +263,12 @@ export default function Sidebar({
           <span className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center text-[12px] font-bold text-primary-dark shrink-0">
             {initialsFrom(userName)}
           </span>
-          <span className="flex-1 min-w-0 text-left text-[13px] font-semibold text-text truncate">{userName}</span>
-          <ChevronDown size={15} className={`text-muted transition-transform shrink-0 ${menuOpen ? "rotate-180" : ""}`} />
+          {!collapsed && (
+            <>
+              <span className="flex-1 min-w-0 text-left text-[13px] font-semibold text-text truncate">{userName}</span>
+              <ChevronDown size={15} className={`text-muted transition-transform shrink-0 ${menuOpen ? "rotate-180" : ""}`} />
+            </>
+          )}
         </button>
       </div>
     </aside>

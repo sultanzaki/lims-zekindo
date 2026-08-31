@@ -22,7 +22,7 @@ export default async function AdminBusinessUnitsPage() {
   const portalUrlFor = (token: string) => (host ? `${proto}://${host}/portal/${token}` : null);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Business Units" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">

@@ -33,7 +33,7 @@ export default async function AdminAuditPage() {
   }));
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Audit Log" backHref="/profile" />
       <AuditLogClient entries={rows} />

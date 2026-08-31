@@ -89,11 +89,11 @@ export default async function DashboardPage() {
   const pct = (n: number) => (totalActive > 0 ? `${(n / totalActive) * 100}%` : "0%");
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <DashboardMobileHeader unreadCount={unread} userName={user.name} />
 
-      <div className="flex-1 px-5 pb-5 pt-4 md:pt-5 flex flex-col gap-5 md:max-w-[1100px] md:mx-auto md:w-full">
+      <div className="flex-1 px-5 pb-5 pt-4 md:pt-10 flex flex-col gap-5 md:max-w-[1100px] md:mx-auto md:w-full">
         <div
           className="rounded-[20px] p-[18px]"
           style={{
