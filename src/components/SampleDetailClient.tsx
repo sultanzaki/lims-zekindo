@@ -322,8 +322,9 @@ export default function SampleDetailClient({
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={role} userName={userName} unreadCount={unreadCount} />
 
-      <div className="sticky top-0 bg-white border-b border-border-soft z-10">
-        <div className="flex items-center gap-2.5 px-3.5 pt-6 pb-2.5 md:px-8 md:pt-8 md:max-w-[1280px] md:w-full">
+      {/* Mobile header (unchanged) */}
+      <div className="md:hidden sticky top-0 bg-white border-b border-border-soft z-10">
+        <div className="flex items-center gap-2.5 px-3.5 pt-6 pb-2.5">
           <Link
             href="/samples"
             className="w-10 h-10 rounded-full bg-page-bg flex items-center justify-center shrink-0"
@@ -344,7 +345,7 @@ export default function SampleDetailClient({
             {sample.status}
           </span>
         </div>
-        <div className="md:hidden flex gap-[3px] mx-3.5 mb-3 p-[3px] bg-[#EFF5F8] rounded-[13px]">
+        <div className="flex gap-[3px] mx-3.5 mb-3 p-[3px] bg-[#EFF5F8] rounded-[13px]">
           {TABS.map((t) => {
             const active = tab === t;
             return (
@@ -364,7 +365,7 @@ export default function SampleDetailClient({
           })}
         </div>
         {(isOverdue || sample.retestOf) && (
-          <div className="flex items-center gap-2 flex-wrap px-3.5 pb-3 md:px-8 md:max-w-[1280px] md:w-full">
+          <div className="flex items-center gap-2 flex-wrap px-3.5 pb-3">
             {isOverdue && (
               <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-danger-bg text-danger">
                 Overdue — due {formatDateTime(dueAt)}
@@ -382,6 +383,37 @@ export default function SampleDetailClient({
         )}
       </div>
 
+      {/* Desktop header: no back button (nav lives in the sidebar), plain title + status */}
+      <div className="hidden md:block px-9 pt-7 pb-5">
+        <div className="flex items-start justify-between gap-6 md:pr-10">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-[20px] font-bold text-text font-mono-data tracking-tight">{sample.id}</h1>
+              <span
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+                style={{ background: statusStyle.bg, color: statusStyle.color }}
+              >
+                {sample.status}
+              </span>
+              {isOverdue && (
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-danger-bg text-danger whitespace-nowrap">
+                  Overdue — due {formatDateTime(dueAt)}
+                </span>
+              )}
+              {sample.retestOf && (
+                <Link
+                  href={`/samples/${sample.retestOf.id}`}
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-chip-bg text-primary whitespace-nowrap"
+                >
+                  Retest of {sample.retestOf.id}
+                </Link>
+              )}
+            </div>
+            <div className="text-[13px] text-muted mt-1">{sample.name || sample.type}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Mobile: one tab's content at a time */}
       <div key={tab} className="md:hidden fade-in flex-1 px-5 py-4 flex flex-col gap-3.5">
         {tab === "Results" && resultsContent}
@@ -390,7 +422,7 @@ export default function SampleDetailClient({
       </div>
 
       {/* Desktop: everything visible at once, split into a metadata rail + a results column */}
-      <div className="hidden md:grid md:grid-cols-[360px_1fr] md:items-start md:gap-5 md:px-8 md:py-6 md:max-w-[1280px] md:w-full flex-1">
+      <div className="hidden md:grid md:grid-cols-[380px_1fr] md:items-start md:gap-6 md:px-9 md:pb-9 md:max-w-[1400px] md:w-full flex-1">
         <div className="flex flex-col gap-3.5">
           {detailsContent}
           <SectionLabel className="mt-1">Custody</SectionLabel>
