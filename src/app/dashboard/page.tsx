@@ -4,7 +4,7 @@ import { getDashboardData, getUnreadCount } from "@/lib/data";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
 import AssistantWidget from "@/components/AssistantWidget";
-import TopNav from "@/components/TopNav";
+import Sidebar from "@/components/Sidebar";
 import DashboardMobileHeader from "@/components/DashboardMobileHeader";
 import Card from "@/components/ui/Card";
 
@@ -89,8 +89,8 @@ export default async function DashboardPage() {
   const pct = (n: number) => (totalActive > 0 ? `${(n / totalActive) * 100}%` : "0%");
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
-      <TopNav active="home" unreadCount={unread} role={user.accessRole} userName={user.name} />
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <DashboardMobileHeader unreadCount={unread} userName={user.name} />
 
       <div className="flex-1 px-5 pb-5 pt-4 md:pt-5 flex flex-col gap-5 md:max-w-[1100px] md:mx-auto md:w-full">

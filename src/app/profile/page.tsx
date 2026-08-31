@@ -3,7 +3,7 @@ import { requirePageUser } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import { ROLE_LABELS, AccessRole, canReviewAsSupervisor, canManageInventoryAndCatalog } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
-import TopNav from "@/components/TopNav";
+import Sidebar from "@/components/Sidebar";
 import { signOutAction } from "@/lib/actions/auth";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Chevron from "@/components/ui/Chevron";
@@ -15,8 +15,8 @@ export default async function ProfilePage() {
   const role = user.accessRole;
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
-      <TopNav active="profile" unreadCount={unread} role={user.accessRole} userName={user.name} />
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <div className="px-5 pt-6 pb-4 bg-white border-b border-border">
         <h1 className="text-[19px] font-bold text-text tracking-tight">Profile</h1>
       </div>

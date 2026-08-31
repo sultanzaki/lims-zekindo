@@ -1,17 +1,23 @@
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { isAdmin, ROLE_LABELS, AccessRole } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import CreateUserForm from "@/components/CreateUserForm";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import { setUserActiveAction } from "@/lib/actions/admin-users";
 
 export default async function AdminUsersPage() {
-  await requirePageRole(isAdmin);
-  const users = await prisma.user.findMany({ orderBy: { createdAt: "asc" } });
+  const user = await requirePageRole(isAdmin);
+  const [users, unread] = await Promise.all([
+    prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
+    getUnreadCount(user.id),
+  ]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Users" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
         <CreateUserForm />

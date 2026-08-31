@@ -1,11 +1,14 @@
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { isAdmin } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import AuditLogClient from "@/components/AuditLogClient";
 
 export default async function AdminAuditPage() {
-  await requirePageRole(isAdmin);
+  const user = await requirePageRole(isAdmin);
+  const unread = await getUnreadCount(user.id);
   const entries = await prisma.auditLog.findMany({
     orderBy: { createdAt: "desc" },
     take: 500,
@@ -30,7 +33,8 @@ export default async function AdminAuditPage() {
   }));
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Audit Log" backHref="/profile" />
       <AuditLogClient entries={rows} />
     </div>

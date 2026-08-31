@@ -1,6 +1,8 @@
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog, canViewAnalytics, isAdmin } from "@/lib/roles";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Chevron from "@/components/ui/Chevron";
 import Link from "next/link";
@@ -8,9 +10,11 @@ import Link from "next/link";
 export default async function AdminHubPage() {
   const user = await requirePageRole((role) => canReviewAsSupervisor(role) || canManageInventoryAndCatalog(role));
   const role = user.accessRole;
+  const unread = await getUnreadCount(user.id);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={role} userName={user.name} unreadCount={unread} />
       <BackHeader title="Lab Management" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5">
         {(canViewAnalytics(role) || canReviewAsSupervisor(role)) && (

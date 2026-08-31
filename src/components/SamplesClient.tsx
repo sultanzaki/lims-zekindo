@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
-import TopNav from "@/components/TopNav";
+import Sidebar from "@/components/Sidebar";
 import Chevron from "@/components/ui/Chevron";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
@@ -161,9 +161,9 @@ export default function SamplesClient({
   }, [filtered]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
-      <TopNav active="samples" unreadCount={unreadCount} role={role} userName={userName} />
-      <div className="sticky top-0 md:top-16 bg-white border-b border-border-soft px-5 pt-6 pb-2.5 z-10 flex flex-col gap-3">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={role} userName={userName} unreadCount={unreadCount} />
+      <div className="sticky top-0 bg-white border-b border-border-soft px-5 pt-6 pb-2.5 z-10 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Samples</h1>
           <div className="flex items-center gap-2 shrink-0">

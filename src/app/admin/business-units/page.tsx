@@ -1,15 +1,20 @@
 import { headers } from "next/headers";
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import { CreateBusinessUnitForm } from "@/components/CatalogForms";
 import BusinessUnitPortalRow from "@/components/BusinessUnitPortalRow";
 import { setBusinessUnitActiveAction } from "@/lib/actions/catalog";
 
 export default async function AdminBusinessUnitsPage() {
-  await requirePageRole(canManageInventoryAndCatalog);
-  const businessUnits = await prisma.businessUnit.findMany({ orderBy: { name: "asc" } });
+  const user = await requirePageRole(canManageInventoryAndCatalog);
+  const [businessUnits, unread] = await Promise.all([
+    prisma.businessUnit.findMany({ orderBy: { name: "asc" } }),
+    getUnreadCount(user.id),
+  ]);
 
   const h = await headers();
   const host = h.get("host");
@@ -17,7 +22,8 @@ export default async function AdminBusinessUnitsPage() {
   const portalUrlFor = (token: string) => (host ? `${proto}://${host}/portal/${token}` : null);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Business Units" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
         <p className="text-xs text-muted -mt-1">

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 import { buildLocationTree, flattenForSelect } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import { CreateEquipmentForm } from "@/components/InventoryForms";
 import EmptyState from "@/components/ui/EmptyState";
 import Chevron from "@/components/ui/Chevron";
@@ -16,10 +18,11 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; dot: string }> =
 };
 
 export default async function EquipmentPage() {
-  await requirePageRole(canManageInventoryAndCatalog);
-  const [equipment, allLocations] = await Promise.all([
+  const user = await requirePageRole(canManageInventoryAndCatalog);
+  const [equipment, allLocations, unread] = await Promise.all([
     prisma.equipment.findMany({ orderBy: { name: "asc" }, include: { storageLocation: true } }),
     prisma.storageLocation.findMany({ select: { id: true, name: true, parentId: true, active: true, notes: true } }),
+    getUnreadCount(user.id),
   ]);
   const locationNodes = allLocations.map((l) => ({ ...l, directReagents: 0, directEquipment: 0 }));
   const locationTree = buildLocationTree(locationNodes);
@@ -27,7 +30,8 @@ export default async function EquipmentPage() {
   const now = new Date().getTime();
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Equipment" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1100px] md:mx-auto md:w-full">
         <CreateEquipmentForm locations={locations} />

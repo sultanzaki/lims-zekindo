@@ -3,7 +3,7 @@ import { requirePageUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { relativeTime } from "@/lib/format";
 import BottomNav from "@/components/BottomNav";
-import TopNav from "@/components/TopNav";
+import Sidebar from "@/components/Sidebar";
 import { markAllReadAction } from "@/lib/actions/notifications";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -28,8 +28,8 @@ export default async function NotificationsPage() {
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
-      <TopNav active="notif" unreadCount={unreadCount} role={user.accessRole} userName={user.name} />
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unreadCount} />
       <div className="sticky top-0 md:top-16 bg-white border-b border-border-soft px-5 pt-6 pb-3.5 z-10 flex items-center justify-between">
         <h1 className="text-[19px] font-bold text-text tracking-tight">Alerts</h1>
         <form action={markAllReadAction}>

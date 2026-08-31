@@ -1,19 +1,25 @@
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import { CreateSampleTypeForm, CreateTestCatalogForm } from "@/components/CatalogForms";
 import { setSampleTypeActiveAction, setTestCatalogActiveAction } from "@/lib/actions/catalog";
 
 export default async function AdminCatalogPage() {
-  await requirePageRole(canManageInventoryAndCatalog);
-  const sampleTypes = await prisma.sampleTypeCatalog.findMany({
-    orderBy: { name: "asc" },
-    include: { tests: { orderBy: { order: "asc" } } },
-  });
+  const user = await requirePageRole(canManageInventoryAndCatalog);
+  const [sampleTypes, unread] = await Promise.all([
+    prisma.sampleTypeCatalog.findMany({
+      orderBy: { name: "asc" },
+      include: { tests: { orderBy: { order: "asc" } } },
+    }),
+    getUnreadCount(user.id),
+  ]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Sample & Test Catalog" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[1100px] md:mx-auto md:w-full">
         <CreateSampleTypeForm />

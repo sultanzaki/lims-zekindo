@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { canViewAnalytics } from "@/lib/roles";
 import {
   getKpiSummary,
@@ -14,6 +15,7 @@ import {
   getReagentHealth,
 } from "@/lib/analytics";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import KpiTiles from "@/components/analytics/KpiTiles";
 import {
   SampleVolumeTrend,
@@ -27,7 +29,7 @@ import {
 } from "@/components/analytics/Charts";
 
 export default async function AnalyticsPage() {
-  await requirePageRole(canViewAnalytics);
+  const user = await requirePageRole(canViewAnalytics);
 
   const [
     kpi,
@@ -40,6 +42,7 @@ export default async function AnalyticsPage() {
     deviationTrend,
     equipmentHealth,
     reagentHealth,
+    unread,
   ] = await Promise.all([
     getKpiSummary(),
     getVolumeTrend(30),
@@ -51,10 +54,12 @@ export default async function AnalyticsPage() {
     getDeviationTrend(12),
     getEquipmentHealth(),
     getReagentHealth(),
+    getUnreadCount(user.id),
   ]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Analytics" backHref="/profile" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1100px] md:mx-auto md:w-full">
         <Link

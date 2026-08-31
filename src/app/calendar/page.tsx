@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { getOpenSamplesByDueDay, dayKeyToDate, addDays } from "@/lib/calendar";
 import { jakartaDayKey } from "@/lib/tz";
 import { formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import EmptyState from "@/components/ui/EmptyState";
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -19,7 +21,7 @@ export default async function CalendarPage({
 }: {
   searchParams: Promise<{ month?: string; day?: string }>;
 }) {
-  await requireUser();
+  const user = await requireUser();
   const { month: monthQ, day: dayQ } = await searchParams;
 
   const todayKey = jakartaDayKey(new Date());
@@ -34,7 +36,7 @@ export default async function CalendarPage({
   const prevMonthKey = monthParam(prevMonth.toISOString());
   const nextMonthKey = monthParam(nextMonth.toISOString());
 
-  const byDay = await getOpenSamplesByDueDay();
+  const [byDay, unread] = await Promise.all([getOpenSamplesByDueDay(), getUnreadCount(user.id)]);
 
   // Leading blanks so the 1st lands in the correct weekday column (Sun-first).
   const leadingBlanks = monthStart.getUTCDay();
@@ -55,7 +57,8 @@ export default async function CalendarPage({
   const selectedDate = dayKeyToDate(selectedDay);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-64">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="TAT Calendar" backHref="/dashboard" />
       <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[560px] md:mx-auto md:w-full">
         <div className="bg-white border border-border rounded-[18px] shadow-card p-4">
