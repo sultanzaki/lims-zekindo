@@ -55,14 +55,21 @@ export default async function CalendarPage({
 
   const selectedItems = byDay.get(selectedDay) ?? [];
   const selectedDate = dayKeyToDate(selectedDay);
+  const dueThisMonth = cells.reduce((sum, key) => sum + (key ? byDay.get(key)?.length ?? 0 : 0), 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
-      <BackHeader title="TAT Calendar" backHref="/dashboard" />
-      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-4 md:grid md:grid-cols-[380px_1fr] md:gap-5 md:items-start md:max-w-[960px] md:w-full">
-        <div className="bg-white border border-border rounded-[18px] md:rounded-2xl shadow-card p-4">
-          <div className="flex items-center justify-between mb-3">
+      <BackHeader title="TAT Calendar" backHref="/dashboard" hideDesktop />
+      <div className="hidden md:block px-9 pt-7">
+        <div className="text-[20px] font-bold text-text tracking-tight">TAT Calendar</div>
+        <div className="text-[13px] text-muted mt-0.5">
+          {MONTH_LABEL.format(monthStart)} &middot; {dueThisMonth} sample{dueThisMonth === 1 ? "" : "s"} due this month
+        </div>
+      </div>
+      <div className="flex-1 px-5 md:px-9 pt-4.5 md:pt-5 pb-7 flex flex-col gap-4 md:grid md:grid-cols-[400px_1fr] md:gap-6 md:items-start md:max-w-[1080px] md:w-full">
+        <div className="bg-white border border-border rounded-[18px] md:rounded-2xl shadow-card p-4 md:p-5">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
             <Link
               href={`/calendar?month=${prevMonthKey}&day=${selectedDay}`}
               className="w-8 h-8 rounded-full bg-page-bg flex items-center justify-center"
@@ -84,15 +91,15 @@ export default async function CalendarPage({
             </Link>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 mb-1.5">
+          <div className="grid grid-cols-7 gap-1 md:gap-1.5 mb-1.5 md:mb-2">
             {WEEKDAY_LABELS.map((w, i) => (
-              <div key={i} className="text-center text-[10px] font-semibold text-faint py-1">
+              <div key={i} className="text-center text-[10px] md:text-[11px] font-semibold text-faint py-1">
                 {w}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-1 md:gap-1.5">
             {cells.map((key, i) => {
               if (!key) return <div key={`blank-${i}`} />;
               const items = byDay.get(key) ?? [];
@@ -104,13 +111,13 @@ export default async function CalendarPage({
                 <Link
                   key={key}
                   href={`/calendar?month=${monthKey}&day=${key}`}
-                  className="aspect-square flex flex-col items-center justify-center gap-0.5 rounded-[10px] relative"
+                  className="aspect-square flex flex-col items-center justify-center gap-0.5 rounded-[10px] md:rounded-xl relative"
                   style={{
                     background: isSelected ? "#1A5F7A" : isToday ? "#E8F4FA" : "transparent",
                   }}
                 >
                   <span
-                    className="text-[12px] font-semibold"
+                    className="text-[12px] md:text-[13px] font-semibold"
                     style={{ color: isSelected ? "#fff" : "#0B0B0B" }}
                   >
                     {Number(key.slice(8, 10))}
@@ -126,7 +133,7 @@ export default async function CalendarPage({
             })}
           </div>
 
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border-soft text-[10px] text-muted">
+          <div className="flex items-center gap-3 mt-3 md:mt-4 pt-3 md:pt-4 border-t border-border-soft text-[10px] md:text-[11px] text-muted">
             <span className="flex items-center gap-1">
               <span className="w-[7px] h-[7px] rounded-full bg-danger inline-block" /> Overdue
             </span>
@@ -140,15 +147,15 @@ export default async function CalendarPage({
         </div>
 
         <div>
-          <div className="text-[13px] font-semibold text-text mb-2.5">
+          <div className="text-[13px] md:text-[15px] font-semibold text-text mb-2.5 md:mb-3">
             {DAY_HEADER_LABEL.format(selectedDate)} {selectedDay === todayKey && <span className="text-primary">· Today</span>}
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 md:gap-2.5">
             {selectedItems.map((s) => (
               <Link
                 key={s.id}
                 href={`/samples/${s.id}`}
-                className="bg-white border border-border rounded-2xl shadow-card-sm px-3.5 py-3 flex items-center justify-between gap-2"
+                className="bg-white border border-border rounded-2xl shadow-card-sm px-3.5 py-3 md:px-4 md:py-3.5 flex items-center justify-between gap-2"
               >
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-text truncate">{s.name || s.id}</div>

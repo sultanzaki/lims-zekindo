@@ -163,8 +163,123 @@ export default function SamplesClient({
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={role} userName={userName} unreadCount={unreadCount} />
-      <div className="sticky top-0 bg-white border-b border-border-soft px-5 md:px-8 pt-6 md:pt-10 pb-2.5 z-10">
-      <div className="md:max-w-[1400px] md:mx-auto md:w-full flex flex-col gap-3">
+      <div className="sticky top-0 bg-white border-b border-border-soft px-5 md:px-9 pt-6 md:pt-7 pb-2.5 md:pb-4 z-10">
+      {/* ============ Desktop header + toolbar ============ */}
+      <div className="hidden md:flex md:flex-col md:gap-3 md:max-w-[1400px] md:w-full md:pr-10">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 shrink-0">
+            <div className="text-[20px] font-bold text-text tracking-tight">Samples</div>
+            <div className="text-[13px] text-muted mt-0.5 whitespace-nowrap">
+              {samples.length} samples &middot; {statusCounts["In Testing"] ?? 0} in testing
+            </div>
+          </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 h-[38px] px-3 rounded-[10px] bg-white border border-border w-[170px] shrink">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#93A6B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search…"
+                className="border-none bg-transparent text-[13px] text-text flex-1 outline-none placeholder:text-faint min-w-0"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-[38px] px-2.5 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-[#5B6B74] cursor-pointer shrink-0 max-w-[130px]"
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt} ({statusCounts[opt] ?? 0})
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              aria-label="Filter by received date"
+              title="Filter by received date"
+              className={`flex items-center justify-center w-[38px] h-[38px] rounded-[10px] border cursor-pointer shrink-0 ${
+                showFilters || hasDateFilter ? "bg-primary-soft border-primary/30 text-primary-dark" : "bg-white border-border text-[#5B6B74]"
+              }`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M8 3v4" />
+                <path d="M16 3v4" />
+                <path d="M3 10h18" />
+              </svg>
+            </button>
+            <button
+              onClick={() => downloadCsv(filtered)}
+              aria-label="Export CSV"
+              title="Export CSV"
+              className="flex items-center justify-center w-[38px] h-[38px] rounded-[10px] bg-white border border-border text-primary-dark cursor-pointer shrink-0"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+              className="h-[38px] px-3 rounded-[10px] border border-border bg-white text-[13px] font-semibold text-text cursor-pointer whitespace-nowrap shrink-0"
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+            {!selectMode && (
+              <Link
+                href="/samples/new"
+                className="flex items-center gap-1.5 h-[38px] px-3.5 rounded-[10px] bg-primary text-white text-[13px] font-semibold shadow-glow-primary whitespace-nowrap shrink-0"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                New
+              </Link>
+            )}
+          </div>
+        </div>
+        {showFilters && (
+          <div className="flex items-center gap-2 self-end">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="text-xs px-2.5 py-2 border border-border rounded-[10px] text-text bg-white"
+            />
+            <span className="text-xs text-muted">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="text-xs px-2.5 py-2 border border-border rounded-[10px] text-text bg-white"
+            />
+          </div>
+        )}
+        {approveResult && "approved" in approveResult && (
+          <div className="bg-primary-soft border border-primary/30 rounded-[13px] px-3.5 py-2.5 text-xs text-primary-dark flex items-start justify-between gap-2">
+            <div>
+              <span className="font-semibold">{approveResult.approved} approved.</span>
+              {approveResult.skipped.length > 0 && (
+                <span> {approveResult.skipped.length} skipped — {approveResult.skipped.map((s) => `${s.id} (${s.reason})`).join(", ")}.</span>
+              )}
+            </div>
+            <button type="button" onClick={() => setApproveResult(null)} className="shrink-0 font-semibold cursor-pointer">
+              Dismiss
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ============ Mobile header (unchanged) ============ */}
+      <div className="md:hidden flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Samples</h1>
           <div className="flex items-center gap-2 shrink-0">
@@ -215,8 +330,8 @@ export default function SamplesClient({
             className="border-none bg-transparent text-[15px] text-text flex-1 outline-none placeholder:text-faint min-w-0"
           />
         </div>
-        <div className="relative -mx-5 md:mx-0">
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5 px-5 md:px-0">
+        <div className="relative -mx-5">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 px-5">
             {STATUS_OPTIONS.map((opt) => {
               const active = statusFilter === opt;
               return (
@@ -236,7 +351,7 @@ export default function SamplesClient({
               );
             })}
           </div>
-          <div className="pointer-events-none absolute top-0 right-0 bottom-0.5 w-8 bg-gradient-to-l from-white to-transparent md:hidden" />
+          <div className="pointer-events-none absolute top-0 right-0 bottom-0.5 w-8 bg-gradient-to-l from-white to-transparent" />
         </div>
         <div className="flex items-center justify-between pb-0.5">
           <button
@@ -273,8 +388,8 @@ export default function SamplesClient({
       </div>
       </div>
 
-      <div className="flex-1 pb-5 flex flex-col md:px-8">
-      <div className="md:max-w-[1400px] md:mx-auto md:w-full">
+      <div className="flex-1 pb-5 flex flex-col md:px-9">
+      <div className="md:max-w-[1400px] md:w-full">
         <div className="md:hidden">
         {groups.map((group) => (
           <div key={group.label}>
@@ -377,7 +492,7 @@ export default function SamplesClient({
         ))}
         </div>
 
-        <div className="hidden md:block px-8 pt-4">
+        <div className="hidden md:block pt-4">
           <div className="bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
             <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-left border-collapse">
