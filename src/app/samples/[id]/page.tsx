@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { getSampleDetail } from "@/lib/data";
+import { getSampleDetail, getUnreadCount } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canReviewAsSupervisor, canApproveAsQa, isAdmin } from "@/lib/roles";
@@ -33,6 +33,7 @@ export default async function SampleDetailPage({
     }),
   ]);
   if (!sample || !user) notFound();
+  const unread = await getUnreadCount(user.id);
 
   const targetHours = sample.sampleType?.targetTatHours ?? 48;
   const dueAt = new Date(sample.receivedDate.getTime() + targetHours * 60 * 60 * 1000);
@@ -81,6 +82,9 @@ export default async function SampleDetailPage({
       trackingUrl={trackingUrl}
       accessCodeFormatted={sample.accessCode ? formatAccessCode(sample.accessCode) : null}
       activeNfcTag={activeNfcTag}
+      role={user.accessRole}
+      userName={user.name}
+      unreadCount={unread}
       actions={{
         canReviewAsSupervisor: canReviewAsSupervisor(user.accessRole),
         canApproveAsQa: canApproveAsQa(user.accessRole),

@@ -34,7 +34,10 @@ export default function NewSampleForm({
   const defaultDateTime = nowAsJakartaLocalInput();
 
   return (
-    <form action={formAction} className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5">
+    <form
+      action={formAction}
+      className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5 md:pt-8 md:max-w-[760px] md:mx-auto md:w-full"
+    >
       <div className="bg-primary-soft border border-[#C4E3F1] rounded-[13px] px-4 py-3.5 flex items-center justify-between gap-3">
         <div>
           <div className="text-[11px] font-bold text-primary-dark tracking-wider uppercase">Sample ID</div>
@@ -91,72 +94,78 @@ export default function NewSampleForm({
         )}
       </div>
 
-      <Field label="Source / Location" htmlFor="source">
-        <input id="source" name="source" type="text" placeholder="e.g. Production Line 2" className={inputClass} />
-      </Field>
+      <div className="flex flex-col gap-5 md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-5">
+        <Field label="Source / Location" htmlFor="source">
+          <input id="source" name="source" type="text" placeholder="e.g. Production Line 2" className={inputClass} />
+        </Field>
 
-      <Field label="Requestor" htmlFor="requestorName">
-        <input
-          id="requestorName"
-          name="requestorName"
-          type="text"
-          defaultValue={defaultRequestor}
-          placeholder="Who requested this testing"
-          className={inputClass}
-        />
-      </Field>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-[13px] font-semibold text-text">Business Unit</label>
-        <select name="businessUnitId" defaultValue="" className={inputClass}>
-          <option value="">Not specified</option>
-          {businessUnits.map((bu) => (
-            <option key={bu.id} value={bu.id}>
-              {bu.name}
-            </option>
-          ))}
-        </select>
-        {businessUnits.length === 0 && (
-          <div className="text-[11px] text-faint">No business units configured yet — ask an admin to add one under Catalog.</div>
-        )}
+        <Field label="Requestor" htmlFor="requestorName">
+          <input
+            id="requestorName"
+            name="requestorName"
+            type="text"
+            defaultValue={defaultRequestor}
+            placeholder="Who requested this testing"
+            className={inputClass}
+          />
+        </Field>
       </div>
 
-      <Field label="Collected By" htmlFor="collectedBy">
-        <input id="collectedBy" name="collectedBy" type="text" defaultValue={defaultCollectedBy} className={inputClass} />
-      </Field>
+      <div className="flex flex-col gap-5 md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-5">
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text">Business Unit</label>
+          <select name="businessUnitId" defaultValue="" className={inputClass}>
+            <option value="">Not specified</option>
+            {businessUnits.map((bu) => (
+              <option key={bu.id} value={bu.id}>
+                {bu.name}
+              </option>
+            ))}
+          </select>
+          {businessUnits.length === 0 && (
+            <div className="text-[11px] text-faint">No business units configured yet — ask an admin to add one under Catalog.</div>
+          )}
+        </div>
 
-      <Field label="Collection Date & Time (WIB)" htmlFor="collectedDate">
-        <input
-          id="collectedDate"
-          name="collectedDate"
-          type="datetime-local"
-          defaultValue={defaultDateTime}
-          className={inputClass}
-        />
-      </Field>
+        <Field label="Collected By" htmlFor="collectedBy">
+          <input id="collectedBy" name="collectedBy" type="text" defaultValue={defaultCollectedBy} className={inputClass} />
+        </Field>
+      </div>
 
-      <div className="flex flex-col gap-2">
-        <label className="text-[13px] font-semibold text-text">Priority</label>
-        <input type="hidden" name="priority" value={priority} />
-        <div className="flex gap-2">
-          {PRIORITIES.map((p) => {
-            const active = priority === p.value;
-            return (
-              <button
-                key={p.value}
-                type="button"
-                onClick={() => setPriority(p.value)}
-                className="flex-1 text-center text-[13px] font-semibold px-2 py-2.5 rounded-[10px] border cursor-pointer min-h-[44px] transition-colors duration-150"
-                style={{
-                  background: active ? "#1A5F7A" : "#FFFFFF",
-                  color: active ? "#ffffff" : "#444444",
-                  borderColor: active ? "#1A5F7A" : "#E3EAEF",
-                }}
-              >
-                {p.label}
-              </button>
-            );
-          })}
+      <div className="flex flex-col gap-5 md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-5">
+        <Field label="Collection Date & Time (WIB)" htmlFor="collectedDate">
+          <input
+            id="collectedDate"
+            name="collectedDate"
+            type="datetime-local"
+            defaultValue={defaultDateTime}
+            className={inputClass}
+          />
+        </Field>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text">Priority</label>
+          <input type="hidden" name="priority" value={priority} />
+          <div className="flex gap-2">
+            {PRIORITIES.map((p) => {
+              const active = priority === p.value;
+              return (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => setPriority(p.value)}
+                  className="flex-1 text-center text-[13px] font-semibold px-2 py-2.5 rounded-[10px] border cursor-pointer min-h-[44px] transition-colors duration-150"
+                  style={{
+                    background: active ? "#1A5F7A" : "#FFFFFF",
+                    color: active ? "#ffffff" : "#444444",
+                    borderColor: active ? "#1A5F7A" : "#E3EAEF",
+                  }}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -174,9 +183,11 @@ export default function NewSampleForm({
         <div className="text-xs font-medium text-danger">{state.error}</div>
       )}
 
-      <Button type="submit" disabled={pending} className="mt-1">
-        {pending ? "Logging in…" : "Log Sample In"}
-      </Button>
+      <div className="md:flex md:justify-end">
+        <Button type="submit" disabled={pending} className="mt-1 md:mt-0 md:w-auto md:px-8">
+          {pending ? "Logging in…" : "Log Sample In"}
+        </Button>
+      </div>
     </form>
   );
 }
