@@ -1,7 +1,10 @@
 import { notFound, redirect } from "next/navigation";
+import { requirePageUser } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { signedAttachmentUrl } from "@/lib/storage";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import TestResultForm from "@/components/TestResultForm";
 import TestReadingsPanel from "@/components/TestReadingsPanel";
 import TestAttachmentsPanel from "@/components/TestAttachmentsPanel";
@@ -12,13 +15,17 @@ export default async function TestEntryPage({
   params: Promise<{ id: string; testId: string }>;
 }) {
   const { id, testId } = await params;
-  const test = await prisma.test.findUnique({
-    where: { id: testId },
-    include: {
-      readings: { orderBy: { takenAt: "asc" } },
-      attachments: { orderBy: { uploadedAt: "desc" } },
-    },
-  });
+  const user = await requirePageUser();
+  const [test, unread] = await Promise.all([
+    prisma.test.findUnique({
+      where: { id: testId },
+      include: {
+        readings: { orderBy: { takenAt: "asc" } },
+        attachments: { orderBy: { uploadedAt: "desc" } },
+      },
+    }),
+    getUnreadCount(user.id),
+  ]);
   if (!test || test.sampleId !== id) notFound();
   if (test.status !== "pending") redirect(`/samples/${id}`);
 
@@ -28,9 +35,10 @@ export default async function TestEntryPage({
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Enter Result" backHref={`/samples/${id}`} />
-      <div className="px-5 pt-4.5 flex flex-col gap-3.5">
+      <div className="px-5 md:px-8 pt-4.5 flex flex-col gap-3.5 md:max-w-[640px] md:w-full">
         <div className="bg-white border border-border rounded-[18px] shadow-card px-4 py-3.5">
           <div className="text-[15px] font-semibold text-text leading-snug">{test.name}</div>
           <div className="flex items-center justify-between gap-3 mt-2.5 pt-2.5 border-t border-border-soft">

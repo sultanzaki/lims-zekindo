@@ -65,7 +65,7 @@ export default function TestResultForm({
       <input type="hidden" name="testId" value={testId} />
       <input type="hidden" name="result" value={result} />
 
-      <div className="px-5 pt-4.5 flex flex-col gap-3.5">
+      <div className="px-5 md:px-8 pt-4.5 flex flex-col gap-3.5 md:max-w-[640px] md:w-full">
         <div
           className="bg-white border-[1.5px] rounded-[14px] px-4 py-4 flex items-center justify-between gap-3 transition-colors duration-200"
           style={{ borderColor: liveBorder }}
