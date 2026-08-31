@@ -21,7 +21,7 @@ export default async function AdminCatalogPage() {
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Sample & Test Catalog" backHref="/profile" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[1100px] md:mx-auto md:w-full">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[1100px] md:w-full">
         <CreateSampleTypeForm />
         <CreateTestCatalogForm sampleTypes={sampleTypes.map((s) => ({ id: s.id, name: s.name }))} />
 

@@ -30,7 +30,7 @@ export default async function DeviationsPage() {
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Deviations" backHref="/profile" />
-      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-3.5 md:items-start md:max-w-[1200px] md:mx-auto md:w-full">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-3.5 md:items-start md:max-w-[1200px] md:w-full">
         {deviations.map((d) => {
           const style = STATUS_STYLE[d.status] ?? STATUS_STYLE.Open;
           return (

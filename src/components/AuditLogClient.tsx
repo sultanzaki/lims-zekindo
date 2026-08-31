@@ -105,7 +105,7 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
   );
 
   return (
-    <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1300px] md:mx-auto md:w-full">
+    <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1300px] md:w-full">
       <div className="flex items-center justify-between gap-3">
         <div className="text-[11px] text-muted">Most recent {entries.length} events</div>
         <button onClick={() => downloadCsv(filtered)} className="text-xs font-semibold text-primary cursor-pointer">
@@ -207,7 +207,8 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
 
       {/* Desktop: table */}
       <div className="hidden md:block bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
-        <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-left border-collapse">
           <thead>
             <tr className="border-b border-border-soft">
               <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-4">Event</th>
@@ -249,6 +250,7 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {filtered.length === 0 && <EmptyState>No activity matches your search.</EmptyState>}

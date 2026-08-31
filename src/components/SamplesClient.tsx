@@ -379,7 +379,8 @@ export default function SamplesClient({
 
         <div className="hidden md:block px-8 pt-4">
           <div className="bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
-            <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-left border-collapse">
               <thead>
                 <tr className="border-b border-border-soft">
                   {selectMode && <th className="w-10 py-2.5 pl-4" />}
@@ -463,6 +464,7 @@ export default function SamplesClient({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 

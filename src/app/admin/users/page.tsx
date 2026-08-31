@@ -19,7 +19,7 @@ export default async function AdminUsersPage() {
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Users" backHref="/profile" />
-      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[1200px] md:mx-auto md:w-full">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[1200px] md:w-full">
         <div className="md:max-w-[640px]">
           <CreateUserForm />
         </div>
@@ -51,7 +51,8 @@ export default async function AdminUsersPage() {
         </div>
 
         <div className="hidden md:block bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[680px] text-left border-collapse">
             <thead>
               <tr className="border-b border-border-soft">
                 <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-4">Name</th>
@@ -95,6 +96,7 @@ export default async function AdminUsersPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
