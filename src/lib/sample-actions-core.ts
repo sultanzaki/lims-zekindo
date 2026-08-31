@@ -1,6 +1,19 @@
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
+import { uploadAttachment } from "@/lib/storage";
 import type { User } from "@prisma/client";
+
+export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+export const ALLOWED_ATTACHMENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/heic",
+  "image/webp",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/csv",
+]);
 
 // The actual DB-mutating logic behind the test-result-entry Server Actions
 // in src/lib/actions/samples.ts, extracted so the mobile Route Handlers
@@ -125,6 +138,49 @@ export async function deleteTestReadingCore(
   // readingId can never remove a row belonging to a different test.
   await prisma.testReading.deleteMany({ where: { id: readingId, testId } });
   await logAudit({ userId: user.id, action: "test.reading_removed", entityType: "Test", entityId: testId, detail: readingId });
+
+  return { ok: true };
+}
+
+export async function uploadTestAttachmentCore(
+  user: User,
+  sampleId: string,
+  testId: string,
+  file: File
+): Promise<ActionResult> {
+  if (file.size === 0) return { ok: false, error: "Choose a file to upload." };
+  if (file.size > MAX_ATTACHMENT_BYTES) return { ok: false, error: "File is too large (max 10MB)." };
+  if (!ALLOWED_ATTACHMENT_TYPES.has(file.type)) {
+    return { ok: false, error: "Unsupported file type. Use a photo (JPG/PNG) or an Excel/CSV file." };
+  }
+
+  const test = await prisma.test.findUnique({ where: { id: testId } });
+  if (!test || test.sampleId !== sampleId) return { ok: false, error: "Test not found." };
+  if (test.status !== "pending") {
+    return { ok: false, error: "This test has already been submitted — attachments are locked." };
+  }
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storagePath = `${sampleId}/${testId}/${randomUUID()}-${safeName}`;
+
+  try {
+    await uploadAttachment(storagePath, file);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Upload failed." };
+  }
+
+  await prisma.testAttachment.create({
+    data: {
+      testId,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      storagePath,
+      uploadedBy: user.name,
+    },
+  });
+
+  await logAudit({ userId: user.id, action: "test.attachment_added", entityType: "Test", entityId: testId, detail: file.name });
 
   return { ok: true };
 }

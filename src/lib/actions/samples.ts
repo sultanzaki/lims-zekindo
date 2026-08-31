@@ -12,18 +12,12 @@ import { canReviewAsSupervisor, canApproveAsQa, isAdmin } from "@/lib/roles";
 import { uploadAttachment, deleteAttachment } from "@/lib/storage";
 import { parseJakartaLocalDateTime } from "@/lib/tz";
 import { generateAccessCode } from "@/lib/tracking";
-import { submitTestResultCore, addTestReadingCore, deleteTestReadingCore } from "@/lib/sample-actions-core";
-
-const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-const ALLOWED_ATTACHMENT_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/heic",
-  "image/webp",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "text/csv",
-]);
+import {
+  submitTestResultCore,
+  addTestReadingCore,
+  deleteTestReadingCore,
+  uploadTestAttachmentCore,
+} from "@/lib/sample-actions-core";
 
 const MAX_REPORT_BYTES = 20 * 1024 * 1024;
 const ALLOWED_REPORT_TYPES = new Set([
@@ -178,37 +172,10 @@ export async function uploadTestAttachmentAction(
 ): Promise<FormState> {
   const user = await requireUser();
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload." };
-  if (file.size > MAX_ATTACHMENT_BYTES) return { error: "File is too large (max 10MB)." };
-  if (!ALLOWED_ATTACHMENT_TYPES.has(file.type)) {
-    return { error: "Unsupported file type. Use a photo (JPG/PNG) or an Excel/CSV file." };
-  }
+  if (!(file instanceof File)) return { error: "Choose a file to upload." };
 
-  const test = await prisma.test.findUnique({ where: { id: testId } });
-  if (!test || test.sampleId !== sampleId) return { error: "Test not found." };
-  if (test.status !== "pending") return { error: "This test has already been submitted — attachments are locked." };
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storagePath = `${sampleId}/${testId}/${randomUUID()}-${safeName}`;
-
-  try {
-    await uploadAttachment(storagePath, file);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Upload failed." };
-  }
-
-  await prisma.testAttachment.create({
-    data: {
-      testId,
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      storagePath,
-      uploadedBy: user.name,
-    },
-  });
-
-  await logAudit({ userId: user.id, action: "test.attachment_added", entityType: "Test", entityId: testId, detail: file.name });
+  const outcome = await uploadTestAttachmentCore(user, sampleId, testId, file);
+  if (!outcome.ok) return { error: outcome.error };
 
   revalidatePath(`/samples/${sampleId}/tests/${testId}`);
   return {};

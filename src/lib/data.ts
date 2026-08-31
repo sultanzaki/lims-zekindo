@@ -8,6 +8,42 @@ export async function getUnreadCount(userId: string) {
   return prisma.notification.count({ where: { userId, unread: true } });
 }
 
+export type NotificationRow = {
+  id: string;
+  title: string;
+  body: string;
+  sampleId: string | null;
+  unread: boolean;
+  createdAt: Date;
+};
+
+// Shared by the web notifications bell/page (src/lib/actions/notifications.ts,
+// which resolves userId from the cookie session) and the mobile
+// GET /api/mobile/notifications route (which resolves it from the Bearer
+// token) — same query, same shape, whichever auth surface called it.
+export async function listNotifications(userId: string): Promise<NotificationRow[]> {
+  const notifications = await prisma.notification.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 30,
+  });
+  return notifications.map((n) => ({
+    id: n.id,
+    title: n.title,
+    body: n.body,
+    sampleId: n.sampleId,
+    unread: n.unread,
+    createdAt: n.createdAt,
+  }));
+}
+
+export async function markAllNotificationsRead(userId: string) {
+  await prisma.notification.updateMany({
+    where: { userId, unread: true },
+    data: { unread: false },
+  });
+}
+
 export async function getDashboardData() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
