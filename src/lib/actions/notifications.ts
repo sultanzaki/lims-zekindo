@@ -13,3 +13,29 @@ export async function markAllReadAction() {
   revalidatePath("/notifications");
   revalidatePath("/dashboard");
 }
+
+export type NotificationRow = {
+  id: string;
+  title: string;
+  body: string;
+  sampleId: string | null;
+  unread: boolean;
+  createdAt: Date;
+};
+
+export async function getNotificationsAction(): Promise<NotificationRow[]> {
+  const user = await requireUser();
+  const notifications = await prisma.notification.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    take: 30,
+  });
+  return notifications.map((n) => ({
+    id: n.id,
+    title: n.title,
+    body: n.body,
+    sampleId: n.sampleId,
+    unread: n.unread,
+    createdAt: n.createdAt,
+  }));
+}

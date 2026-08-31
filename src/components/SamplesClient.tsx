@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
-import TopNav from "@/components/TopNav";
+import Sidebar from "@/components/Sidebar";
 import Chevron from "@/components/ui/Chevron";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
@@ -161,9 +161,125 @@ export default function SamplesClient({
   }, [filtered]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
-      <TopNav active="samples" unreadCount={unreadCount} role={role} userName={userName} />
-      <div className="sticky top-0 md:top-16 bg-white border-b border-border-soft px-5 pt-6 pb-2.5 z-10 flex flex-col gap-3">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
+      <Sidebar role={role} userName={userName} unreadCount={unreadCount} />
+      <div className="sticky top-0 bg-white border-b border-border-soft px-5 md:px-9 pt-6 md:pt-7 pb-2.5 md:pb-4 z-10">
+      {/* ============ Desktop header + toolbar ============ */}
+      <div className="hidden md:flex md:flex-col md:gap-3 md:max-w-[1400px] md:w-full md:pr-10">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 shrink-0">
+            <div className="text-[20px] font-bold text-text tracking-tight">Samples</div>
+            <div className="text-[13px] text-muted mt-0.5 whitespace-nowrap">
+              {samples.length} samples &middot; {statusCounts["In Testing"] ?? 0} in testing
+            </div>
+          </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 h-[38px] px-3 rounded-[10px] bg-white border border-border w-[170px] shrink">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#93A6B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search…"
+                className="border-none bg-transparent text-[13px] text-text flex-1 outline-none placeholder:text-faint min-w-0"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-[38px] px-2.5 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-[#5B6B74] cursor-pointer shrink-0 max-w-[130px]"
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt} ({statusCounts[opt] ?? 0})
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              aria-label="Filter by received date"
+              title="Filter by received date"
+              className={`flex items-center justify-center w-[38px] h-[38px] rounded-[10px] border cursor-pointer shrink-0 ${
+                showFilters || hasDateFilter ? "bg-primary-soft border-primary/30 text-primary-dark" : "bg-white border-border text-[#5B6B74]"
+              }`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M8 3v4" />
+                <path d="M16 3v4" />
+                <path d="M3 10h18" />
+              </svg>
+            </button>
+            <button
+              onClick={() => downloadCsv(filtered)}
+              aria-label="Export CSV"
+              title="Export CSV"
+              className="flex items-center justify-center w-[38px] h-[38px] rounded-[10px] bg-white border border-border text-primary-dark cursor-pointer shrink-0"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+              className="h-[38px] px-3 rounded-[10px] border border-border bg-white text-[13px] font-semibold text-text cursor-pointer whitespace-nowrap shrink-0"
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+            {!selectMode && (
+              <Link
+                href="/samples/new"
+                className="flex items-center gap-1.5 h-[38px] px-3.5 rounded-[10px] bg-primary text-white text-[13px] font-semibold shadow-glow-primary whitespace-nowrap shrink-0"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                New
+              </Link>
+            )}
+          </div>
+        </div>
+        {showFilters && (
+          <div className="flex items-center gap-2 self-end">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="text-xs px-2.5 py-2 border border-border rounded-[10px] text-text bg-white"
+            />
+            <span className="text-xs text-muted">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="text-xs px-2.5 py-2 border border-border rounded-[10px] text-text bg-white"
+            />
+          </div>
+        )}
+        {approveResult && "approved" in approveResult && (
+          <div className="bg-primary-soft border border-primary/30 rounded-[13px] px-3.5 py-2.5 text-xs text-primary-dark flex items-start justify-between gap-2">
+            <div>
+              <span className="font-semibold">{approveResult.approved} approved.</span>
+              {approveResult.skipped.length > 0 && (
+                <span> {approveResult.skipped.length} skipped — {approveResult.skipped.map((s) => `${s.id} (${s.reason})`).join(", ")}.</span>
+              )}
+            </div>
+            <button type="button" onClick={() => setApproveResult(null)} className="shrink-0 font-semibold cursor-pointer">
+              Dismiss
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ============ Mobile header (unchanged) ============ */}
+      <div className="md:hidden flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Samples</h1>
           <div className="flex items-center gap-2 shrink-0">
@@ -270,8 +386,11 @@ export default function SamplesClient({
           </div>
         )}
       </div>
+      </div>
 
-      <div className="flex-1 pb-5 flex flex-col">
+      <div className="flex-1 pb-5 flex flex-col md:px-9">
+      <div className="md:max-w-[1400px] md:w-full">
+        <div className="md:hidden">
         {groups.map((group) => (
           <div key={group.label}>
             <div className="px-5 pt-3.5 pb-1.5 flex items-baseline justify-between">
@@ -371,11 +490,105 @@ export default function SamplesClient({
             </div>
           </div>
         ))}
+        </div>
+
+        <div className="hidden md:block pt-4">
+          <div className="bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border-soft">
+                  {selectMode && <th className="w-10 py-2.5 pl-4" />}
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Sample ID</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Name / Type</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Source</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Status</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Due / Completed</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3 pr-4">Collected By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((s) => {
+                  const statusStyle = STATUS_STYLES[s.status as SampleStatus];
+                  const terminal = s.status === "Complete" || s.status === "Rejected";
+                  const due = !terminal ? dueLabelFor(s.receivedDate, s.sampleType?.targetTatHours ?? 48) : null;
+                  const footerLabel = terminal
+                    ? s.status === "Complete"
+                      ? s.approvedAt
+                        ? `Completed ${formatDate(s.approvedAt)}`
+                        : "Complete"
+                      : "Needs correction"
+                    : due!.label;
+                  const footerColor = terminal ? (s.status === "Complete" ? "#1E7A34" : "#B00016") : due!.color;
+                  const selected = selectedIds.has(s.id);
+
+                  return (
+                    <tr
+                      key={s.id}
+                      onClick={() => (selectMode ? toggleSelect(s.id) : router.push(`/samples/${s.id}`))}
+                      className="border-b border-border-soft last:border-b-0 cursor-pointer hover:bg-chip-bg transition-colors"
+                      style={{ background: selected ? "var(--color-primary-soft)" : undefined }}
+                    >
+                      {selectMode && (
+                        <td className="py-2.5 pl-4">
+                          <span
+                            className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+                            style={{
+                              borderColor: selected ? "var(--color-primary)" : "var(--color-border)",
+                              background: selected ? "var(--color-primary)" : "transparent",
+                            }}
+                          >
+                            {selected && (
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </span>
+                        </td>
+                      )}
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: CUSTODY_DOT_COLOR[s.status as SampleStatus] }} />
+                          <span className="text-[13px] font-semibold text-text font-mono-data">{s.id}</span>
+                          {selectMode && isApprovable(s) && (
+                            <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-success/15 text-success-dark shrink-0">
+                              Approvable
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 max-w-[240px]">
+                        <div className="text-[13px] font-semibold text-text truncate">{s.name || s.type}</div>
+                        {s.name && <div className="text-[11px] text-muted truncate">{s.type}</div>}
+                      </td>
+                      <td className="py-2.5 px-3 text-[13px] text-muted max-w-[200px] truncate">{s.source}</td>
+                      <td className="py-2.5 px-3">
+                        <span
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+                          style={{ background: statusStyle.bg, color: statusStyle.color }}
+                        >
+                          {SAMPLE_STATUS_SHORT[s.status as SampleStatus]}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-[13px] font-semibold whitespace-nowrap" style={{ color: footerColor }}>
+                        {footerLabel}
+                      </td>
+                      <td className="py-2.5 px-3 pr-4 text-[13px] text-muted truncate max-w-[160px]">{s.collectedBy}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+
         {filtered.length === 0 && (
           <div className="px-5">
             <EmptyState>No samples match your search.</EmptyState>
           </div>
         )}
+      </div>
       </div>
 
       {selectMode && selectedIds.size > 0 && (

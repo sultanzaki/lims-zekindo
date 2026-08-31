@@ -115,7 +115,7 @@ export function GlobalSearchDesktop() {
   }, [focused]);
 
   return (
-    <div className="relative w-64" ref={containerRef}>
+    <div className="relative w-full" ref={containerRef}>
       <div className="flex items-center gap-2 bg-chip-bg border border-border rounded-full px-3.5 py-2">
         <SearchIcon />
         <input
@@ -128,7 +128,7 @@ export function GlobalSearchDesktop() {
         />
       </div>
       {focused && (
-        <div className="menu-pop absolute left-0 top-11 w-[380px] max-h-[440px] overflow-y-auto bg-white border border-border rounded-[16px] shadow-[0_8px_28px_rgba(16,42,58,0.14)] z-30">
+        <div className="menu-pop absolute left-0 top-11 w-[340px] max-h-[440px] overflow-y-auto bg-white border border-border rounded-[16px] shadow-[0_8px_28px_rgba(16,42,58,0.14)] z-30">
           <ResultList groups={groups} loading={loading} query={query} onNavigate={() => setFocused(false)} />
         </div>
       )}

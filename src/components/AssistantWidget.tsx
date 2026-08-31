@@ -6,9 +6,9 @@ import ToolResultCard from "@/components/assistant/ToolResultCard";
 import AssistantMarkdown from "@/components/assistant/AssistantMarkdown";
 import { inputClassSm } from "@/components/ui/Field";
 
-function AssistantIcon({ size = 24 }: { size?: number }) {
+function AssistantIcon({ size = 24, color = "#fff" }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3a2 2 0 012 2v1h1a3 3 0 013 3v6a3 3 0 01-3 3H9a3 3 0 01-3-3V9a3 3 0 013-3h1V5a2 2 0 012-2z" />
       <path d="M8 12h.01" />
       <path d="M16 12h.01" />
@@ -243,35 +243,35 @@ export default function AssistantWidget() {
         type="button"
         onClick={openWidget}
         aria-label="Open assistant"
-        className={`fixed right-5 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-dark shadow-[0_8px_24px_rgba(26,95,122,0.4)] flex items-center justify-center transition-transform hover:scale-105 bottom-[calc(54px+max(env(safe-area-inset-bottom),20px)+14px)] md:bottom-6 ${everOpened ? "" : "assistant-fab-pulse"}`}
+        className={`fixed right-5 z-40 w-14 h-14 rounded-full bg-primary shadow-[0_8px_24px_rgba(26,95,122,0.4)] flex items-center justify-center transition-transform hover:scale-105 hover:bg-primary-dark bottom-[calc(54px+max(env(safe-area-inset-bottom),20px)+14px)] md:bottom-6 ${everOpened ? "" : "assistant-fab-pulse"}`}
       >
         <AssistantIcon />
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center md:justify-end p-0 md:p-6 bg-black/30 md:bg-transparent" onClick={() => setOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center md:items-stretch md:justify-end p-0 md:p-6 bg-black/30 md:bg-transparent"
+          onClick={() => setOpen(false)}
+        >
           <div
-            className="menu-pop w-full md:w-[400px] h-[85vh] md:h-[600px] max-h-[85vh] bg-white md:rounded-[20px] rounded-t-[20px] shadow-[0_12px_40px_rgba(16,42,58,0.25)] flex flex-col overflow-hidden"
+            className="menu-pop w-full md:w-[420px] h-[85vh] md:h-auto max-h-[85vh] md:max-h-none bg-white rounded-t-[20px] md:rounded-[20px] md:border md:border-border shadow-[0_12px_40px_rgba(16,42,58,0.25)] md:shadow-[0_20px_48px_rgba(16,42,58,0.22)] flex flex-col overflow-hidden"
             style={{ transformOrigin: "bottom right" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="flex items-center gap-2.5 px-4 py-3.5 shrink-0"
-              style={{ background: "linear-gradient(152deg, #1A5F7A 0%, #2B8DB8 100%)" }}
-            >
-              <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center shrink-0">
-                <AssistantIcon size={18} />
+            <div className="flex items-center gap-2.5 px-4 py-3.5 md:px-5 md:py-4 shrink-0 bg-white border-b border-border">
+              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+                <AssistantIcon size={18} color="#1A5F7A" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-bold text-white">LIMS Assistant</span>
-                  <span className="relative w-1.5 h-1.5 rounded-full bg-[#6EE0A8] shrink-0">
-                    <span className="absolute inset-0 rounded-full bg-[#6EE0A8] animate-ping" />
+                  <span className="text-[13px] md:text-sm font-bold text-text">LIMS Assistant</span>
+                  <span className="relative w-1.5 h-1.5 rounded-full bg-success shrink-0">
+                    <span className="absolute inset-0 rounded-full bg-success animate-ping" />
                   </span>
                 </div>
-                <div className="text-[10px] text-white/75 truncate">Samples, stok, kalibrasi, analytics</div>
+                <div className="text-[10px] md:text-[11px] text-muted truncate">Samples, stok, kalibrasi, analytics</div>
               </div>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="w-8 h-8 rounded-full flex items-center justify-center text-white/90 hover:bg-white/15 shrink-0">
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="w-8 h-8 rounded-full flex items-center justify-center text-muted hover:bg-chip-bg hover:text-text shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
@@ -279,11 +279,11 @@ export default function AssistantWidget() {
               </button>
             </div>
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-3.5 py-3 flex flex-col gap-2.5 bg-page-bg">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-3.5 py-3 md:px-4 md:py-4 flex flex-col gap-2.5 bg-page-bg">
               {displayItems.length === 0 && (
                 <div className="fade-in flex items-start gap-2 self-start max-w-[88%]">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0 mt-0.5">
-                    <AssistantIcon size={13} />
+                  <div className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center shrink-0 mt-0.5">
+                    <AssistantIcon size={13} color="#1A5F7A" />
                   </div>
                   <div className="text-xs text-text bg-white shadow-card-sm rounded-[14px] rounded-bl-[4px] px-3.5 py-3">
                     Halo! Tanya apa saja soal sampel, stok reagen, jadwal kalibrasi, kinerja teknisi, atau minta ringkasan
@@ -301,8 +301,7 @@ export default function AssistantWidget() {
                     return (
                       <div
                         key={item.id}
-                        className="fade-in text-[13px] leading-relaxed rounded-[14px] rounded-br-[4px] px-3.5 py-2.5 max-w-[88%] whitespace-pre-wrap self-end text-white shadow-card-sm"
-                        style={{ background: "linear-gradient(135deg, #2B8DB8 0%, #1A5F7A 100%)" }}
+                        className="fade-in text-[13px] leading-relaxed rounded-[14px] rounded-br-[4px] px-3.5 py-2.5 max-w-[88%] whitespace-pre-wrap self-end text-white bg-primary shadow-card-sm"
                       >
                         {item.content}
                       </div>
@@ -310,8 +309,8 @@ export default function AssistantWidget() {
                   }
                   return (
                     <div key={item.id} className="fade-in flex items-start gap-2 self-start max-w-[88%]">
-                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0 mt-0.5">
-                        <AssistantIcon size={13} />
+                      <div className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center shrink-0 mt-0.5">
+                        <AssistantIcon size={13} color="#1A5F7A" />
                       </div>
                       <div className="text-[13px] leading-relaxed rounded-[14px] rounded-bl-[4px] px-3.5 py-2.5 bg-white text-text shadow-card-sm min-w-0">
                         <AssistantMarkdown content={item.content} />
@@ -386,8 +385,8 @@ export default function AssistantWidget() {
 
               {busy && !pendingProposals.length && displayItems.at(-1)?.kind !== "message" && (
                 <div className="fade-in flex items-start gap-2 self-start">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0 mt-0.5">
-                    <AssistantIcon size={13} />
+                  <div className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center shrink-0 mt-0.5">
+                    <AssistantIcon size={13} color="#1A5F7A" />
                   </div>
                   <div className="bg-white shadow-card-sm rounded-[14px] rounded-bl-[4px] px-3.5 py-3 flex items-center gap-1">
                     <span className="typing-dot w-1.5 h-1.5 rounded-full bg-muted" style={{ animationDelay: "0s" }} />
@@ -399,7 +398,7 @@ export default function AssistantWidget() {
               {error && <div className="fade-in self-start text-xs text-danger px-1">{error}</div>}
             </div>
 
-            <div className="border-t border-border-soft p-2.5 shrink-0 bg-white">
+            <div className="border-t border-border-soft p-2.5 md:p-3.5 shrink-0 bg-white">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -413,7 +412,7 @@ export default function AssistantWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Tanya sesuatu…"
                   disabled={busy || pendingProposals.length > 0}
-                  className="flex-1 text-[13px] px-3.5 py-2.5 rounded-full border border-border bg-chip-bg focus:bg-white transition-colors text-text outline-none placeholder:text-faint disabled:opacity-60 min-w-0"
+                  className="flex-1 text-[13px] md:text-sm px-3.5 py-2.5 md:py-3 rounded-full border border-border bg-chip-bg focus:bg-white transition-colors text-text outline-none placeholder:text-faint disabled:opacity-60 min-w-0"
                 />
                 {busy ? (
                   <button
@@ -429,7 +428,7 @@ export default function AssistantWidget() {
                     type="submit"
                     disabled={pendingProposals.length > 0 || !input.trim()}
                     aria-label="Send"
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-dark text-white flex items-center justify-center shrink-0 disabled:opacity-40"
+                    className="w-10 h-10 rounded-full bg-primary shadow-glow-primary text-white flex items-center justify-center shrink-0 disabled:opacity-40 disabled:shadow-none"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="22" y1="2" x2="11" y2="13" />

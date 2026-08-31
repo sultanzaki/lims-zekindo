@@ -1,5 +1,5 @@
-import { DetailScreenSkeleton } from "@/components/Skeleton";
+import { DetailScreenSkeletonWithSidebar } from "@/components/Skeleton";
 
 export default function Loading() {
-  return <DetailScreenSkeleton />;
+  return <DetailScreenSkeletonWithSidebar />;
 }

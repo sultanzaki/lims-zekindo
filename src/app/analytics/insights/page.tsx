@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { canViewAnalytics } from "@/lib/roles";
 import { getTatPredictions, getResultAnomalies, getTechnicianPerformance } from "@/lib/bi";
 import { formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -12,18 +14,20 @@ function Note({ children }: { children: React.ReactNode }) {
 }
 
 export default async function InsightsPage() {
-  await requirePageRole(canViewAnalytics);
+  const user = await requirePageRole(canViewAnalytics);
 
-  const [predictions, anomalies, technicians] = await Promise.all([
+  const [predictions, anomalies, technicians, unread] = await Promise.all([
     getTatPredictions(),
     getResultAnomalies(),
     getTechnicianPerformance(),
+    getUnreadCount(user.id),
   ]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Advanced Insights" backHref="/analytics" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-6 md:max-w-[720px] md:mx-auto md:w-full">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-6 md:max-w-[720px] md:w-full">
         <section>
           <SectionLabel className="mb-1.5">TAT Prediction by Sample Type</SectionLabel>
           <Note>

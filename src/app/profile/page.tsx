@@ -3,7 +3,7 @@ import { requirePageUser } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import { ROLE_LABELS, AccessRole, canReviewAsSupervisor, canManageInventoryAndCatalog } from "@/lib/roles";
 import BottomNav from "@/components/BottomNav";
-import TopNav from "@/components/TopNav";
+import Sidebar from "@/components/Sidebar";
 import { signOutAction } from "@/lib/actions/auth";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Chevron from "@/components/ui/Chevron";
@@ -15,13 +15,15 @@ export default async function ProfilePage() {
   const role = user.accessRole;
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
-      <TopNav active="profile" unreadCount={unread} role={user.accessRole} userName={user.name} />
-      <div className="px-5 pt-6 pb-4 bg-white border-b border-border">
-        <h1 className="text-[19px] font-bold text-text tracking-tight">Profile</h1>
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
+      <div className="px-5 md:px-8 pt-6 md:pt-10 pb-4 bg-white border-b border-border">
+        <div className="md:max-w-[640px] md:w-full">
+          <h1 className="text-[19px] font-bold text-text tracking-tight">Profile</h1>
+        </div>
       </div>
 
-      <div className="flex-1 p-5 flex flex-col gap-5">
+      <div className="flex-1 p-5 md:px-8 flex flex-col gap-5 md:max-w-[640px] md:w-full">
         <div className="bg-white border border-border rounded-[18px] shadow-card p-4 flex items-center gap-3.5">
           <div className="w-[54px] h-[54px] rounded-full bg-primary-soft flex items-center justify-center text-lg font-bold text-primary-dark shrink-0">
             {user.initials}

@@ -16,6 +16,7 @@ export async function getDashboardData() {
     inTesting,
     awaitingReview,
     overdueRows,
+    overdueCountRows,
     rejectedEvents,
     queueRows,
     approvedLast7,
@@ -31,6 +32,12 @@ export async function getDashboardData() {
       AND s."receivedDate" + (COALESCE(c."targetTatHours", 48) || ' hours')::interval < now()
       ORDER BY s."receivedDate" ASC
       LIMIT 3
+    `,
+    prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(*) as count FROM "Sample" s
+      LEFT JOIN "SampleTypeCatalog" c ON s."sampleTypeId" = c.id
+      WHERE s.status = ANY(${OPEN_STATUSES})
+      AND s."receivedDate" + (COALESCE(c."targetTatHours", 48) || ' hours')::interval < now()
     `,
     prisma.custodyEvent.findMany({
       where: { label: { contains: "Rejected" }, sample: { status: "Rejected" } },
@@ -48,6 +55,7 @@ export async function getDashboardData() {
     prisma.custodyEvent.count({ where: { label: { contains: "Rejected" }, time: { gte: sevenDaysAgo } } }),
   ]);
 
+  const overdueCount = Number(overdueCountRows[0]?.count ?? 0);
   const overdueIds = overdueRows.map((r) => r.id);
   const overdueSamples = overdueIds.length
     ? await prisma.sample.findMany({ where: { id: { in: overdueIds } } })
@@ -97,6 +105,7 @@ export async function getDashboardData() {
     pendingLogin,
     inTesting,
     awaitingReview,
+    overdueCount,
     attentionItems,
     queueSamples,
     approvedLast7,
