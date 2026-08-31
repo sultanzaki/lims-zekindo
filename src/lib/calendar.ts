@@ -51,3 +51,14 @@ export function dayKeyToDate(key: string): Date {
 export function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * DAY_MS);
 }
+
+export function monthParam(key: string): string {
+  return key.slice(0, 7); // "YYYY-MM"
+}
+
+// Grid cells are built from UTC-midnight synthetic dates, so their Jakarta
+// calendar day is just the same Y-M-D (no real timezone conversion needed
+// here since we're only using this to label cells).
+export function utcDayKey(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}

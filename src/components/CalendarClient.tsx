@@ -1,0 +1,183 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { dayKeyToDate, addDays, monthParam, utcDayKey, type CalendarSample } from "@/lib/calendar";
+import { formatDateTime } from "@/lib/format";
+import EmptyState from "@/components/ui/EmptyState";
+
+const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+const MONTH_LABEL = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+const DAY_HEADER_LABEL = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" });
+
+export default function CalendarClient({
+  byDay,
+  initialMonthKey,
+  initialSelectedDay,
+  todayKey,
+}: {
+  byDay: Record<string, CalendarSample[]>;
+  initialMonthKey: string;
+  initialSelectedDay: string;
+  todayKey: string;
+}) {
+  const [monthKey, setMonthKey] = useState(initialMonthKey);
+  const [selectedDay, setSelectedDay] = useState(initialSelectedDay);
+
+  const { monthStart, prevMonthKey, nextMonthKey, cells } = useMemo(() => {
+    const [year, month] = monthKey.split("-").map(Number);
+    const monthStart = new Date(Date.UTC(year, month - 1, 1));
+    const monthEndExclusive = new Date(Date.UTC(year, month, 1));
+    const prevMonth = new Date(Date.UTC(year, month - 2, 1));
+    const nextMonth = new Date(Date.UTC(year, month, 1));
+
+    // Leading blanks so the 1st lands in the correct weekday column (Sun-first).
+    const leadingBlanks = monthStart.getUTCDay();
+    const totalDays = Math.round((monthEndExclusive.getTime() - monthStart.getTime()) / (24 * 60 * 60 * 1000));
+    const cells: (string | null)[] = [
+      ...Array.from({ length: leadingBlanks }, () => null),
+      ...Array.from({ length: totalDays }, (_, i) => utcDayKey(addDays(monthStart, i))),
+    ];
+
+    return {
+      monthStart,
+      prevMonthKey: monthParam(prevMonth.toISOString()),
+      nextMonthKey: monthParam(nextMonth.toISOString()),
+      cells,
+    };
+  }, [monthKey]);
+
+  const selectedItems = byDay[selectedDay] ?? [];
+  const selectedDate = dayKeyToDate(selectedDay);
+  const dueThisMonth = cells.reduce((sum, key) => sum + (key ? byDay[key]?.length ?? 0 : 0), 0);
+
+  function goToday() {
+    setMonthKey(monthParam(todayKey));
+    setSelectedDay(todayKey);
+  }
+
+  return (
+    <>
+      <div className="hidden md:block px-9 pt-7">
+        <div className="text-[20px] font-bold text-text tracking-tight">TAT Calendar</div>
+        <div className="text-[13px] text-muted mt-0.5">
+          {MONTH_LABEL.format(monthStart)} &middot; {dueThisMonth} sample{dueThisMonth === 1 ? "" : "s"} due this month
+        </div>
+      </div>
+      <div className="flex-1 px-5 md:px-9 pt-4.5 md:pt-5 pb-7 flex flex-col gap-4 md:grid md:grid-cols-[400px_1fr] md:gap-6 md:items-start md:max-w-[1080px] md:w-full">
+        <div className="bg-white border border-border rounded-[18px] md:rounded-2xl shadow-card p-4 md:p-5">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
+            <button
+              type="button"
+              onClick={() => setMonthKey(prevMonthKey)}
+              className="w-8 h-8 rounded-full bg-page-bg flex items-center justify-center cursor-pointer"
+              aria-label="Previous month"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A5F7A" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <div className="text-[15px] font-bold text-text tracking-tight">{MONTH_LABEL.format(monthStart)}</div>
+            <button
+              type="button"
+              onClick={() => setMonthKey(nextMonthKey)}
+              className="w-8 h-8 rounded-full bg-page-bg flex items-center justify-center cursor-pointer"
+              aria-label="Next month"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A5F7A" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 md:gap-1.5 mb-1.5 md:mb-2">
+            {WEEKDAY_LABELS.map((w, i) => (
+              <div key={i} className="text-center text-[10px] md:text-[11px] font-semibold text-faint py-1">
+                {w}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 md:gap-1.5">
+            {cells.map((key, i) => {
+              if (!key) return <div key={`blank-${i}`} />;
+              const items = byDay[key] ?? [];
+              const hasOverdue = items.some((s) => s.overdue);
+              const isSelected = key === selectedDay;
+              const isToday = key === todayKey;
+              const dotColor = hasOverdue ? "#D0021B" : items.length > 0 ? "#F5A623" : null;
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  onClick={() => setSelectedDay(key)}
+                  className="aspect-square flex flex-col items-center justify-center gap-0.5 rounded-[10px] md:rounded-xl relative cursor-pointer"
+                  style={{
+                    background: isSelected ? "#1A5F7A" : isToday ? "#E8F4FA" : "transparent",
+                  }}
+                >
+                  <span
+                    className="text-[12px] md:text-[13px] font-semibold"
+                    style={{ color: isSelected ? "#fff" : "#0B0B0B" }}
+                  >
+                    {Number(key.slice(8, 10))}
+                  </span>
+                  {dotColor && (
+                    <span
+                      className="w-[5px] h-[5px] rounded-full"
+                      style={{ background: isSelected ? "#fff" : dotColor }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-3 mt-3 md:mt-4 pt-3 md:pt-4 border-t border-border-soft text-[10px] md:text-[11px] text-muted">
+            <span className="flex items-center gap-1">
+              <span className="w-[7px] h-[7px] rounded-full bg-danger inline-block" /> Overdue
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-[7px] h-[7px] rounded-full bg-warning inline-block" /> Due
+            </span>
+            <button type="button" onClick={goToday} className="ml-auto font-semibold text-primary cursor-pointer">
+              Today
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[13px] md:text-[15px] font-semibold text-text mb-2.5 md:mb-3">
+            {DAY_HEADER_LABEL.format(selectedDate)} {selectedDay === todayKey && <span className="text-primary">· Today</span>}
+          </div>
+          <div className="flex flex-col gap-2 md:gap-2.5">
+            {selectedItems.map((s) => (
+              <Link
+                key={s.id}
+                href={`/samples/${s.id}`}
+                className="bg-white border border-border rounded-2xl shadow-card-sm px-3.5 py-3 md:px-4 md:py-3.5 flex items-center justify-between gap-2"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-text truncate">{s.name || s.id}</div>
+                  <div className="text-xs text-muted mt-0.5">
+                    {s.type} · {s.status}
+                  </div>
+                </div>
+                <span
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0"
+                  style={{
+                    background: s.overdue ? "#FDECEA" : "#FEF3E0",
+                    color: s.overdue ? "#B00016" : "#9A6100",
+                  }}
+                >
+                  {s.overdue ? "Overdue" : formatDateTime(s.dueAt)}
+                </span>
+              </Link>
+            ))}
+            {selectedItems.length === 0 && <EmptyState>Nothing due this day.</EmptyState>}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
