@@ -393,12 +393,13 @@ async function verifySignature(userId: string, formData: FormData): Promise<{ us
 // exact same status transition, custody event, and audit entry as approving
 // one sample at a time through the review panel — the only thing bulk mode
 // changes is how many samples get looped through, not what happens to each.
-async function performSupervisorApprove(sample: { id: string }, user: { id: string; name: string; email: string }) {
+async function performSupervisorApprove(sample: { id: string }, user: { id: string; name: string; role: string; email: string }) {
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
   await prisma.sample.update({
     where: { id: sample.id },
     data: {
       status: "Awaiting QA Approval",
+      reviewedByRole: user.role,
       custodyEvents: {
         create: [{ label: `Supervisor Reviewed (${user.name})`, time: new Date(), order: eventCount }],
       },

@@ -54,6 +54,7 @@ model Sample {
   createdAt        DateTime  @default(now())
   approvedBy       String?
   approvedAt       DateTime?
+  reviewedByRole   String?
   storageLocation  String?
   retentionUntil   DateTime?
   disposedAt       DateTime?

@@ -4,16 +4,22 @@ import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
-import LabelCard from "@/components/LabelCard";
+import LabelCard, { type LabelSize } from "@/components/LabelCard";
+import LabelSizeSwitch from "@/components/LabelSizeSwitch";
 import EmptyState from "@/components/ui/EmptyState";
+
+function parseSize(value: string | undefined): LabelSize {
+  return value === "small" || value === "medium" ? value : "large";
+}
 
 export default async function SampleLabelBatchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ids?: string }>;
+  searchParams: Promise<{ ids?: string; size?: string }>;
 }) {
   await requirePageUser();
-  const { ids } = await searchParams;
+  const { ids, size: sizeParam } = await searchParams;
+  const size = parseSize(sizeParam);
   const sampleIds = (ids ?? "")
     .split(",")
     .map((s) => s.trim())
@@ -55,6 +61,8 @@ export default async function SampleLabelBatchPage({
       </div>
 
       <div className="label-print-wrap flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
+        {cards.length > 0 && <LabelSizeSwitch basePath="/samples/label-batch" size={size} extraParams={{ ids: ids ?? "" }} />}
+
         {cards.length === 0 && (
           <div className="no-print w-full max-w-[320px]">
             <EmptyState>No samples selected. Go back and pick some from the Samples list.</EmptyState>
@@ -68,6 +76,7 @@ export default async function SampleLabelBatchPage({
               docType="Sample Label"
               code={sample.id}
               title={sample.name}
+              size={size}
               fields={[
                 { label: "Type", value: sample.type },
                 { label: "Priority", value: sample.priority },

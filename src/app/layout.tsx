@@ -15,7 +15,17 @@ const robotoMono = Roboto_Mono({
   weight: ["500", "600"],
 });
 
+// Falls back through Vercel's auto-injected deployment URL env vars so the
+// og:image tag resolves to an absolute URL in every environment (prod,
+// preview, local) without needing a hardcoded domain.
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "LIMS Mobile",
   description: "Laboratory Information Management System",
   appleWebApp: {

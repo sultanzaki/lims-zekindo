@@ -4,14 +4,23 @@ import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
-import LabelCard from "@/components/LabelCard";
+import LabelCard, { type LabelSize } from "@/components/LabelCard";
+import LabelSizeSwitch from "@/components/LabelSizeSwitch";
+
+function parseSize(value: string | undefined): LabelSize {
+  return value === "small" || value === "medium" ? value : "large";
+}
 
 export default async function SampleLabelPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ size?: string }>;
 }) {
   const { id } = await params;
+  const { size: sizeParam } = await searchParams;
+  const size = parseSize(sizeParam);
   const sample = await prisma.sample.findUnique({
     where: { id },
     select: {
@@ -37,11 +46,14 @@ export default async function SampleLabelPage({
       </div>
 
       <div className="label-print-wrap flex-1 px-5 pt-6 pb-7 flex flex-col items-center gap-4">
+        <LabelSizeSwitch basePath={`/samples/${sample.id}/label`} size={size} />
+
         <LabelCard
           qrDataUrl={qrDataUrl}
           docType="Sample Label"
           code={sample.id}
           title={sample.name}
+          size={size}
           fields={[
             { label: "Type", value: sample.type },
             { label: "Priority", value: sample.priority },

@@ -190,6 +190,22 @@ input.field-plain:focus {
   .label-card {
     page-break-inside: avoid;
   }
+  /* Small/medium labels print on real pre-cut label stock, not a trimmed
+     corner of A4 — the physical page IS the label, so no flush-corner
+     positioning or 6mm cut margin is needed, and the @page size below must
+     match the label exactly. */
+  .label-print-wrap:has(.label-card[data-size="small"]),
+  .label-print-wrap:has(.label-card[data-size="medium"]) {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+  .label-card[data-size="small"] {
+    page: label-sm;
+  }
+  .label-card[data-size="medium"] {
+    page: label-md;
+  }
   /* Batch label print: each label is meant to go on its own physical
      sticker/page, same as printing one label at a time — just looped. The
      last one doesn't need a trailing blank page after it. */
@@ -199,6 +215,16 @@ input.field-plain:focus {
   .label-batch-item:last-child {
     break-after: auto;
   }
+}
+
+@page label-sm {
+  size: 50mm 20mm;
+  margin: 0;
+}
+
+@page label-md {
+  size: 100mm 40mm;
+  margin: 0;
 }
 
 /* ---- Motion ----

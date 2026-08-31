@@ -84,11 +84,12 @@ export default function CertificateDocument({ sample, qrDataUrl }: { sample: Sam
       {/* Signatures */}
       <div className="grid grid-cols-2 gap-8 mt-auto text-[10px] break-inside-avoid">
         <SignatureBlock
-          role="Reviewed By — Supervisor"
+          role="Reviewed By"
           name={reviewedByName}
+          title={sample.reviewedByRole ?? undefined}
           date={reviewEvent ? formatDate(reviewEvent.time) : null}
         />
-        <SignatureBlock role="Approved By — QA Manager" name={approvedName} title={approvedTitle} date={sample.approvedAt ? formatDate(sample.approvedAt) : null} />
+        <SignatureBlock role="Approved By" name={approvedName} title={approvedTitle} date={sample.approvedAt ? formatDate(sample.approvedAt) : null} />
       </div>
 
       {/* Footer */}
