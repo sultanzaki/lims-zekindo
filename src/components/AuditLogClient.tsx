@@ -232,7 +232,7 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
                     </div>
                   </td>
                   <td className="py-2.5 px-3 text-[13px] text-muted whitespace-nowrap">{e.actorName}</td>
-                  <td className="py-2.5 px-3 text-[13px]">
+                  <td className="py-2.5 px-3 text-[13px] whitespace-nowrap">
                     {e.entityType === "Sample" ? (
                       <Link href={`/samples/${e.entityId}`} className="font-mono-data text-primary font-semibold hover:underline">
                         {e.entityType} {e.entityId}

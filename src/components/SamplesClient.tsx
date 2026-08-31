@@ -431,7 +431,7 @@ export default function SamplesClient({
                           </span>
                         </td>
                       )}
-                      <td className="py-2.5 px-3">
+                      <td className="py-2.5 px-3 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: CUSTODY_DOT_COLOR[s.status as SampleStatus] }} />
                           <span className="text-[13px] font-semibold text-text font-mono-data">{s.id}</span>

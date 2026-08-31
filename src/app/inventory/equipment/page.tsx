@@ -108,7 +108,7 @@ export default async function EquipmentPage() {
                     const locationName = e.storageLocation ? locationTree.pathFor(e.storageLocation.id) : e.location;
                     return (
                       <tr key={e.id} className="border-b border-border-soft last:border-b-0 hover:bg-chip-bg transition-colors">
-                        <td className="py-2.5 px-4">
+                        <td className="py-2.5 px-4 whitespace-nowrap">
                           <Link href={`/inventory/equipment/${e.id}`} className="text-[13px] font-semibold text-primary-dark font-mono-data hover:underline">
                             {e.assetTag}
                           </Link>

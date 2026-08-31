@@ -323,7 +323,7 @@ export default function SampleDetailClient({
       <Sidebar role={role} userName={userName} unreadCount={unreadCount} />
 
       <div className="sticky top-0 bg-white border-b border-border-soft z-10">
-        <div className="flex items-center gap-2.5 px-3.5 pt-6 pb-2.5 md:px-8 md:pt-8 md:max-w-[1280px] md:mx-auto md:w-full">
+        <div className="flex items-center gap-2.5 px-3.5 pt-6 pb-2.5 md:px-8 md:pt-8 md:max-w-[1280px] md:w-full">
           <Link
             href="/samples"
             className="w-10 h-10 rounded-full bg-page-bg flex items-center justify-center shrink-0"
@@ -364,7 +364,7 @@ export default function SampleDetailClient({
           })}
         </div>
         {(isOverdue || sample.retestOf) && (
-          <div className="flex items-center gap-2 flex-wrap px-3.5 pb-3 md:px-8 md:max-w-[1280px] md:mx-auto md:w-full">
+          <div className="flex items-center gap-2 flex-wrap px-3.5 pb-3 md:px-8 md:max-w-[1280px] md:w-full">
             {isOverdue && (
               <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-danger-bg text-danger">
                 Overdue — due {formatDateTime(dueAt)}
@@ -390,7 +390,7 @@ export default function SampleDetailClient({
       </div>
 
       {/* Desktop: everything visible at once, split into a metadata rail + a results column */}
-      <div className="hidden md:grid md:grid-cols-[360px_1fr] md:items-start md:gap-5 md:px-8 md:py-6 md:max-w-[1280px] md:mx-auto md:w-full flex-1">
+      <div className="hidden md:grid md:grid-cols-[360px_1fr] md:items-start md:gap-5 md:px-8 md:py-6 md:max-w-[1280px] md:w-full flex-1">
         <div className="flex flex-col gap-3.5">
           {detailsContent}
           <SectionLabel className="mt-1">Custody</SectionLabel>

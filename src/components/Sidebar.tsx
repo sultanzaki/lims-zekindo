@@ -47,7 +47,7 @@ type NavGroup = {
   items: NavItem[];
 };
 
-function buildGroups(role: string, hasUnread: boolean): NavGroup[] {
+function buildGroups(role: string): NavGroup[] {
   const groups: NavGroup[] = [
     {
       label: "Main",
@@ -56,7 +56,6 @@ function buildGroups(role: string, hasUnread: boolean): NavGroup[] {
         { href: "/samples", label: "Samples", icon: FlaskConical },
         { href: "/scan", label: "Scan", icon: ScanLine },
         { href: "/calendar", label: "TAT Calendar", icon: CalendarClock },
-        { href: "/notifications", label: "Alerts", icon: Bell, badge: hasUnread },
       ],
     },
   ];
@@ -135,7 +134,8 @@ export default function Sidebar({
   unreadCount: number;
 }) {
   const pathname = usePathname();
-  const groups = buildGroups(role, unreadCount > 0);
+  const groups = buildGroups(role);
+  const hasUnread = unreadCount > 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1");
   const menuRef = useRef<HTMLDivElement>(null);
@@ -164,6 +164,17 @@ export default function Sidebar({
   const close = () => setMenuOpen(false);
 
   return (
+    <>
+    <Link
+      href="/notifications"
+      aria-label="Alerts"
+      className="hidden md:flex fixed top-4 right-6 z-30 w-10 h-10 rounded-full bg-white border border-border items-center justify-center text-muted hover:bg-chip-bg hover:text-text shadow-card-sm transition-colors"
+    >
+      <Bell size={18} strokeWidth={2} />
+      {hasUnread && (
+        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-danger border-2 border-white" />
+      )}
+    </Link>
     <aside
       style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
       className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-border z-20 transition-[width] duration-200 overflow-hidden"
@@ -272,5 +283,6 @@ export default function Sidebar({
         </button>
       </div>
     </aside>
+    </>
   );
 }

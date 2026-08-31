@@ -36,7 +36,7 @@ export default function NewSampleForm({
   return (
     <form
       action={formAction}
-      className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-5 md:pt-8 md:max-w-[760px] md:mx-auto md:w-full"
+      className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-5 md:pt-8 md:max-w-[760px] md:w-full"
     >
       <div className="bg-primary-soft border border-[#C4E3F1] rounded-[13px] px-4 py-3.5 flex items-center justify-between gap-3">
         <div>

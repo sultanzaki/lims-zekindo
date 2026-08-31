@@ -22,32 +22,37 @@ export function SkeletonRow({ withBadge = true, stagger = 0 }: { withBadge?: boo
  * sidebar-less mobile layout during navigation. */
 export function SidebarSkeleton() {
   return (
-    <aside
-      style={{ width: "var(--sidebar-w)" }}
-      className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-border z-20 overflow-hidden"
-    >
-      <div className="flex items-center h-16 shrink-0 border-b border-border px-5">
-        <SkeletonBlock className="h-6 w-24" />
+    <>
+      <div className="hidden md:block fixed top-4 right-6 z-30">
+        <SkeletonBlock className="h-10 w-10 rounded-full" />
       </div>
-      <div className="px-4 pt-4">
-        <SkeletonBlock className="h-9 w-full rounded-full" />
-      </div>
-      <div className="flex-1 px-3 py-4 flex flex-col gap-5">
-        <div className="flex flex-col gap-0.5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-9 w-full rounded-xl" />
-          ))}
+      <aside
+        style={{ width: "var(--sidebar-w)" }}
+        className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-border z-20 overflow-hidden"
+      >
+        <div className="flex items-center h-16 shrink-0 border-b border-border px-5">
+          <SkeletonBlock className="h-6 w-24" />
         </div>
-        <div className="flex flex-col gap-0.5">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-9 w-full rounded-xl" />
-          ))}
+        <div className="px-4 pt-4">
+          <SkeletonBlock className="h-9 w-full rounded-full" />
         </div>
-      </div>
-      <div className="border-t border-border p-3">
-        <SkeletonBlock className="h-11 w-full rounded-xl" />
-      </div>
-    </aside>
+        <div className="flex-1 px-3 py-4 flex flex-col gap-5">
+          <div className="flex flex-col gap-0.5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonBlock key={i} className="h-9 w-full rounded-xl" />
+            ))}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonBlock key={i} className="h-9 w-full rounded-xl" />
+            ))}
+          </div>
+        </div>
+        <div className="border-t border-border p-3">
+          <SkeletonBlock className="h-11 w-full rounded-xl" />
+        </div>
+      </aside>
+    </>
   );
 }
 

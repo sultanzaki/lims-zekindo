@@ -123,7 +123,7 @@ export default async function ReagentsPage() {
                           </Link>
                           <span className="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-chip-bg text-muted">{r.category}</span>
                         </td>
-                        <td className="py-2.5 px-3 text-[13px] text-muted font-mono-data">{r.lotNumber}</td>
+                        <td className="py-2.5 px-3 text-[13px] text-muted font-mono-data whitespace-nowrap">{r.lotNumber}</td>
                         <td className="py-2.5 px-3 text-[13px] text-muted font-mono-data whitespace-nowrap">
                           {r.expiryDate ? formatDate(r.expiryDate) : "—"}
                         </td>
