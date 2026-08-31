@@ -6,6 +6,7 @@ import { requireUser, requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { decodeNfcPayload, pathForNfcEntity, type NfcEntityType } from "@/lib/nfc";
+import { resolveNfcToken } from "@/lib/nfc-resolve";
 
 // Sample NFC tags follow the sample detail page's own access rule (any
 // logged-in user can view/act on a sample) — Equipment and Reagent/Chemical
@@ -116,16 +117,7 @@ export type ResolveNfcTagResult =
 /** Used by the scan page: turns a scanned tag's raw NDEF text into where to go. */
 export async function resolveNfcTagAction(rawText: string): Promise<ResolveNfcTagResult> {
   await requireUser();
-  const token = decodeNfcPayload(rawText);
-  if (!token) return { status: "unknown" };
-
-  const tag = await prisma.nfcTag.findUnique({ where: { token } });
-  if (!tag) return { status: "unknown" };
-  if (!tag.active) return { status: "inactive" };
-
-  const entityType = tag.entityType as NfcEntityType;
-  const path = pathForNfcEntity(entityType, tag.entityId);
-  // Chemicals/reagents: jump straight to the Log Usage form already on
-  // that detail page, instead of just the read-only info at the top.
-  return { status: "ok", redirectPath: entityType === "REAGENT" ? `${path}?action=log` : path };
+  const result = await resolveNfcToken(rawText);
+  if (result.status !== "ok") return { status: result.status };
+  return { status: "ok", redirectPath: result.redirectPath };
 }
