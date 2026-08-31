@@ -163,7 +163,8 @@ export default function SamplesClient({
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={role} userName={userName} unreadCount={unreadCount} />
-      <div className="sticky top-0 bg-white border-b border-border-soft px-5 pt-6 md:pt-10 pb-2.5 z-10 flex flex-col gap-3">
+      <div className="sticky top-0 bg-white border-b border-border-soft px-5 md:px-8 pt-6 md:pt-10 pb-2.5 z-10">
+      <div className="md:max-w-[1400px] md:mx-auto md:w-full flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Samples</h1>
           <div className="flex items-center gap-2 shrink-0">
@@ -214,8 +215,8 @@ export default function SamplesClient({
             className="border-none bg-transparent text-[15px] text-text flex-1 outline-none placeholder:text-faint min-w-0"
           />
         </div>
-        <div className="relative -mx-5">
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5 px-5">
+        <div className="relative -mx-5 md:mx-0">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 px-5 md:px-0">
             {STATUS_OPTIONS.map((opt) => {
               const active = statusFilter === opt;
               return (
@@ -235,7 +236,7 @@ export default function SamplesClient({
               );
             })}
           </div>
-          <div className="pointer-events-none absolute top-0 right-0 bottom-0.5 w-8 bg-gradient-to-l from-white to-transparent" />
+          <div className="pointer-events-none absolute top-0 right-0 bottom-0.5 w-8 bg-gradient-to-l from-white to-transparent md:hidden" />
         </div>
         <div className="flex items-center justify-between pb-0.5">
           <button
@@ -270,8 +271,11 @@ export default function SamplesClient({
           </div>
         )}
       </div>
+      </div>
 
-      <div className="flex-1 pb-5 flex flex-col">
+      <div className="flex-1 pb-5 flex flex-col md:px-8">
+      <div className="md:max-w-[1400px] md:mx-auto md:w-full">
+        <div className="md:hidden">
         {groups.map((group) => (
           <div key={group.label}>
             <div className="px-5 pt-3.5 pb-1.5 flex items-baseline justify-between">
@@ -371,11 +375,103 @@ export default function SamplesClient({
             </div>
           </div>
         ))}
+        </div>
+
+        <div className="hidden md:block px-8 pt-4">
+          <div className="bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border-soft">
+                  {selectMode && <th className="w-10 py-2.5 pl-4" />}
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Sample ID</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Name / Type</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Source</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Status</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Due / Completed</th>
+                  <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3 pr-4">Collected By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((s) => {
+                  const statusStyle = STATUS_STYLES[s.status as SampleStatus];
+                  const terminal = s.status === "Complete" || s.status === "Rejected";
+                  const due = !terminal ? dueLabelFor(s.receivedDate, s.sampleType?.targetTatHours ?? 48) : null;
+                  const footerLabel = terminal
+                    ? s.status === "Complete"
+                      ? s.approvedAt
+                        ? `Completed ${formatDate(s.approvedAt)}`
+                        : "Complete"
+                      : "Needs correction"
+                    : due!.label;
+                  const footerColor = terminal ? (s.status === "Complete" ? "#1E7A34" : "#B00016") : due!.color;
+                  const selected = selectedIds.has(s.id);
+
+                  return (
+                    <tr
+                      key={s.id}
+                      onClick={() => (selectMode ? toggleSelect(s.id) : router.push(`/samples/${s.id}`))}
+                      className="border-b border-border-soft last:border-b-0 cursor-pointer hover:bg-chip-bg transition-colors"
+                      style={{ background: selected ? "var(--color-primary-soft)" : undefined }}
+                    >
+                      {selectMode && (
+                        <td className="py-2.5 pl-4">
+                          <span
+                            className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+                            style={{
+                              borderColor: selected ? "var(--color-primary)" : "var(--color-border)",
+                              background: selected ? "var(--color-primary)" : "transparent",
+                            }}
+                          >
+                            {selected && (
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </span>
+                        </td>
+                      )}
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: CUSTODY_DOT_COLOR[s.status as SampleStatus] }} />
+                          <span className="text-[13px] font-semibold text-text font-mono-data">{s.id}</span>
+                          {selectMode && isApprovable(s) && (
+                            <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-success/15 text-success-dark shrink-0">
+                              Approvable
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 max-w-[240px]">
+                        <div className="text-[13px] font-semibold text-text truncate">{s.name || s.type}</div>
+                        {s.name && <div className="text-[11px] text-muted truncate">{s.type}</div>}
+                      </td>
+                      <td className="py-2.5 px-3 text-[13px] text-muted max-w-[200px] truncate">{s.source}</td>
+                      <td className="py-2.5 px-3">
+                        <span
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+                          style={{ background: statusStyle.bg, color: statusStyle.color }}
+                        >
+                          {SAMPLE_STATUS_SHORT[s.status as SampleStatus]}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-[13px] font-semibold whitespace-nowrap" style={{ color: footerColor }}>
+                        {footerLabel}
+                      </td>
+                      <td className="py-2.5 px-3 pr-4 text-[13px] text-muted truncate max-w-[160px]">{s.collectedBy}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {filtered.length === 0 && (
           <div className="px-5">
             <EmptyState>No samples match your search.</EmptyState>
           </div>
         )}
+      </div>
       </div>
 
       {selectMode && selectedIds.size > 0 && (
