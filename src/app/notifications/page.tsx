@@ -2,21 +2,11 @@ import Link from "next/link";
 import { requirePageUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { relativeTime } from "@/lib/format";
+import { notifAccent } from "@/lib/notifications";
 import BottomNav from "@/components/BottomNav";
 import Sidebar from "@/components/Sidebar";
 import { markAllReadAction } from "@/lib/actions/notifications";
 import EmptyState from "@/components/ui/EmptyState";
-
-function notifAccent(title: string) {
-  const t = title.toLowerCase();
-  if (t.includes("rejected") || t.includes("overdue") || t.includes("deviation")) {
-    return { bg: "#FDECEA", color: "#D0021B" };
-  }
-  if (t.includes("approved") || t.includes("complete")) {
-    return { bg: "#E6F4EA", color: "#28A745" };
-  }
-  return { bg: "#E8F4FA", color: "#2B8DB8" };
-}
 
 export default async function NotificationsPage() {
   const user = await requirePageUser();

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { buildLocationTree, flattenForSelect } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
-import { CreateStorageLocationForm } from "@/components/WarehouseForms";
+import WarehouseToolbar from "@/components/WarehouseToolbar";
 import WarehouseTree from "@/components/WarehouseTree";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -29,18 +29,20 @@ export default async function WarehousePage() {
   }));
   const tree = buildLocationTree(nodes);
   const parentOptions = flattenForSelect(nodes);
+  const activeLocations = nodes.filter((n) => n.active).length;
+  const totalItems = nodes.reduce((sum, n) => sum + n.directReagents + n.directEquipment, 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
-      <BackHeader title="Warehouse" backHref="/profile" />
-      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1400px] md:w-full">
-        <p className="text-xs text-muted -mt-1 md:max-w-[720px]">
-          Physical storage locations shared by Reagents &amp; Chemicals and Equipment — nest them as deep as your lab is organized, e.g. KBI › Microbiology Lab › Rak X.
-        </p>
-        <div className="md:max-w-[720px]">
-          <CreateStorageLocationForm parentOptions={parentOptions} />
-        </div>
+      <BackHeader title="Warehouse" backHref="/profile" hideDesktop />
+      <div className="flex-1 px-5 md:px-9 pt-4.5 md:pt-7 pb-7 md:pb-9 flex flex-col gap-3.5 md:gap-5 md:max-w-[1400px] md:w-full">
+        <WarehouseToolbar
+          totalLocations={nodes.length}
+          activeLocations={activeLocations}
+          totalItems={totalItems}
+          parentOptions={parentOptions}
+        />
 
         {nodes.length > 0 ? <WarehouseTree tree={tree} /> : <EmptyState>No warehouse locations yet — add one above.</EmptyState>}
       </div>

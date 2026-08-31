@@ -6,6 +6,7 @@ import { CreateEquipmentForm } from "@/components/InventoryForms";
 import StatChip from "@/components/ui/StatChip";
 import EmptyState from "@/components/ui/EmptyState";
 import Chevron from "@/components/ui/Chevron";
+import Modal from "@/components/ui/Modal";
 
 export type EquipmentRow = {
   id: string;
@@ -91,23 +92,21 @@ export default function EquipmentListClient({
           </select>
           <button
             type="button"
-            onClick={() => setFormOpen((v) => !v)}
+            onClick={() => setFormOpen(true)}
             className="flex items-center gap-1.5 h-[38px] px-4 rounded-[10px] bg-primary text-white text-[13px] font-semibold shadow-glow-primary cursor-pointer"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            {formOpen ? "Close" : "Add Equipment"}
+            Add Equipment
           </button>
         </div>
       </div>
 
-      {formOpen && (
-        <div className="hidden md:block md:max-w-[640px]">
-          <CreateEquipmentForm locations={locations} />
-        </div>
-      )}
+      <Modal open={formOpen} onClose={() => setFormOpen(false)} title="Add Equipment">
+        <CreateEquipmentForm locations={locations} />
+      </Modal>
 
       {/* Mobile: always-visible create form (unchanged) */}
       <div className="md:hidden">

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { CreateSampleTypeForm, CreateTestCatalogForm } from "@/components/CatalogForms";
 import StatChip from "@/components/ui/StatChip";
+import Modal from "@/components/ui/Modal";
 import { setSampleTypeActiveAction, setTestCatalogActiveAction } from "@/lib/actions/catalog";
 
 export type TestRow = {
@@ -69,35 +70,35 @@ export default function SampleTestCatalogClient({ sampleTypes }: { sampleTypes: 
           </div>
           <button
             type="button"
-            onClick={() => setTestFormOpen((v) => !v)}
+            onClick={() => setTestFormOpen(true)}
             className="flex items-center gap-1.5 h-[38px] px-4 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-primary-dark cursor-pointer whitespace-nowrap"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            {testFormOpen ? "Close" : "Add Test"}
+            Add Test
           </button>
           <button
             type="button"
-            onClick={() => setSampleTypeFormOpen((v) => !v)}
+            onClick={() => setSampleTypeFormOpen(true)}
             className="flex items-center gap-1.5 h-[38px] px-4 rounded-[10px] bg-primary text-white text-[13px] font-semibold shadow-glow-primary cursor-pointer whitespace-nowrap"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            {sampleTypeFormOpen ? "Close" : "Add Sample Type"}
+            Add Sample Type
           </button>
         </div>
       </div>
 
-      {(sampleTypeFormOpen || testFormOpen) && (
-        <div className="hidden md:grid md:grid-cols-2 md:gap-4 md:items-start">
-          {sampleTypeFormOpen && <CreateSampleTypeForm />}
-          {testFormOpen && <CreateTestCatalogForm sampleTypes={sampleTypes.map((s) => ({ id: s.id, name: s.name }))} />}
-        </div>
-      )}
+      <Modal open={sampleTypeFormOpen} onClose={() => setSampleTypeFormOpen(false)} title="Add Sample Type">
+        <CreateSampleTypeForm />
+      </Modal>
+      <Modal open={testFormOpen} onClose={() => setTestFormOpen(false)} title="Add Test Definition">
+        <CreateTestCatalogForm sampleTypes={sampleTypes.map((s) => ({ id: s.id, name: s.name }))} />
+      </Modal>
 
       {/* Mobile: always-visible create forms (unchanged) */}
       <div className="flex flex-col gap-4 md:hidden">

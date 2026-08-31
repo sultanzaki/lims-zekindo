@@ -9,7 +9,6 @@ import {
   FlaskConical,
   ScanLine,
   CalendarClock,
-  Bell,
   BarChart3,
   TriangleAlert,
   ClipboardList,
@@ -30,6 +29,7 @@ import {
 import { signOutAction } from "@/lib/actions/auth";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog, canViewAnalytics, isAdmin } from "@/lib/roles";
 import { GlobalSearchDesktop } from "@/components/GlobalSearch";
+import NotificationsBell from "@/components/NotificationsBell";
 
 const EXPANDED_W = "16rem";
 const COLLAPSED_W = "4.5rem";
@@ -135,7 +135,6 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const groups = buildGroups(role);
-  const hasUnread = unreadCount > 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1");
   const menuRef = useRef<HTMLDivElement>(null);
@@ -165,16 +164,7 @@ export default function Sidebar({
 
   return (
     <>
-    <Link
-      href="/notifications"
-      aria-label="Alerts"
-      className="hidden md:flex fixed top-4 right-6 z-30 w-10 h-10 rounded-full bg-white border border-border items-center justify-center text-muted hover:bg-chip-bg hover:text-text shadow-card-sm transition-colors"
-    >
-      <Bell size={18} strokeWidth={2} />
-      {hasUnread && (
-        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-danger border-2 border-white" />
-      )}
-    </Link>
+    <NotificationsBell unreadCount={unreadCount} />
     <aside
       style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
       className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-border z-20 transition-[width] duration-200 overflow-hidden"
