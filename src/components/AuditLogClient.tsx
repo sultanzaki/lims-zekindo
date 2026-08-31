@@ -105,7 +105,7 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
   );
 
   return (
-    <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5">
+    <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1300px] md:mx-auto md:w-full">
       <div className="flex items-center justify-between gap-3">
         <div className="text-[11px] text-muted">Most recent {entries.length} events</div>
         <button onClick={() => downloadCsv(filtered)} className="text-xs font-semibold text-primary cursor-pointer">
@@ -113,7 +113,7 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
         </button>
       </div>
 
-      <div className="flex items-center gap-2 bg-chip-bg border border-border rounded-[13px] px-3.5 py-2.5">
+      <div className="flex items-center gap-2 bg-chip-bg border border-border rounded-[13px] px-3.5 py-2.5 md:max-w-[420px]">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7A8B94" strokeWidth="2" className="shrink-0">
           <circle cx="11" cy="11" r="7" />
           <path d="M21 21l-4.35-4.35" />
@@ -127,8 +127,8 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
         />
       </div>
 
-      <div className="relative -mx-5">
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 px-5">
+      <div className="relative -mx-5 md:mx-0">
+        <div className="flex gap-1.5 overflow-x-auto md:overflow-visible md:flex-wrap pb-0.5 px-5 md:px-0">
           {CATEGORY_OPTIONS.map((opt) => {
             const active = category === opt;
             const style = opt === "All" ? null : AUDIT_CATEGORY_STYLE[opt];
@@ -149,10 +149,11 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
             );
           })}
         </div>
-        <div className="pointer-events-none absolute top-0 right-0 bottom-0.5 w-8 bg-gradient-to-l from-page-bg to-transparent" />
+        <div className="pointer-events-none absolute top-0 right-0 bottom-0.5 w-8 bg-gradient-to-l from-page-bg to-transparent md:hidden" />
       </div>
 
-      <div className="flex flex-col">
+      {/* Mobile: grouped card feed */}
+      <div className="flex flex-col md:hidden">
         {groups.map((group) => (
           <div key={group.label}>
             <div className="pt-3 pb-1.5 flex items-baseline justify-between">
@@ -202,8 +203,55 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
             </div>
           </div>
         ))}
-        {filtered.length === 0 && <EmptyState>No activity matches your search.</EmptyState>}
       </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-border-soft">
+              <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-4">Event</th>
+              <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Actor</th>
+              <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Entity</th>
+              <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Detail</th>
+              <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3 pr-4">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((e) => {
+              const style = AUDIT_CATEGORY_STYLE[e.category];
+              return (
+                <tr key={e.id} className="border-b border-border-soft last:border-b-0 hover:bg-chip-bg transition-colors">
+                  <td className="py-2.5 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-[7px] flex items-center justify-center shrink-0" style={{ background: style.bg }}>
+                        <CategoryIcon category={e.category} color={style.color} />
+                      </div>
+                      <span className="text-[13px] font-semibold text-text whitespace-nowrap">{e.label}</span>
+                    </div>
+                  </td>
+                  <td className="py-2.5 px-3 text-[13px] text-muted whitespace-nowrap">{e.actorName}</td>
+                  <td className="py-2.5 px-3 text-[13px]">
+                    {e.entityType === "Sample" ? (
+                      <Link href={`/samples/${e.entityId}`} className="font-mono-data text-primary font-semibold hover:underline">
+                        {e.entityType} {e.entityId}
+                      </Link>
+                    ) : e.entityLabel ? (
+                      <span className="text-muted">{e.entityType} · {e.entityLabel}</span>
+                    ) : (
+                      <span className="text-muted font-mono-data">{e.entityType} {e.entityId}</span>
+                    )}
+                  </td>
+                  <td className="py-2.5 px-3 text-[12px] text-faint max-w-[320px] truncate">{e.detail ?? "—"}</td>
+                  <td className="py-2.5 px-3 pr-4 text-[12px] text-faint whitespace-nowrap">{formatDateTime(e.createdAt)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {filtered.length === 0 && <EmptyState>No activity matches your search.</EmptyState>}
     </div>
   );
 }
