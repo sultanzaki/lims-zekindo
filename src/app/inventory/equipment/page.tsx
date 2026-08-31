@@ -33,10 +33,12 @@ export default async function EquipmentPage() {
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Equipment" backHref="/profile" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1100px] md:mx-auto md:w-full">
-        <CreateEquipmentForm locations={locations} />
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1400px] md:mx-auto md:w-full">
+        <div className="md:max-w-[640px]">
+          <CreateEquipmentForm locations={locations} />
+        </div>
 
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2.5 md:hidden">
           {equipment.map((e) => {
             const overdue = e.nextCalibrationDue && e.nextCalibrationDue.getTime() < now;
             const style = STATUS_STYLE[e.status] ?? STATUS_STYLE.Operational;
@@ -81,6 +83,55 @@ export default async function EquipmentPage() {
             );
           })}
           {equipment.length === 0 && <EmptyState>No equipment tracked yet.</EmptyState>}
+        </div>
+
+        <div className="hidden md:block">
+          {equipment.length === 0 ? (
+            <EmptyState>No equipment tracked yet.</EmptyState>
+          ) : (
+            <div className="bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border-soft">
+                    <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-4">Asset Tag</th>
+                    <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Name</th>
+                    <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Location</th>
+                    <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3">Calibration Due</th>
+                    <th className="text-[11px] font-semibold text-faint uppercase tracking-wider py-2.5 px-3 pr-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {equipment.map((e) => {
+                    const overdue = e.nextCalibrationDue && e.nextCalibrationDue.getTime() < now;
+                    const style = STATUS_STYLE[e.status] ?? STATUS_STYLE.Operational;
+                    const locationName = e.storageLocation ? locationTree.pathFor(e.storageLocation.id) : e.location;
+                    return (
+                      <tr key={e.id} className="border-b border-border-soft last:border-b-0 hover:bg-chip-bg transition-colors">
+                        <td className="py-2.5 px-4">
+                          <Link href={`/inventory/equipment/${e.id}`} className="text-[13px] font-semibold text-primary-dark font-mono-data hover:underline">
+                            {e.assetTag}
+                          </Link>
+                        </td>
+                        <td className="py-2.5 px-3 text-[13px] text-text font-medium truncate max-w-[220px]">{e.name}</td>
+                        <td className="py-2.5 px-3 text-[13px] text-muted truncate max-w-[160px]">{locationName || "—"}</td>
+                        <td className="py-2.5 px-3 text-[13px] whitespace-nowrap" style={{ color: overdue ? "#D0021B" : "#5B6B74" }}>
+                          {e.nextCalibrationDue ? `${formatDate(e.nextCalibrationDue)}${overdue ? " (overdue)" : ""}` : "—"}
+                        </td>
+                        <td className="py-2.5 px-3 pr-4">
+                          <span
+                            className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+                            style={{ background: style.bg, color: style.color }}
+                          >
+                            {e.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
