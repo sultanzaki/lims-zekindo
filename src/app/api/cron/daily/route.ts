@@ -141,6 +141,34 @@ async function checkRetention(): Promise<number> {
   return sent;
 }
 
+// Overdue deviations notify their assignee — falling back to Supervisors
+// when nobody's been assigned yet, so an unassigned overdue deviation
+// doesn't just silently go unnoticed.
+async function checkOverdueDeviations(): Promise<number> {
+  const fallbackRecipients = await usersWithRoles(["SUPERVISOR"]);
+
+  const overdue = await prisma.deviation.findMany({
+    where: { status: { not: "Closed" }, dueDate: { lt: new Date() } },
+    select: { id: true, sampleId: true, assigneeId: true, dueDate: true },
+  });
+
+  let sent = 0;
+  for (const d of overdue) {
+    const recipients = d.assigneeId ? [d.assigneeId] : fallbackRecipients;
+    if (recipients.length === 0) continue;
+    const title = `Deviation overdue: ${d.sampleId}`;
+    if (await alreadyNotified(title)) continue;
+    await notifyUsers({
+      userIds: recipients,
+      title,
+      body: `The deviation opened on sample ${d.sampleId} was due ${d.dueDate?.toDateString()} and is still open.`,
+      sampleId: d.sampleId,
+    });
+    sent++;
+  }
+  return sent;
+}
+
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
@@ -155,12 +183,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [overdueTat, reagents, equipment, retention] = await Promise.all([
+  const [overdueTat, reagents, equipment, retention, deviations] = await Promise.all([
     checkOverdueTat(),
     checkReagents(),
     checkEquipment(),
     checkRetention(),
+    checkOverdueDeviations(),
   ]);
 
-  return NextResponse.json({ ok: true, sent: { overdueTat, reagents, equipment, retention } });
+  return NextResponse.json({ ok: true, sent: { overdueTat, reagents, equipment, retention, deviations } });
 }

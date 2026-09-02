@@ -29,6 +29,7 @@ model User {
   auditLogs     AuditLog[]
   mobileRefreshTokens MobileRefreshToken[]
   submittedTests Test[]
+  assignedDeviations Deviation[]
 
   @@index([accessRole])
 }
@@ -426,6 +427,7 @@ model NfcTag {
 }
 
 // status values: "Open" | "Investigating" | "Closed"
+// severity values: "Minor" | "Major" | "Critical" (null = not yet triaged)
 model Deviation {
   id          String    @id @default(cuid())
   sampleId    String
@@ -438,6 +440,12 @@ model Deviation {
   openedAt    DateTime  @default(now())
   closedAt    DateTime?
 
+  assigneeId String?
+  assignee   User?     @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  dueDate    DateTime?
+  severity   String?
+
   @@index([sampleId])
   @@index([status])
+  @@index([assigneeId])
 }
