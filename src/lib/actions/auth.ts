@@ -4,12 +4,9 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { createSession, destroySession, requireUser } from "@/lib/auth";
+import { verifyCredentials } from "@/lib/credentials";
 
 export type LoginState = { error?: string };
-
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
-const GENERIC_ERROR = "Invalid email/employee ID or password.";
 
 export async function loginAction(
   _prevState: LoginState,
@@ -22,49 +19,12 @@ export async function loginAction(
     return { error: "Enter your email or employee ID and password." };
   }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { email: identifier.toLowerCase() },
-        { employeeId: identifier.toUpperCase() },
-      ],
-    },
-  });
-
-  // Same generic error whether the account doesn't exist or the password is
-  // wrong — distinct messages would let an attacker enumerate valid accounts.
-  if (!user) {
-    return { error: GENERIC_ERROR };
+  const result = await verifyCredentials(identifier, password);
+  if ("error" in result) {
+    return { error: result.error };
   }
 
-  if (user.lockedUntil && user.lockedUntil > new Date()) {
-    return { error: "Too many failed attempts. Try again in a few minutes." };
-  }
-
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) {
-    const attempts = user.failedLoginAttempts + 1;
-    const locked = attempts >= MAX_LOGIN_ATTEMPTS;
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        failedLoginAttempts: locked ? 0 : attempts,
-        lockedUntil: locked ? new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000) : null,
-      },
-    });
-    return { error: GENERIC_ERROR };
-  }
-
-  if (!user.active) {
-    return { error: "This account has been deactivated. Contact your Lab Manager." };
-  }
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { failedLoginAttempts: 0, lockedUntil: null },
-  });
-
-  await createSession(user.id);
+  await createSession(result.user.id);
   redirect("/dashboard");
 }
 
