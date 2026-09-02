@@ -6,7 +6,7 @@ import type { getSampleDetail } from "@/lib/data";
 import type { FormState } from "@/lib/actions/samples";
 import { formatDateTime } from "@/lib/format";
 import { CUSTODY_DOT_COLOR, STATUS_STYLES, TEST_STATUS_STYLES, type SampleStatus, type TestStatus } from "@/lib/status";
-import { parseSpecVerdict, specNumericLimit } from "@/lib/spec";
+import { parseVerdict, numericLimitFor } from "@/lib/spec";
 import StatusBadge from "@/components/StatusBadge";
 import StorageLocationForm from "@/components/StorageLocationForm";
 import ReviewPanel from "@/components/ReviewPanel";
@@ -94,11 +94,11 @@ export default function SampleDetailClient({
       {sample.tests.map((test) => {
         const st = TEST_STATUS_STYLES[test.status as TestStatus];
         const hasResult = test.result != null;
-        const verdict = hasResult ? parseSpecVerdict(test.spec, test.result) : null;
+        const verdict = hasResult ? parseVerdict(test, test.result) : null;
         const verdictBg = verdict === "Pass" ? "#E6F4EA" : verdict === "Fail" ? "#FDECEA" : "#EEF2F5";
         const verdictColor = verdict === "Pass" ? "#1E7A34" : verdict === "Fail" ? "#B00016" : "#5B6B74";
         const verdictNote = verdict === "Pass" ? "Within limit" : verdict === "Fail" ? "Exceeds limit" : "Manual review";
-        const limit = specNumericLimit(test.spec);
+        const limit = numericLimitFor(test);
         const resultN = parseResultNumber(test.result);
         const showBar = hasResult && limit != null && limit > 0 && resultN != null && /^[≤<]/.test(test.spec.trim());
         const barPct = showBar ? Math.min(100, Math.max(0, ((resultN as number) / (limit as number)) * 100)) : 0;

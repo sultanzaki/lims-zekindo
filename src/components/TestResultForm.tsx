@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useActionState } from "react";
 import { submitTestResultAction, type FormState } from "@/lib/actions/samples";
-import { parseSpecLimit, parseSpecVerdict } from "@/lib/spec";
+import { parseSpecLimit, parseVerdict, parseOptionList, type ResultTypeConfig } from "@/lib/spec";
 import Field, { inputClass } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
 
@@ -14,6 +14,8 @@ const QUALITATIVE_PAIRS: Record<string, [string, string]> = {
   "no growth": ["No Growth", "Growth Detected"],
 };
 
+// Legacy-only inference (rows created before structured result types existed):
+// byte-for-byte the same lookup this form has always used.
 function qualitativeOptionsFor(spec: string): [string, string] | null {
   const limit = parseSpecLimit(spec);
   if (!limit || limit.kind !== "exact") return null;
@@ -26,18 +28,27 @@ export default function TestResultForm({
   unit,
   spec,
   isMulti = false,
+  resultConfig,
 }: {
   sampleId: string;
   testId: string;
   unit: string;
   spec: string;
   isMulti?: boolean;
+  resultConfig: ResultTypeConfig;
 }) {
   const [state, formAction, pending] = useActionState(submitTestResultAction, initialState);
   const [result, setResult] = useState("");
 
-  const qualitative = qualitativeOptionsFor(spec);
-  const verdict = parseSpecVerdict(spec, result || null);
+  const isCategorical = resultConfig.resultType === "CATEGORICAL";
+  const isText = resultConfig.resultType === "TEXT";
+
+  // Only applies on the legacy path (resultType === null) — a structured
+  // NUMERIC test never hits this, it always gets the plain numeric input.
+  const qualitative = !resultConfig.resultType ? qualitativeOptionsFor(spec) : null;
+  const categoricalOptions = isCategorical ? parseOptionList(resultConfig.categoricalOptions) : [];
+
+  const verdict = parseVerdict({ ...resultConfig, spec }, result || null);
   const liveBorder = verdict === "Fail" ? "#D0021B" : verdict === "Pass" ? "#28A745" : "#E3EAEF";
   const liveVerdictBg = verdict === "Fail" ? "#FDECEA" : "#E6F4EA";
   const liveVerdictColor = verdict === "Fail" ? "#B00016" : "#1E7A34";
@@ -75,7 +86,9 @@ export default function TestResultForm({
               {isMulti ? "Final reported value" : "Measured value"}
             </div>
             <div className="flex items-baseline gap-2 mt-1">
-              {qualitative ? (
+              {isText ? (
+                <span className="text-sm text-faint">Enter the observation below</span>
+              ) : qualitative || isCategorical ? (
                 <span
                   className="text-[32px] font-bold font-mono-data leading-none"
                   style={{ color: result ? "#111111" : "#C2D2DB" }}
@@ -93,7 +106,7 @@ export default function TestResultForm({
                   style={{ color: "#111111" }}
                 />
               )}
-              {unit && <span className="text-sm text-muted font-medium shrink-0">{unit}</span>}
+              {unit && !isText && <span className="text-sm text-muted font-medium shrink-0">{unit}</span>}
             </div>
           </div>
           {verdict && (
@@ -106,7 +119,39 @@ export default function TestResultForm({
           )}
         </div>
 
-        {qualitative ? (
+        {isText ? (
+          <Field label="Result" htmlFor="result-text">
+            <textarea
+              id="result-text"
+              rows={4}
+              value={result}
+              onChange={(e) => setResult(e.target.value)}
+              placeholder="Describe the observation…"
+              className={`${inputClass} resize-none`}
+            />
+          </Field>
+        ) : isCategorical ? (
+          <div className="flex flex-wrap gap-2.5">
+            {categoricalOptions.map((opt) => {
+              const active = result === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setResult(opt)}
+                  className="text-center text-sm font-semibold px-4 py-3.5 rounded-xl border-[1.5px] cursor-pointer min-h-[50px] transition-colors duration-150"
+                  style={{
+                    background: active ? "#2B8DB8" : "#FFFFFF",
+                    color: active ? "#ffffff" : "#444444",
+                    borderColor: active ? "#2B8DB8" : "#E3EAEF",
+                  }}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        ) : qualitative ? (
           <div className="flex gap-2.5">
             {qualitative.map((opt) => {
               const active = result === opt;
