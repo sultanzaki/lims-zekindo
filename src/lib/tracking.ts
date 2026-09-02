@@ -32,6 +32,14 @@ export function normalizeSampleId(raw: string): string {
   return raw.trim().toUpperCase();
 }
 
+// The URL embedded in a Certificate of Analysis's QR code — scanning it
+// opens the public, no-login certificate reprint so the holder can compare
+// it against the printed page. The accessCode is what makes this a genuine
+// authenticity check rather than a guessable-by-sample-ID lookup.
+export function certificateVerificationUrl(origin: string, sampleId: string, accessCode: string): string {
+  return `${origin}/track/certificate?id=${sampleId}&code=${accessCode}`;
+}
+
 // Constant-shape comparison isn't the concern here (this isn't a password) —
 // the point is simply that a valid Sample ID alone must never be sufficient;
 // the random accessCode is the actual gate on the public tracking portal.

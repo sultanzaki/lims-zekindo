@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { getSampleDetail } from "@/lib/data";
+import { certificateVerificationUrl } from "@/lib/tracking";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
 import CertificateDocument from "@/components/CertificateDocument";
@@ -14,11 +16,13 @@ export default async function CertificatePage({
   const sample = await getSampleDetail(id);
   if (!sample || sample.status !== "Complete") notFound();
 
-  const certificateNo = `COA-${sample.id}`;
-  const qrDataUrl = await QRCode.toDataURL(
-    `${certificateNo} | ${sample.approvedAt ? sample.approvedAt.toISOString() : ""} | ${sample.approvedBy ?? ""}`,
-    { margin: 0, width: 200 }
-  );
+  const h = await headers();
+  const host = h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+  const verifyUrl = sample.accessCode && host
+    ? certificateVerificationUrl(`${proto}://${host}`, sample.id, sample.accessCode)
+    : null;
+  const qrDataUrl = await QRCode.toDataURL(verifyUrl ?? `COA-${sample.id}`, { margin: 0, width: 200 });
 
   return (
     <div className="min-h-screen print:min-h-0 flex flex-col items-center bg-page-bg print:bg-white print:block">
