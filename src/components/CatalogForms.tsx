@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { createSampleTypeAction, createTestCatalogAction, createBusinessUnitAction, type FormState } from "@/lib/actions/catalog";
+import { useActionState, useMemo, useState } from "react";
+import { createSampleTypeAction, createTestCatalogAction, createBusinessUnitAction, createTestPanelAction, type FormState } from "@/lib/actions/catalog";
 import { useRepeatableRows } from "@/lib/useRepeatableRows";
 import { inputClassSm } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
@@ -196,6 +196,74 @@ export function CreateBusinessUnitForm() {
       {state.error && <div className="text-xs text-danger">{state.error}</div>}
       <Button type="submit" disabled={pending} size="sm">
         {pending ? "Adding…" : ids.length > 1 ? `Add ${ids.length} Business Units` : "Add Business Unit"}
+      </Button>
+    </form>
+  );
+}
+
+type PanelTestOption = { id: string; name: string; spec: string; sampleTypeName: string };
+
+// A quick-add preset: pick a name and check off which tests belong to it —
+// used at sample creation to add a whole group of tests in one click
+// instead of picking each one individually.
+export function CreateTestPanelForm({ tests }: { tests: PanelTestOption[] }) {
+  const [state, formAction, pending] = useActionState(createTestPanelAction, initialState);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return tests;
+    return tests.filter((t) => t.name.toLowerCase().includes(q) || t.sampleTypeName.toLowerCase().includes(q));
+  }, [tests, search]);
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  return (
+    <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
+      <div className="text-[13px] font-semibold text-text">Add Test Panel</div>
+      <input name="name" placeholder="e.g. Full Micro Panel" required className={inputClassSm} />
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search tests to include…"
+        className={inputClassSm}
+      />
+      <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto border border-border-soft rounded-[10px] p-2">
+        {filtered.map((t) => (
+          <label key={t.id} className="flex items-center gap-2 text-xs py-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selected.has(t.id)}
+              onChange={() => toggle(t.id)}
+              className="w-3.5 h-3.5 shrink-0"
+            />
+            <span className="text-text font-medium">{t.name}</span>
+            <span className="text-faint">· {t.sampleTypeName}</span>
+          </label>
+        ))}
+        {filtered.length === 0 && <div className="text-xs text-muted px-1 py-2">No tests match your search.</div>}
+      </div>
+      {/*
+        Rendered unconditionally for every selected id (not just the
+        currently-filtered checkboxes above) — a checkbox scrolled out of
+        the search filter would otherwise unmount and drop its value from
+        the submitted FormData.
+      */}
+      {Array.from(selected).map((id) => (
+        <input key={id} type="hidden" name="testCatalogIds" value={id} />
+      ))}
+      <div className="text-[11px] text-muted">{selected.size} test{selected.size === 1 ? "" : "s"} selected</div>
+      {state.error && <div className="text-xs text-danger">{state.error}</div>}
+      <Button type="submit" disabled={pending || selected.size === 0} size="sm">
+        {pending ? "Adding…" : "Add Test Panel"}
       </Button>
     </form>
   );

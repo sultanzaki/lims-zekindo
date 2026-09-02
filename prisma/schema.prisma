@@ -285,6 +285,19 @@ model TestCatalog {
   @@index([sampleTypeId])
 }
 
+// An admin-curated shortcut for sample creation: "add these N tests at
+// once" instead of picking each one individually. testCatalogIds is a
+// simple JSON string array (matches this codebase's preference for a JSON
+// list over a join table for small, admin-managed, low-churn data — see
+// TestCatalog.categoricalOptions for the same pattern in a single field).
+model TestPanel {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  active         Boolean  @default(true)
+  testCatalogIds Json
+  createdAt      DateTime @default(now())
+}
+
 // status values: "Operational" | "Under Maintenance" | "Out of Service"
 model Equipment {
   id                 String    @id @default(cuid())

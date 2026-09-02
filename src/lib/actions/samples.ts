@@ -64,14 +64,29 @@ export async function createSampleAction(
   });
   if (!sampleType) return { error: "Sample type not found." };
 
+  // Ad-hoc extras picked in the form (individually, or via a quick-add
+  // panel) — merged in alongside the sample type's own default tests.
+  // Anything already in the default list is deduped rather than trusting
+  // the client to have excluded it.
+  const defaultTestIds = new Set(sampleType.tests.map((t) => t.id));
+  const extraTestIds = formData
+    .getAll("extraTestIds")
+    .map((v) => String(v))
+    .filter((id) => id && !defaultTestIds.has(id));
+  const extraTests =
+    extraTestIds.length > 0
+      ? await prisma.testCatalog.findMany({ where: { id: { in: extraTestIds }, active: true } })
+      : [];
+
   const collectedDate = collectedDateRaw ? parseJakartaLocalDateTime(collectedDateRaw) : new Date();
   const now = new Date();
   const id = await getNextSampleId();
   const retentionUntil = new Date(now.getTime() + sampleType.retentionDays * 24 * 60 * 60 * 1000);
 
+  const allTests = [...sampleType.tests, ...extraTests];
   const testsToCreate =
-    sampleType.tests.length > 0
-      ? sampleType.tests.map((t, i) => ({
+    allTests.length > 0
+      ? allTests.map((t, i) => ({
           name: t.name,
           status: "pending",
           unit: t.unit,
