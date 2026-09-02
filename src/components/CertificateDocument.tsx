@@ -98,10 +98,20 @@ export default function CertificateDocument({ sample, qrDataUrl }: { sample: Sam
           This certificate relates only to the sample(s) identified above and shall not be reproduced except in full,
           without the written approval of the laboratory. Generated {formatDateTime(new Date())}.
           <br />
+          This document is securely signed and digitally verifiable — scan the QR code to confirm it is authentic
+          and unaltered.
+          <br />
           Powered by Product Specialist Microbiology.
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qrDataUrl} alt="Verification code" width={52} height={52} className="shrink-0" />
+        <div className="flex flex-col items-center gap-1 shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qrDataUrl} alt="Verification code" width={52} height={52} />
+          <div className="text-[7px] text-faint tracking-wide uppercase text-center leading-tight">
+            Scan to verify
+            <br />
+            authenticity
+          </div>
+        </div>
       </div>
     </div>
   );
