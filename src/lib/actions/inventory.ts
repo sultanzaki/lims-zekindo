@@ -136,6 +136,45 @@ export async function recordReagentTransactionAction(
   return {};
 }
 
+export type BulkRelocateResult = { error: string } | { moved: number };
+
+// Bulk-select on the Reagents list feeds this — moving a batch of items to a
+// new (or cleared, when locationId is "") storage location in one action,
+// the same "reorganizing a fridge" task that's currently one-item-at-a-time
+// via the edit page. Each moved item still gets its own audit entry with a
+// from/to diff, same as any other structured audit call site.
+export async function bulkRelocateReagentsAction(ids: string[], locationId: string): Promise<BulkRelocateResult> {
+  const user = await requireRole(canManageInventoryAndCatalog);
+  if (ids.length === 0) return { error: "No reagents selected." };
+  if (ids.length > 200) return { error: "Too many items selected at once (max 200)." };
+
+  const targetLocationId = locationId || null;
+  if (targetLocationId) {
+    const loc = await prisma.storageLocation.findUnique({ where: { id: targetLocationId } });
+    if (!loc) return { error: "Choose a valid location." };
+  }
+
+  const existing = await prisma.reagent.findMany({ where: { id: { in: ids } }, select: { id: true, locationId: true } });
+
+  let moved = 0;
+  for (const r of existing) {
+    if (r.locationId === targetLocationId) continue;
+    await prisma.reagent.update({ where: { id: r.id }, data: { locationId: targetLocationId } });
+    await logAudit({
+      userId: user.id,
+      action: "reagent.relocated",
+      entityType: "Reagent",
+      entityId: r.id,
+      metadata: { location: { from: r.locationId, to: targetLocationId } },
+    });
+    moved++;
+  }
+
+  revalidatePath("/inventory/reagents");
+  revalidatePath("/inventory/warehouse");
+  return { moved };
+}
+
 // ---------- Equipment ----------
 
 export async function createEquipmentAction(
@@ -297,4 +336,38 @@ export async function logMaintenanceAction(
   revalidatePath("/inventory/equipment");
   revalidatePath(`/inventory/equipment/${id}`);
   return {};
+}
+
+// Same bulk-relocate pattern as bulkRelocateReagentsAction above, for the
+// Equipment list's bulk-select.
+export async function bulkRelocateEquipmentAction(ids: string[], locationId: string): Promise<BulkRelocateResult> {
+  const user = await requireRole(canManageInventoryAndCatalog);
+  if (ids.length === 0) return { error: "No equipment selected." };
+  if (ids.length > 200) return { error: "Too many items selected at once (max 200)." };
+
+  const targetLocationId = locationId || null;
+  if (targetLocationId) {
+    const loc = await prisma.storageLocation.findUnique({ where: { id: targetLocationId } });
+    if (!loc) return { error: "Choose a valid location." };
+  }
+
+  const existing = await prisma.equipment.findMany({ where: { id: { in: ids } }, select: { id: true, locationId: true } });
+
+  let moved = 0;
+  for (const e of existing) {
+    if (e.locationId === targetLocationId) continue;
+    await prisma.equipment.update({ where: { id: e.id }, data: { locationId: targetLocationId } });
+    await logAudit({
+      userId: user.id,
+      action: "equipment.relocated",
+      entityType: "Equipment",
+      entityId: e.id,
+      metadata: { location: { from: e.locationId, to: targetLocationId } },
+    });
+    moved++;
+  }
+
+  revalidatePath("/inventory/equipment");
+  revalidatePath("/inventory/warehouse");
+  return { moved };
 }
