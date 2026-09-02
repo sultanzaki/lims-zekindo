@@ -12,6 +12,7 @@ import { canReviewAsSupervisor, canApproveAsQa, isAdmin } from "@/lib/roles";
 import { uploadAttachment, deleteAttachment } from "@/lib/storage";
 import { parseJakartaLocalDateTime } from "@/lib/tz";
 import { generateAccessCode } from "@/lib/tracking";
+import { notifyUsers, getSubmitterIds } from "@/lib/notify";
 import {
   submitTestResultCore,
   addTestReadingCore,
@@ -318,6 +319,7 @@ async function performSupervisorApprove(sample: { id: string }, user: { id: stri
 
 async function performQaApprove(sample: { id: string; type: string }, user: { id: string; name: string; role: string; email: string }) {
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
+  const submitterIds = await getSubmitterIds(sample.id);
   await prisma.$transaction([
     prisma.test.updateMany({ where: { sampleId: sample.id, status: "awaiting" }, data: { status: "complete" } }),
     prisma.sample.update({
@@ -327,17 +329,15 @@ async function performQaApprove(sample: { id: string; type: string }, user: { id
         approvedBy: `${user.name}, ${user.role}`,
         approvedAt: new Date(),
         custodyEvents: { create: [{ label: "QA Approved", time: new Date(), order: eventCount }] },
-        notifications: {
-          create: {
-            userId: user.id,
-            title: `Result approved — ${sample.id}`,
-            body: `${sample.type} passed QA review and is ready for release.`,
-            unread: true,
-          },
-        },
       },
     }),
   ]);
+  await notifyUsers({
+    userIds: [user.id, ...submitterIds],
+    title: `Result approved — ${sample.id}`,
+    body: `${sample.type} passed QA review and is ready for release.`,
+    sampleId: sample.id,
+  });
   await logAudit({ userId: user.id, action: "sample.qa_approved", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
 }
 
@@ -364,6 +364,7 @@ export async function supervisorApproveAction(
 
 async function performSupervisorReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }) {
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
+  const submitterIds = await getSubmitterIds(sample.id);
   await prisma.sample.update({
     where: { id: sample.id },
     data: {
@@ -371,15 +372,13 @@ async function performSupervisorReject(sample: { id: string; type: string }, use
       custodyEvents: {
         create: [{ label: `Supervisor Rejected (${user.name})`, time: new Date(), order: eventCount }],
       },
-      notifications: {
-        create: {
-          userId: user.id,
-          title: `Supervisor rejected ${sample.id}`,
-          body: `${sample.type} did not pass supervisor review. Recollection may be required.`,
-          unread: true,
-        },
-      },
     },
+  });
+  await notifyUsers({
+    userIds: [user.id, ...submitterIds],
+    title: `Supervisor rejected ${sample.id}`,
+    body: `${sample.type} did not pass supervisor review. Recollection may be required.`,
+    sampleId: sample.id,
   });
   await openDeviationForRejection(sample.id, sample.type, user.id, "supervisor");
   await logAudit({ userId: user.id, action: "sample.supervisor_rejected", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
@@ -547,20 +546,19 @@ export async function rejectSampleForAssistant(sampleId: string, actingUser: Ass
 
 async function performQaReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }) {
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
+  const submitterIds = await getSubmitterIds(sample.id);
   await prisma.sample.update({
     where: { id: sample.id },
     data: {
       status: "Rejected",
       custodyEvents: { create: [{ label: "QA Rejected", time: new Date(), order: eventCount }] },
-      notifications: {
-        create: {
-          userId: user.id,
-          title: `QA rejected ${sample.id}`,
-          body: `${sample.type} did not meet spec. Recollection requested.`,
-          unread: true,
-        },
-      },
     },
+  });
+  await notifyUsers({
+    userIds: [user.id, ...submitterIds],
+    title: `QA rejected ${sample.id}`,
+    body: `${sample.type} did not meet spec. Recollection requested.`,
+    sampleId: sample.id,
   });
   await openDeviationForRejection(sample.id, sample.type, user.id, "QA");
   await logAudit({ userId: user.id, action: "sample.qa_rejected", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });

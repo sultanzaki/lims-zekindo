@@ -47,7 +47,7 @@ export async function submitTestResultCore(
 
   await prisma.test.update({
     where: { id: testId },
-    data: { status: "awaiting", result: trimmedResult, notes: notes.trim() || null },
+    data: { status: "awaiting", result: trimmedResult, notes: notes.trim() || null, submittedById: user.id },
   });
 
   const otherTests = sample.tests.filter((t) => t.id !== testId);
