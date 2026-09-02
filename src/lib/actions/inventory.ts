@@ -178,6 +178,8 @@ export async function changeEquipmentStatusAction(
     return { error: "Choose a valid status." };
   }
 
+  const existing = await prisma.equipment.findUnique({ where: { id }, select: { status: true } });
+
   await prisma.$transaction([
     prisma.equipment.update({ where: { id }, data: { status } }),
     prisma.equipmentEvent.create({
@@ -190,7 +192,14 @@ export async function changeEquipmentStatusAction(
     }),
   ]);
 
-  await logAudit({ userId: user.id, action: "equipment.status_changed", entityType: "Equipment", entityId: id, detail: status });
+  await logAudit({
+    userId: user.id,
+    action: "equipment.status_changed",
+    entityType: "Equipment",
+    entityId: id,
+    detail: status,
+    metadata: existing ? { status: { from: existing.status, to: status } } : undefined,
+  });
   revalidatePath("/inventory/equipment");
   revalidatePath(`/inventory/equipment/${id}`);
   return {};

@@ -13,9 +13,17 @@ type Entry = {
   entityId: string;
   entityLabel: string | null;
   detail: string | null;
+  metadata: Record<string, { from: unknown; to: unknown }> | null;
   createdAt: Date;
   actorName: string;
 };
+
+/** Renders a structured before/after diff (when present) as "field: from → to, ...". */
+function metadataSummary(metadata: Entry["metadata"]): string | null {
+  if (!metadata) return null;
+  const parts = Object.entries(metadata).map(([field, { from, to }]) => `${field}: ${String(from)} → ${String(to)}`);
+  return parts.length > 0 ? parts.join(", ") : null;
+}
 
 const CATEGORY_OPTIONS: ("All" | AuditCategory)[] = ["All", "create", "approve", "reject", "update", "remove", "security"];
 const DAY_GROUP_ORDER = ["Today", "Yesterday", "Earlier"] as const;
@@ -46,7 +54,8 @@ function toCsv(rows: Entry[]) {
   const header = ["Timestamp", "Actor", "Action", "Entity Type", "Entity ID", "Detail"];
   const lines = rows.map((e) => {
     const { label } = auditActionInfo(e.action);
-    return [e.createdAt.toISOString(), e.actorName, label, e.entityType, e.entityLabel ?? e.entityId, e.detail ?? ""]
+    const detail = [e.detail, metadataSummary(e.metadata)].filter(Boolean).join(" · ");
+    return [e.createdAt.toISOString(), e.actorName, label, e.entityType, e.entityLabel ?? e.entityId, detail]
       .map((v) => `"${csvSafe(String(v)).replace(/"/g, '""')}"`)
       .join(",");
   });
@@ -229,7 +238,11 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
                             <span className="font-mono-data">{e.entityType} {e.entityId}</span>
                           )}
                         </div>
-                        {e.detail && <div className="text-[12px] text-faint mt-1 leading-snug">{e.detail}</div>}
+                        {[e.detail, metadataSummary(e.metadata)].filter(Boolean).length > 0 && (
+                          <div className="text-[12px] text-faint mt-1 leading-snug">
+                            {[e.detail, metadataSummary(e.metadata)].filter(Boolean).join(" · ")}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -286,7 +299,9 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
                         <span className="text-muted font-mono-data">{e.entityType} {e.entityId}</span>
                       )}
                     </td>
-                    <td className="py-2.5 px-3 text-[12px] text-faint max-w-[320px] truncate">{e.detail ?? "—"}</td>
+                    <td className="py-2.5 px-3 text-[12px] text-faint max-w-[320px] truncate">
+                      {[e.detail, metadataSummary(e.metadata)].filter(Boolean).join(" · ") || "—"}
+                    </td>
                     <td className="py-2.5 px-3 pr-4 text-[12px] text-faint whitespace-nowrap">{formatDateTime(e.createdAt)}</td>
                   </tr>
                 );
