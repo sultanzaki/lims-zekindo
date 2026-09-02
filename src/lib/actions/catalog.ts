@@ -15,20 +15,34 @@ export async function createSampleTypeAction(
   formData: FormData
 ): Promise<FormState> {
   const user = await requireRole(canManageInventoryAndCatalog);
-  const name = String(formData.get("name") || "").trim();
-  const targetTatHours = Number(formData.get("targetTatHours") || 48);
-  const retentionDays = Number(formData.get("retentionDays") || 30);
+  const names = formData.getAll("name").map((v) => String(v).trim());
+  const targetTatHoursList = formData.getAll("targetTatHours").map((v) => Number(v || 48));
+  const retentionDaysList = formData.getAll("retentionDays").map((v) => Number(v || 30));
 
-  if (!name) return { error: "Name is required." };
+  const rows = names.map((name, i) => ({
+    name,
+    targetTatHours: targetTatHoursList[i] ?? 48,
+    retentionDays: retentionDaysList[i] ?? 30,
+  }));
 
-  const existing = await prisma.sampleTypeCatalog.findUnique({ where: { name } });
-  if (existing) return { error: "That sample type already exists." };
+  if (rows.some((r) => !r.name)) return { error: "Name is required." };
 
-  const created = await prisma.sampleTypeCatalog.create({
-    data: { name, targetTatHours, retentionDays },
+  const seen = new Set<string>();
+  for (const r of rows) {
+    if (seen.has(r.name.toLowerCase())) return { error: `"${r.name}" was entered more than once.` };
+    seen.add(r.name.toLowerCase());
+  }
+
+  const existing = await prisma.sampleTypeCatalog.findMany({
+    where: { name: { in: rows.map((r) => r.name) } },
+    select: { name: true },
   });
+  if (existing.length > 0) return { error: `"${existing[0].name}" already exists.` };
 
-  await logAudit({ userId: user.id, action: "catalog.sample_type_created", entityType: "SampleTypeCatalog", entityId: created.id, detail: name });
+  for (const r of rows) {
+    const created = await prisma.sampleTypeCatalog.create({ data: r });
+    await logAudit({ userId: user.id, action: "catalog.sample_type_created", entityType: "SampleTypeCatalog", entityId: created.id, detail: r.name });
+  }
 
   revalidatePath("/admin/catalog");
   return {};
@@ -197,15 +211,22 @@ export async function createBusinessUnitAction(
   formData: FormData
 ): Promise<FormState> {
   const user = await requireRole(canManageInventoryAndCatalog);
-  const name = String(formData.get("name") || "").trim();
-  if (!name) return { error: "Name is required." };
+  const names = formData.getAll("name").map((v) => String(v).trim());
+  if (names.some((n) => !n)) return { error: "Name is required." };
 
-  const existing = await prisma.businessUnit.findUnique({ where: { name } });
-  if (existing) return { error: "That business unit already exists." };
+  const seen = new Set<string>();
+  for (const n of names) {
+    if (seen.has(n.toLowerCase())) return { error: `"${n}" was entered more than once.` };
+    seen.add(n.toLowerCase());
+  }
 
-  const created = await prisma.businessUnit.create({ data: { name } });
+  const existing = await prisma.businessUnit.findMany({ where: { name: { in: names } }, select: { name: true } });
+  if (existing.length > 0) return { error: `"${existing[0].name}" already exists.` };
 
-  await logAudit({ userId: user.id, action: "catalog.business_unit_created", entityType: "BusinessUnit", entityId: created.id, detail: name });
+  for (const name of names) {
+    const created = await prisma.businessUnit.create({ data: { name } });
+    await logAudit({ userId: user.id, action: "catalog.business_unit_created", entityType: "BusinessUnit", entityId: created.id, detail: name });
+  }
 
   revalidatePath("/admin/catalog");
   revalidatePath("/samples/new");

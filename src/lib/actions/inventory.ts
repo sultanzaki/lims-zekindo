@@ -31,44 +31,49 @@ export async function createReagentAction(
   formData: FormData
 ): Promise<FormState> {
   const user = await requireRole(canManageInventoryAndCatalog);
-  const name = String(formData.get("name") || "").trim();
-  const category = String(formData.get("category") || "Reagent").trim() || "Reagent";
-  const lotNumber = String(formData.get("lotNumber") || "").trim();
-  const quantity = Number(formData.get("quantity") || 0);
-  const unit = String(formData.get("unit") || "").trim();
-  const minStockLevel = Number(formData.get("minStockLevel") || 0);
-  const expiryDateRaw = String(formData.get("expiryDate") || "");
-  const locationId = String(formData.get("locationId") || "").trim();
+  const names = formData.getAll("name").map((v) => String(v).trim());
+  const categories = formData.getAll("category").map((v) => String(v || "Reagent").trim() || "Reagent");
+  const lotNumbers = formData.getAll("lotNumber").map((v) => String(v).trim());
+  const quantities = formData.getAll("quantity").map((v) => Number(v || 0));
+  const units = formData.getAll("unit").map((v) => String(v).trim());
+  const minStockLevels = formData.getAll("minStockLevel").map((v) => Number(v || 0));
+  const expiryDates = formData.getAll("expiryDate").map((v) => String(v || ""));
+  const locationIds = formData.getAll("locationId").map((v) => String(v || "").trim());
 
-  if (!name || !lotNumber || !unit) return { error: "Name, lot number, and unit are required." };
+  const rows = names.map((name, i) => ({
+    name,
+    category: categories[i] ?? "Reagent",
+    lotNumber: lotNumbers[i] ?? "",
+    quantity: quantities[i] ?? 0,
+    unit: units[i] ?? "",
+    minStockLevel: minStockLevels[i] ?? 0,
+    expiryDate: expiryDates[i] ? new Date(expiryDates[i]) : null,
+    locationId: locationIds[i] || null,
+  }));
 
-  const created = await prisma.reagent.create({
-    data: {
-      name,
-      category,
-      lotNumber,
-      quantity,
-      unit,
-      minStockLevel,
-      expiryDate: expiryDateRaw ? new Date(expiryDateRaw) : null,
-      locationId: locationId || null,
-    },
-  });
-
-  if (quantity > 0) {
-    await prisma.reagentTransaction.create({
-      data: {
-        reagentId: created.id,
-        type: "RECEIVED",
-        quantityChange: quantity,
-        quantityAfter: quantity,
-        reason: "Initial stock",
-        performedBy: user.name,
-      },
-    });
+  if (rows.some((r) => !r.name || !r.lotNumber || !r.unit)) {
+    return { error: "Name, lot number, and unit are required." };
   }
 
-  await logAudit({ userId: user.id, action: "reagent.created", entityType: "Reagent", entityId: created.id, detail: name });
+  for (const r of rows) {
+    const created = await prisma.reagent.create({ data: r });
+
+    if (r.quantity > 0) {
+      await prisma.reagentTransaction.create({
+        data: {
+          reagentId: created.id,
+          type: "RECEIVED",
+          quantityChange: r.quantity,
+          quantityAfter: r.quantity,
+          reason: "Initial stock",
+          performedBy: user.name,
+        },
+      });
+    }
+
+    await logAudit({ userId: user.id, action: "reagent.created", entityType: "Reagent", entityId: created.id, detail: r.name });
+  }
+
   revalidatePath("/inventory/reagents");
   revalidatePath("/inventory/warehouse");
   return {};
@@ -138,28 +143,38 @@ export async function createEquipmentAction(
   formData: FormData
 ): Promise<FormState> {
   const user = await requireRole(canManageInventoryAndCatalog);
-  const name = String(formData.get("name") || "").trim();
-  const assetTag = String(formData.get("assetTag") || "").trim();
-  const locationId = String(formData.get("locationId") || "").trim();
-  const lastCalibratedAtRaw = String(formData.get("lastCalibratedAt") || "");
-  const nextCalibrationDueRaw = String(formData.get("nextCalibrationDue") || "");
+  const names = formData.getAll("name").map((v) => String(v).trim());
+  const assetTags = formData.getAll("assetTag").map((v) => String(v).trim());
+  const locationIds = formData.getAll("locationId").map((v) => String(v || "").trim());
+  const nextCalibrationDues = formData.getAll("nextCalibrationDue").map((v) => String(v || ""));
 
-  if (!name || !assetTag) return { error: "Name and asset tag are required." };
+  const rows = names.map((name, i) => ({
+    name,
+    assetTag: assetTags[i] ?? "",
+    locationId: locationIds[i] || null,
+    lastCalibratedAt: null as Date | null,
+    nextCalibrationDue: nextCalibrationDues[i] ? new Date(nextCalibrationDues[i]) : null,
+  }));
 
-  const existing = await prisma.equipment.findUnique({ where: { assetTag } });
-  if (existing) return { error: "Asset tag already in use." };
+  if (rows.some((r) => !r.name || !r.assetTag)) return { error: "Name and asset tag are required." };
 
-  const created = await prisma.equipment.create({
-    data: {
-      name,
-      assetTag,
-      locationId: locationId || null,
-      lastCalibratedAt: lastCalibratedAtRaw ? new Date(lastCalibratedAtRaw) : null,
-      nextCalibrationDue: nextCalibrationDueRaw ? new Date(nextCalibrationDueRaw) : null,
-    },
+  const seen = new Set<string>();
+  for (const r of rows) {
+    if (seen.has(r.assetTag)) return { error: `Asset tag "${r.assetTag}" was entered more than once.` };
+    seen.add(r.assetTag);
+  }
+
+  const existing = await prisma.equipment.findMany({
+    where: { assetTag: { in: rows.map((r) => r.assetTag) } },
+    select: { assetTag: true },
   });
+  if (existing.length > 0) return { error: `Asset tag "${existing[0].assetTag}" already in use.` };
 
-  await logAudit({ userId: user.id, action: "equipment.created", entityType: "Equipment", entityId: created.id, detail: name });
+  for (const r of rows) {
+    const created = await prisma.equipment.create({ data: r });
+    await logAudit({ userId: user.id, action: "equipment.created", entityType: "Equipment", entityId: created.id, detail: r.name });
+  }
+
   revalidatePath("/inventory/equipment");
   revalidatePath("/inventory/warehouse");
   return {};
