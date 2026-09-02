@@ -167,7 +167,7 @@ export default function Sidebar({
     <NotificationsBell unreadCount={unreadCount} />
     <aside
       style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
-      className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-border z-20 transition-[width] duration-200 overflow-hidden"
+      className="no-print hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-border z-20 transition-[width] duration-200 overflow-hidden"
     >
       <div className="flex items-center h-16 shrink-0 border-b border-border px-3.5 gap-1.5">
         {!collapsed && (

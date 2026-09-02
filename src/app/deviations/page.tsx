@@ -7,6 +7,7 @@ import { formatDateTime, formatDate } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import DeviationForm from "@/components/DeviationForm";
+import DeviationsExportBar from "@/components/DeviationsExportBar";
 import EmptyState from "@/components/ui/EmptyState";
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
@@ -47,24 +48,36 @@ export default async function DeviationsPage({
     }),
   ]);
   const nowMs = new Date().getTime();
+  const exportRows = deviations.map((d) => ({
+    sampleId: d.sample.id,
+    status: d.status,
+    severity: d.severity ?? "",
+    description: d.description,
+    assigneeName: d.assignee?.name ?? "",
+    dueDate: d.dueDate ? formatDate(d.dueDate) : "",
+    openedAt: formatDateTime(d.openedAt),
+  }));
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Deviations" backHref="/profile" />
       <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1200px] md:w-full">
-        <form className="flex items-center gap-2" method="get">
-          <span className="text-xs text-muted">Severity:</span>
-          <select name="severity" defaultValue={severityFilter ?? ""} className="text-xs px-2.5 py-1.5 border border-border rounded-full bg-white text-text">
-            <option value="">All</option>
-            {SEVERITIES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <button type="submit" className="text-xs font-semibold text-primary px-2.5 py-1.5 rounded-full border border-primary-soft bg-primary-soft cursor-pointer">
-            Apply
-          </button>
-        </form>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <form className="no-print flex items-center gap-2" method="get">
+            <span className="text-xs text-muted">Severity:</span>
+            <select name="severity" defaultValue={severityFilter ?? ""} className="text-xs px-2.5 py-1.5 border border-border rounded-full bg-white text-text">
+              <option value="">All</option>
+              {SEVERITIES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <button type="submit" className="text-xs font-semibold text-primary px-2.5 py-1.5 rounded-full border border-primary-soft bg-primary-soft cursor-pointer">
+              Apply
+            </button>
+          </form>
+          <DeviationsExportBar rows={exportRows} />
+        </div>
 
         <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-3.5 md:items-start">
           {deviations.map((d) => {

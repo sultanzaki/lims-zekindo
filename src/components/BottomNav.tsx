@@ -80,7 +80,7 @@ export default function BottomNav({ active, unreadCount }: { active: Tab; unread
   const c = (tab: Tab) => (active === tab ? ON : OFF);
   const hasUnread = unreadCount > 0;
   return (
-    <div className="md:hidden sticky bottom-0 left-0 right-0 bg-white border-t border-border flex items-stretch justify-around pt-1.5 px-1 pb-[max(env(safe-area-inset-bottom),20px)] shadow-[0_-2px_14px_rgba(16,42,58,0.06)] z-10">
+    <div className="no-print md:hidden sticky bottom-0 left-0 right-0 bg-white border-t border-border flex items-stretch justify-around pt-1.5 px-1 pb-[max(env(safe-area-inset-bottom),20px)] shadow-[0_-2px_14px_rgba(16,42,58,0.06)] z-10">
       <Link href="/dashboard" className="flex flex-col items-center flex-1 min-h-12 pt-1">
         <TapFeedback>
           <NavPill on={active === "home"}>

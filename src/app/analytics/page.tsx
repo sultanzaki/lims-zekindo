@@ -17,6 +17,7 @@ import {
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import KpiTiles from "@/components/analytics/KpiTiles";
+import AnalyticsExportBar from "@/components/AnalyticsExportBar";
 import {
   SampleVolumeTrend,
   VolumeByCategoryBar,
@@ -62,9 +63,21 @@ export default async function AnalyticsPage() {
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Analytics" backHref="/profile" />
       <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1100px] md:w-full">
+        <AnalyticsExportBar
+          kpi={kpi}
+          volumeTrend={volumeTrend}
+          statusDistribution={statusDistribution}
+          passRejectTrend={passRejectTrend}
+          volumeByType={volumeByType}
+          volumeByBu={volumeByBu}
+          tatByType={tatByType}
+          deviationTrend={deviationTrend}
+          equipmentHealth={equipmentHealth}
+          reagentHealth={reagentHealth}
+        />
         <Link
           href="/analytics/insights"
-          className="flex items-center justify-between gap-2 bg-white border border-border rounded-[16px] shadow-card-sm px-4 py-3"
+          className="no-print flex items-center justify-between gap-2 bg-white border border-border rounded-[16px] shadow-card-sm px-4 py-3"
         >
           <div>
             <div className="text-sm font-semibold text-text">Advanced Insights</div>
