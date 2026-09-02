@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { generatePortalToken } from "@/lib/tracking";
+import { buildSpecLabel, parseOptionList, type ResultTypeConfig } from "@/lib/spec";
 
 export type FormState = { error?: string };
 
@@ -48,6 +49,79 @@ function normalizeIntervalPlan(raw: string): string | null {
   return labels.length > 0 ? labels.join(",") : null;
 }
 
+type ParsedResultType = { config: ResultTypeConfig; error?: string };
+
+// Reads the Result Type sub-fields out of the Add Test form and validates
+// them into a structured ResultTypeConfig. Every branch either returns a
+// fully-populated config or an error the form can show — spec is never
+// hand-typed for a new test definition, it's generated from this afterward.
+function parseResultTypeFields(formData: FormData): ParsedResultType {
+  const resultType = String(formData.get("resultType") || "NUMERIC");
+  const empty: ResultTypeConfig = {
+    resultType,
+    numericMode: null,
+    numericLimit: null,
+    numericMin: null,
+    numericMax: null,
+    numericTarget: null,
+    numericTolerance: null,
+    categoricalOptions: null,
+    categoricalPassOptions: null,
+    categoricalOrdered: null,
+  };
+
+  if (resultType === "NUMERIC") {
+    const numericMode = String(formData.get("numericMode") || "lte");
+    const cfg: ResultTypeConfig = { ...empty, numericMode };
+    if (numericMode === "lte" || numericMode === "gte") {
+      const limit = Number(formData.get("numericLimit"));
+      if (!Number.isFinite(limit)) return { config: cfg, error: "Enter a numeric limit." };
+      cfg.numericLimit = limit;
+    } else if (numericMode === "range") {
+      const min = Number(formData.get("numericMin"));
+      const max = Number(formData.get("numericMax"));
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return { config: cfg, error: "Enter both a minimum and a maximum." };
+      if (min >= max) return { config: cfg, error: "The minimum must be less than the maximum." };
+      cfg.numericMin = min;
+      cfg.numericMax = max;
+    } else if (numericMode === "target") {
+      const target = Number(formData.get("numericTarget"));
+      const tolerance = Number(formData.get("numericTolerance"));
+      if (!Number.isFinite(target) || !Number.isFinite(tolerance)) return { config: cfg, error: "Enter both a target value and a tolerance." };
+      if (tolerance < 0) return { config: cfg, error: "Tolerance can't be negative." };
+      cfg.numericTarget = target;
+      cfg.numericTolerance = tolerance;
+    } else if (numericMode !== "info") {
+      return { config: cfg, error: "Unknown numeric mode." };
+    }
+    return { config: cfg };
+  }
+
+  if (resultType === "CATEGORICAL") {
+    const options = parseOptionList(String(formData.get("categoricalOptions") || ""));
+    const passOptions = parseOptionList(String(formData.get("categoricalPassOptions") || ""));
+    const ordered = formData.get("categoricalOrdered") === "on";
+    const cfg: ResultTypeConfig = {
+      ...empty,
+      categoricalOptions: options.join(","),
+      categoricalPassOptions: passOptions.join(","),
+      categoricalOrdered: ordered,
+    };
+    if (options.length < 2) return { config: cfg, error: "List at least 2 options, comma-separated." };
+    if (passOptions.length === 0) return { config: cfg, error: "Pick at least one option as a passing result." };
+    const optionsLower = options.map((o) => o.toLowerCase());
+    const unknown = passOptions.find((p) => !optionsLower.includes(p.toLowerCase()));
+    if (unknown) return { config: cfg, error: `"${unknown}" isn't one of the listed options.` };
+    return { config: cfg };
+  }
+
+  if (resultType === "TEXT") {
+    return { config: empty };
+  }
+
+  return { config: empty, error: "Unknown result type." };
+}
+
 export async function createTestCatalogAction(
   _prevState: FormState,
   formData: FormData
@@ -56,13 +130,17 @@ export async function createTestCatalogAction(
   const sampleTypeId = String(formData.get("sampleTypeId") || "");
   const name = String(formData.get("name") || "").trim();
   const unit = String(formData.get("unit") || "").trim();
-  const spec = String(formData.get("spec") || "").trim();
   const method = String(formData.get("method") || "").trim();
   const resultMode = String(formData.get("resultMode") || "SINGLE") === "MULTI" ? "MULTI" : "SINGLE";
   const replicateCountRaw = String(formData.get("replicateCount") || "").trim();
   const intervalPlanRaw = String(formData.get("intervalPlan") || "").trim();
+  const requiresAttachment = formData.get("requiresAttachment") === "on";
 
-  if (!sampleTypeId || !name || !spec) return { error: "Sample type, test name, and spec are required." };
+  if (!sampleTypeId || !name) return { error: "Sample type and test name are required." };
+
+  const { config, error: resultTypeError } = parseResultTypeFields(formData);
+  if (resultTypeError) return { error: resultTypeError };
+  const spec = buildSpecLabel(config, unit);
 
   let replicateCount: number | null = null;
   let intervalPlan: string | null = null;
@@ -77,7 +155,28 @@ export async function createTestCatalogAction(
 
   const count = await prisma.testCatalog.count({ where: { sampleTypeId } });
   const created = await prisma.testCatalog.create({
-    data: { sampleTypeId, name, unit, spec, method: method || null, order: count, resultMode, replicateCount, intervalPlan },
+    data: {
+      sampleTypeId,
+      name,
+      unit,
+      spec,
+      method: method || null,
+      order: count,
+      resultMode,
+      replicateCount,
+      intervalPlan,
+      resultType: config.resultType,
+      numericMode: config.numericMode,
+      numericLimit: config.numericLimit,
+      numericMin: config.numericMin,
+      numericMax: config.numericMax,
+      numericTarget: config.numericTarget,
+      numericTolerance: config.numericTolerance,
+      categoricalOptions: config.categoricalOptions,
+      categoricalPassOptions: config.categoricalPassOptions,
+      categoricalOrdered: config.categoricalOrdered,
+      requiresAttachment: config.resultType === "TEXT" ? requiresAttachment : null,
+    },
   });
 
   await logAudit({ userId: user.id, action: "catalog.test_created", entityType: "TestCatalog", entityId: created.id, detail: name });

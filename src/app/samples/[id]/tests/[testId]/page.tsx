@@ -75,7 +75,7 @@ export default async function TestEntryPage({
       </div>
 
       <div className="mx-5 mt-3.5 border-t border-border-soft" />
-      <TestResultForm sampleId={id} testId={test.id} unit={test.unit} spec={test.spec} isMulti={isMulti} />
+      <TestResultForm sampleId={id} testId={test.id} unit={test.unit} spec={test.spec} isMulti={isMulti} resultConfig={test} />
     </div>
   );
 }

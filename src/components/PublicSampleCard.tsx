@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { parseSpecVerdict } from "@/lib/spec";
+import { parseVerdict, type ResultTypeConfig } from "@/lib/spec";
 import { clientStageLabel, clientStageColors } from "@/lib/publicStage";
 import AttachmentGallery from "@/components/AttachmentGallery";
 import type { PublicSample, PublicSampleView } from "@/lib/publicSample";
@@ -301,7 +301,7 @@ export default function PublicSampleCard({
   );
 }
 
-type ParameterTest = {
+type ParameterTest = ResultTypeConfig & {
   id: string;
   name: string;
   status: string;
@@ -313,7 +313,7 @@ type ParameterTest = {
 
 function ParameterRow({ test, revealDetail }: { test: ParameterTest; revealDetail: boolean }) {
   const submitted = test.status === "awaiting";
-  const verdict = revealDetail ? parseSpecVerdict(test.spec, test.result) : null;
+  const verdict = revealDetail ? parseVerdict(test, test.result) : null;
 
   const pill = revealDetail
     ? verdict === "Fail"

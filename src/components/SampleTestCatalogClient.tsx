@@ -14,6 +14,7 @@ export type TestRow = {
   resultMode: string;
   replicateCount: number | null;
   intervalPlan: string | null;
+  resultType: string | null;
 };
 
 export type SampleTypeRow = {
@@ -159,6 +160,11 @@ function SampleTypeCard({ st }: { st: SampleTypeRow }) {
             <div>
               <span className={`font-medium ${t.active ? "text-text" : "text-muted line-through"}`}>{t.name}</span>
               <span className="text-muted"> &middot; {t.spec}</span>
+              {(t.resultType === "CATEGORICAL" || t.resultType === "TEXT") && (
+                <span className="ml-1.5 inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-chip-bg text-muted align-middle">
+                  {t.resultType === "CATEGORICAL" ? "Categorical" : "Text"}
+                </span>
+              )}
               {t.resultMode === "MULTI" && (
                 <span className="ml-1.5 inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary-soft text-primary-dark align-middle">
                   {[t.replicateCount ? `×${t.replicateCount}` : null, t.intervalPlan ? t.intervalPlan.split(",").length + " pts" : null]

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { parseSpecVerdict } from "@/lib/spec";
+import { parseVerdict } from "@/lib/spec";
 import type { getSampleDetail } from "@/lib/data";
 
 type SampleDetail = NonNullable<Awaited<ReturnType<typeof getSampleDetail>>>;
@@ -57,7 +57,7 @@ export default function CertificateDocument({ sample, qrDataUrl }: { sample: Sam
         </thead>
         <tbody>
           {sample.tests.map((test) => {
-            const verdict = parseSpecVerdict(test.spec, test.result);
+            const verdict = parseVerdict(test, test.result);
             return (
               <tr key={test.id} className="border-b border-border-soft break-inside-avoid">
                 <td className="py-1.5 pr-2 font-medium">{test.name}</td>

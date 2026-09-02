@@ -7,7 +7,7 @@
 //   submitting user is actually recorded — Test rows themselves carry no
 //   technician reference).
 import { prisma } from "@/lib/db";
-import { parseSpecVerdict } from "@/lib/spec";
+import { parseVerdict } from "@/lib/spec";
 
 const OPEN_STATUSES = ["Pending Login", "In Testing", "Awaiting Supervisor Review", "Awaiting QA Approval"];
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -154,6 +154,16 @@ export async function getTechnicianPerformance(days = 90): Promise<TechnicianSta
       id: true,
       spec: true,
       result: true,
+      resultType: true,
+      numericMode: true,
+      numericLimit: true,
+      numericMin: true,
+      numericMax: true,
+      numericTarget: true,
+      numericTolerance: true,
+      categoricalOptions: true,
+      categoricalPassOptions: true,
+      categoricalOrdered: true,
       sample: { select: { receivedDate: true, sampleType: { select: { targetTatHours: true } } } },
     },
   });
@@ -169,7 +179,7 @@ export async function getTechnicianPerformance(days = 90): Promise<TechnicianSta
     const targetHours = test.sample.sampleType?.targetTatHours ?? 48;
     const dueAt = test.sample.receivedDate.getTime() + targetHours * HOUR_MS;
     if (log.createdAt.getTime() <= dueAt) entry.onTime += 1;
-    const verdict = parseSpecVerdict(test.spec, test.result);
+    const verdict = parseVerdict(test, test.result);
     if (verdict) {
       entry.verdictable += 1;
       if (verdict === "Fail") entry.fails += 1;
