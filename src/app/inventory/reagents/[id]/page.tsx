@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { pathForLocationId } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import LinkButton from "@/components/ui/LinkButton";
 import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
@@ -23,10 +25,10 @@ export default async function ReagentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requirePageRole(canManageInventoryAndCatalog);
+  const user = await requirePageRole(canManageInventoryAndCatalog);
   const { id } = await params;
 
-  const [reagent, activeNfcTag] = await Promise.all([
+  const [reagent, activeNfcTag, unread] = await Promise.all([
     prisma.reagent.findUnique({
       where: { id },
       include: { storageLocation: true, transactions: { orderBy: { performedAt: "desc" } } },
@@ -35,6 +37,7 @@ export default async function ReagentDetailPage({
       where: { entityType: "REAGENT", entityId: id, active: true },
       select: { registeredBy: true, registeredAt: true },
     }),
+    getUnreadCount(user.id),
   ]);
   if (!reagent) notFound();
 
@@ -46,9 +49,10 @@ export default async function ReagentDetailPage({
     : reagent.location;
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title={reagent.name} backHref="/inventory/reagents" />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[720px] md:w-full">
         <div className="bg-white border border-border rounded-[18px] shadow-card overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3.5 border-b border-border-soft">
             <span className="text-xs font-semibold text-muted font-mono-data">Lot {reagent.lotNumber}</span>

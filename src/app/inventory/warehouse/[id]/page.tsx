@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requirePageRole } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/data";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 import { buildLocationTree, flattenForSelect } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
+import Sidebar from "@/components/Sidebar";
 import { CreateStorageLocationForm } from "@/components/WarehouseForms";
 import { setStorageLocationActiveAction } from "@/lib/actions/warehouse";
 import SectionLabel from "@/components/ui/SectionLabel";
@@ -18,10 +20,10 @@ export default async function StorageLocationDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requirePageRole(canManageInventoryAndCatalog);
+  const user = await requirePageRole(canManageInventoryAndCatalog);
   const { id } = await params;
 
-  const [location, all] = await Promise.all([
+  const [location, all, unread] = await Promise.all([
     prisma.storageLocation.findUnique({
       where: { id },
       include: {
@@ -30,6 +32,7 @@ export default async function StorageLocationDetailPage({
       },
     }),
     prisma.storageLocation.findMany({ include: { _count: { select: { reagents: true, equipment: true } } } }),
+    getUnreadCount(user.id),
   ]);
   if (!location) notFound();
 
@@ -48,9 +51,10 @@ export default async function StorageLocationDetailPage({
   const parentOptions = flattenForSelect(nodes, { excludeId: id });
 
   return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
+    <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
+      <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title={location.name} backHref={ancestors.length > 0 ? `/inventory/warehouse/${ancestors[ancestors.length - 1].id}` : "/inventory/warehouse"} />
-      <div className="flex-1 px-5 pt-4.5 pb-7 flex flex-col gap-4">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[720px] md:w-full">
         {ancestors.length > 0 && (
           <div className="flex items-center gap-1 text-xs text-muted -mt-1 flex-wrap">
             <Link href="/inventory/warehouse" className="hover:text-primary">
