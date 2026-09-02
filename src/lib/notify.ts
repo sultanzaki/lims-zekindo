@@ -11,15 +11,23 @@ import { prisma } from "@/lib/db";
 export async function notifyUsers(input: { userIds: string[]; title: string; body: string; sampleId?: string }) {
   const uniqueIds = [...new Set(input.userIds)].filter(Boolean);
   if (uniqueIds.length === 0) return;
-  await prisma.notification.createMany({
-    data: uniqueIds.map((userId) => ({
-      userId,
-      title: input.title,
-      body: input.body,
-      sampleId: input.sampleId,
-      unread: true,
-    })),
-  });
+  // Callers in samples.ts run this between a status-changing DB write and
+  // the logAudit() call that records it — a notification failure must
+  // never throw and skip that audit entry (or fail an already-committed
+  // approve/reject on-screen), so this is best-effort and swallows errors.
+  try {
+    await prisma.notification.createMany({
+      data: uniqueIds.map((userId) => ({
+        userId,
+        title: input.title,
+        body: input.body,
+        sampleId: input.sampleId,
+        unread: true,
+      })),
+    });
+  } catch (err) {
+    console.error("notifyUsers failed:", err);
+  }
 }
 
 /** Distinct users who submitted at least one test result on this sample. */

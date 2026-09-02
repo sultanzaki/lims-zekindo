@@ -149,12 +149,17 @@ export async function bulkRelocateReagentsAction(ids: string[], locationId: stri
   if (ids.length > 200) return { error: "Too many items selected at once (max 200)." };
 
   const targetLocationId = locationId || null;
+  let targetLocationName = "Unassigned";
   if (targetLocationId) {
-    const loc = await prisma.storageLocation.findUnique({ where: { id: targetLocationId } });
+    const loc = await prisma.storageLocation.findUnique({ where: { id: targetLocationId }, select: { name: true } });
     if (!loc) return { error: "Choose a valid location." };
+    targetLocationName = loc.name;
   }
 
-  const existing = await prisma.reagent.findMany({ where: { id: { in: ids } }, select: { id: true, locationId: true } });
+  const existing = await prisma.reagent.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, locationId: true, storageLocation: { select: { name: true } } },
+  });
 
   let moved = 0;
   for (const r of existing) {
@@ -165,7 +170,9 @@ export async function bulkRelocateReagentsAction(ids: string[], locationId: stri
       action: "reagent.relocated",
       entityType: "Reagent",
       entityId: r.id,
-      metadata: { location: { from: r.locationId, to: targetLocationId } },
+      // Metadata is rendered verbatim in the Audit Log UI/CSV — use the
+      // location's name, not its id, so the from/to diff is readable there.
+      metadata: { location: { from: r.storageLocation?.name ?? "Unassigned", to: targetLocationName } },
     });
     moved++;
   }
@@ -346,12 +353,17 @@ export async function bulkRelocateEquipmentAction(ids: string[], locationId: str
   if (ids.length > 200) return { error: "Too many items selected at once (max 200)." };
 
   const targetLocationId = locationId || null;
+  let targetLocationName = "Unassigned";
   if (targetLocationId) {
-    const loc = await prisma.storageLocation.findUnique({ where: { id: targetLocationId } });
+    const loc = await prisma.storageLocation.findUnique({ where: { id: targetLocationId }, select: { name: true } });
     if (!loc) return { error: "Choose a valid location." };
+    targetLocationName = loc.name;
   }
 
-  const existing = await prisma.equipment.findMany({ where: { id: { in: ids } }, select: { id: true, locationId: true } });
+  const existing = await prisma.equipment.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, locationId: true, storageLocation: { select: { name: true } } },
+  });
 
   let moved = 0;
   for (const e of existing) {
@@ -362,7 +374,9 @@ export async function bulkRelocateEquipmentAction(ids: string[], locationId: str
       action: "equipment.relocated",
       entityType: "Equipment",
       entityId: e.id,
-      metadata: { location: { from: e.locationId, to: targetLocationId } },
+      // Metadata is rendered verbatim in the Audit Log UI/CSV — use the
+      // location's name, not its id, so the from/to diff is readable there.
+      metadata: { location: { from: e.storageLocation?.name ?? "Unassigned", to: targetLocationName } },
     });
     moved++;
   }
