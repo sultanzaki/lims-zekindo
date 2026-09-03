@@ -23,6 +23,7 @@ export default function ReviewPanel({
   approveLabel: string;
 }) {
   const [password, setPassword] = useState("");
+  const [reason, setReason] = useState("");
   const [approveState, approveFormAction, approvePending] = useActionState(approveAction, initialState);
   const [rejectState, rejectFormAction, rejectPending] = useActionState(rejectAction, initialState);
 
@@ -34,6 +35,19 @@ export default function ReviewPanel({
       </div>
       {canAct ? (
         <>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-semibold text-warning-dark" htmlFor="review-reason">
+              Reason (required to reject)
+            </label>
+            <textarea
+              id="review-reason"
+              rows={2}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="What didn't meet spec, or why recollection is needed…"
+              className={`${inputClassSm} border-warning/40 resize-none`}
+            />
+          </div>
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-semibold text-warning-dark" htmlFor="review-password">
               Enter your password to sign this decision
@@ -52,6 +66,7 @@ export default function ReviewPanel({
           <div className="flex gap-2.5">
             <form action={rejectFormAction} className="flex-1">
               <input type="hidden" name="password" value={password} />
+              <input type="hidden" name="reason" value={reason} />
               <Button variant="outlineDanger" size="sm" disabled={rejectPending || approvePending}>
                 {rejectPending ? "Signing…" : "Reject"}
               </Button>
