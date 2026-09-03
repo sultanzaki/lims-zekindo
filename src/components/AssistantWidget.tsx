@@ -50,6 +50,11 @@ async function readSseEvents(response: Response, onEvent: (event: Record<string,
 export default function AssistantWidget() {
   const [everOpened, setEverOpened] = useState(false);
   const [open, setOpen] = useState(false);
+  // Panel stays mounted through the close animation (menu-pop-out) instead
+  // of vanishing the instant `open` flips false — see the matching pattern
+  // in ui/Modal.tsx.
+  const [panelRendered, setPanelRendered] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [displayItems, setDisplayItems] = useState<DisplayItem[]>([]);
   const [input, setInput] = useState("");
@@ -83,6 +88,20 @@ export default function AssistantWidget() {
   function openWidget() {
     setEverOpened(true);
     setOpen(true);
+  }
+
+  // Adjust state during render when `open` changes (React's documented
+  // alternative to a setState-in-effect for "reset/react to a prop change")
+  // rather than reacting to it a frame later in an effect.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setPanelRendered(true);
+      setClosing(false);
+    } else if (panelRendered) {
+      setClosing(true);
+    }
   }
 
   function stopStreaming() {
@@ -248,13 +267,18 @@ export default function AssistantWidget() {
         <AssistantIcon />
       </button>
 
-      {open && (
+      {panelRendered && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center md:items-stretch md:justify-end p-0 md:p-6 bg-black/30 md:bg-transparent"
+          className={`fixed inset-0 z-50 flex items-end justify-center md:items-stretch md:justify-end p-0 md:p-6 bg-black/30 md:bg-transparent ${
+            closing ? "modal-backdrop-out" : "modal-backdrop-in"
+          }`}
           onClick={() => setOpen(false)}
+          onAnimationEnd={() => {
+            if (closing) setPanelRendered(false);
+          }}
         >
           <div
-            className="menu-pop w-full md:w-[420px] h-[85vh] md:h-auto max-h-[85vh] md:max-h-none bg-white rounded-t-[20px] md:rounded-[20px] md:border md:border-border shadow-[0_12px_40px_rgba(16,42,58,0.25)] md:shadow-[0_20px_48px_rgba(16,42,58,0.22)] flex flex-col overflow-hidden"
+            className={`${closing ? "menu-pop-out" : "menu-pop"} w-full md:w-[420px] h-[85vh] md:h-auto max-h-[85vh] md:max-h-none bg-white rounded-t-[20px] md:rounded-[20px] md:border md:border-border shadow-[0_12px_40px_rgba(16,42,58,0.25)] md:shadow-[0_20px_48px_rgba(16,42,58,0.22)] flex flex-col overflow-hidden`}
             style={{ transformOrigin: "bottom right" }}
             onClick={(e) => e.stopPropagation()}
           >

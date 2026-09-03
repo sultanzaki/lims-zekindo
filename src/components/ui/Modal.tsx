@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Modal({
   open,
@@ -15,6 +15,26 @@ export default function Modal({
   children: React.ReactNode;
   maxWidth?: string;
 }) {
+  // Kept mounted through the exit animation (see the modal-*-out keyframes
+  // in globals.css) instead of unmounting the instant `open` flips false —
+  // otherwise the modal would just snap away with no close motion.
+  const [rendered, setRendered] = useState(open);
+  const [closing, setClosing] = useState(false);
+
+  // Adjust state during render when `open` changes (React's documented
+  // alternative to a setState-in-effect for "reset/react to a prop change")
+  // rather than reacting to it a frame later in an effect.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setRendered(true);
+      setClosing(false);
+    } else if (rendered) {
+      setClosing(true);
+    }
+  }
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -24,15 +44,22 @@ export default function Modal({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!rendered) return null;
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-5"
+      className={`fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-5 ${
+        closing ? "modal-backdrop-out" : "modal-backdrop-in"
+      }`}
       onClick={onClose}
+      onAnimationEnd={() => {
+        if (closing) setRendered(false);
+      }}
     >
       <div
-        className="w-full bg-white rounded-[18px] p-4 md:p-5 flex flex-col gap-3 max-h-[85vh] overflow-y-auto"
+        className={`w-full bg-white rounded-[18px] p-4 md:p-5 flex flex-col gap-3 max-h-[85vh] overflow-y-auto ${
+          closing ? "modal-panel-out" : "modal-panel-in"
+        }`}
         style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
