@@ -4,6 +4,7 @@ import { loadPublicSample, preparePublicSampleView } from "@/lib/publicSample";
 import PublicSampleCard, { contactMailtoHref } from "@/components/PublicSampleCard";
 import PublicPageHeader from "@/components/PublicPageHeader";
 import TrackLookupForm from "@/components/TrackLookupForm";
+import type { Metadata } from "next";
 
 function MailIcon() {
   return (
@@ -13,6 +14,8 @@ function MailIcon() {
     </svg>
   );
 }
+
+export const metadata: Metadata = { title: "Track Your Sample" };
 
 export default async function TrackPage({
   searchParams,

@@ -14,6 +14,7 @@ import {
   getEquipmentHealth,
   getReagentHealth,
 } from "@/lib/analytics";
+import type { Metadata } from "next";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import KpiTiles from "@/components/analytics/KpiTiles";
@@ -28,6 +29,8 @@ import {
   EquipmentHealthMeter,
   ReagentHealthMeter,
 } from "@/components/analytics/Charts";
+
+export const metadata: Metadata = { title: "Analytics" };
 
 export default async function AnalyticsPage() {
   const user = await requirePageRole(canViewAnalytics);

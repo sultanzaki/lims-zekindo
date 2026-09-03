@@ -8,10 +8,13 @@ import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
+import type { Metadata } from "next";
 
 function Note({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] text-faint leading-relaxed -mt-1.5">{children}</p>;
 }
+
+export const metadata: Metadata = { title: "Advanced Insights" };
 
 export default async function InsightsPage() {
   const user = await requirePageRole(canViewAnalytics);

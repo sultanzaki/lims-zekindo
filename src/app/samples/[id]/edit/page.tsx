@@ -7,8 +7,11 @@ import { updateSampleAction } from "@/lib/actions/samples";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import EditSampleForm from "@/components/EditSampleForm";
+import type { Metadata } from "next";
 
 const EDITABLE_STATUSES = new Set(["Pending Login", "In Testing"]);
+
+export const metadata: Metadata = { title: "Edit Sample" };
 
 export default async function EditSamplePage({
   params,

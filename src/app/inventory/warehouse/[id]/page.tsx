@@ -13,6 +13,13 @@ import { setStorageLocationActiveAction } from "@/lib/actions/warehouse";
 import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
 import Chevron from "@/components/ui/Chevron";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const location = await prisma.storageLocation.findUnique({ where: { id }, select: { name: true } });
+  return { title: location?.name ?? "Location" };
+}
 import LinkButton from "@/components/ui/LinkButton";
 
 export default async function StorageLocationDetailPage({

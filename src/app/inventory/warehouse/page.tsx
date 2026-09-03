@@ -8,6 +8,9 @@ import Sidebar from "@/components/Sidebar";
 import WarehouseToolbar from "@/components/WarehouseToolbar";
 import WarehouseTree from "@/components/WarehouseTree";
 import EmptyState from "@/components/ui/EmptyState";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Warehouse" };
 
 export default async function WarehousePage() {
   const user = await requirePageRole(canManageInventoryAndCatalog);

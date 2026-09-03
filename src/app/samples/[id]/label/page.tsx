@@ -6,10 +6,13 @@ import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
 import LabelCard, { type LabelSize } from "@/components/LabelCard";
 import LabelSizeSwitch from "@/components/LabelSizeSwitch";
+import type { Metadata } from "next";
 
 function parseSize(value: string | undefined): LabelSize {
   return value === "small" || value === "medium" ? value : "large";
 }
+
+export const metadata: Metadata = { title: "Barcode Label" };
 
 export default async function SampleLabelPage({
   params,

@@ -7,6 +7,9 @@ import BottomNav from "@/components/BottomNav";
 import Sidebar from "@/components/Sidebar";
 import { markAllReadAction } from "@/lib/actions/notifications";
 import EmptyState from "@/components/ui/EmptyState";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Notifications" };
 
 export default async function NotificationsPage() {
   const user = await requirePageUser();

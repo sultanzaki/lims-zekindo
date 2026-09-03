@@ -6,6 +6,9 @@ import Sidebar from "@/components/Sidebar";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Chevron from "@/components/ui/Chevron";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Lab Management" };
 
 export default async function AdminHubPage() {
   const user = await requirePageRole((role) => canReviewAsSupervisor(role) || canManageInventoryAndCatalog(role));

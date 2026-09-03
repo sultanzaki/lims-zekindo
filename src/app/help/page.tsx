@@ -3,6 +3,9 @@ import { getUnreadCount } from "@/lib/data";
 import { canReviewAsSupervisor, canManageInventoryAndCatalog, isAdmin } from "@/lib/roles";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Help & Support" };
 
 export default async function HelpPage() {
   const user = await getCurrentUser();

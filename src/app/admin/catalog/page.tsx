@@ -5,6 +5,9 @@ import { prisma } from "@/lib/db";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import SampleTestCatalogClient from "@/components/SampleTestCatalogClient";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Sample & Test Catalog" };
 
 export default async function AdminCatalogPage() {
   const user = await requirePageRole(canManageInventoryAndCatalog);

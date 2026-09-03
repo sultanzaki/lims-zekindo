@@ -17,6 +17,13 @@ import {
   uploadSampleReportAction,
   deleteSampleReportAction,
 } from "@/lib/actions/samples";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const sample = await prisma.sample.findUnique({ where: { id }, select: { name: true, type: true } });
+  return { title: sample ? (sample.name || sample.type) : id };
+}
 
 export default async function SampleDetailPage({
   params,

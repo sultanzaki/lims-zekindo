@@ -97,6 +97,11 @@ model Sample {
   @@index([sampleTypeId])
   @@index([retestOfSampleId])
   @@index([businessUnitId])
+  // Supports the Samples list's default sort (newest first) and its
+  // keyset/cursor pagination, plus the received-date range filter — both
+  // need an index to stay fast once this table is large.
+  @@index([createdAt])
+  @@index([receivedDate])
 }
 
 // A finished lab report document for the whole sample (e.g. a signed-off
@@ -317,6 +322,10 @@ model Equipment {
 
   @@index([nextCalibrationDue])
   @@index([locationId])
+  @@index([status])
+  // Supports the Equipment list's default sort (by name) and its
+  // keyset/cursor pagination.
+  @@index([name])
 }
 
 // type values: "CALIBRATION" | "MAINTENANCE" | "STATUS_CHANGE"
@@ -357,6 +366,10 @@ model Reagent {
 
   @@index([expiryDate])
   @@index([locationId])
+  @@index([category])
+  // Supports the Reagents list's default sort (by name) and its
+  // keyset/cursor pagination.
+  @@index([name])
 }
 
 // type values: "RECEIVED" | "CONSUMED" | "ADJUSTED" | "DISPOSED"

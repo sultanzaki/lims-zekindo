@@ -12,6 +12,13 @@ import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
 import { ReagentTransactionForm } from "@/components/ReagentDetailForms";
 import NfcTagPanel from "@/components/NfcTagPanel";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const reagent = await prisma.reagent.findUnique({ where: { id }, select: { name: true } });
+  return { title: reagent?.name ?? "Reagent" };
+}
 
 const TX_STYLE: Record<string, { label: string; bg: string; color: string }> = {
   RECEIVED: { label: "Received", bg: "#E6F4EA", color: "#1E7A34" },

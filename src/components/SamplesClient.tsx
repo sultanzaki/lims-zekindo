@@ -1,18 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import Sidebar from "@/components/Sidebar";
 import Chevron from "@/components/ui/Chevron";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import CursorPager from "@/components/ui/CursorPager";
 import { inputClassSm } from "@/components/ui/Field";
 import { SAMPLE_STATUSES, STATUS_STYLES, CUSTODY_DOT_COLOR, SAMPLE_STATUS_SHORT, type SampleStatus } from "@/lib/status";
 import { dueLabelFor, dayGroupLabel, formatDate } from "@/lib/format";
 import { canReviewAsSupervisor, canApproveAsQa } from "@/lib/roles";
 import { bulkApproveSamplesAction, type BulkApproveResult } from "@/lib/actions/samples";
+import type { CursorPageInfo } from "@/lib/pagination";
 
 type SampleRow = {
   id: string;
@@ -28,6 +30,7 @@ type SampleRow = {
 
 const STATUS_OPTIONS = ["All", ...SAMPLE_STATUSES];
 const DAY_GROUP_ORDER = ["Today", "Yesterday", "Earlier"] as const;
+const SEARCH_DEBOUNCE_MS = 400;
 
 // Neutralize leading =, +, -, @ (and tab/CR) so a value typed into a free-text
 // field (Source, Collected By…) can't be interpreted as a formula by Excel/
@@ -63,19 +66,52 @@ export default function SamplesClient({
   role,
   userName,
   initialStatus = "All",
+  initialQuery = "",
+  initialDateFrom = "",
+  initialDateTo = "",
+  statusCounts,
+  pageInfo,
 }: {
   samples: SampleRow[];
   unreadCount: number;
   role: string;
   userName: string;
   initialStatus?: string;
+  initialQuery?: string;
+  initialDateFrom?: string;
+  initialDateTo?: string;
+  statusCounts: Record<string, number>;
+  pageInfo: CursorPageInfo;
 }) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
-  const [showFilters, setShowFilters] = useState(false);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [query, setQuery] = useState(initialQuery);
+  const [showFilters, setShowFilters] = useState(Boolean(initialDateFrom || initialDateTo));
+  const [dateFrom, setDateFrom] = useState(initialDateFrom);
+  const [dateTo, setDateTo] = useState(initialDateTo);
+
+  // Keep local input state aligned after a server round-trip (e.g. the
+  // browser's back/forward button lands on a different set of params).
+  // Adjusted during render (React's documented pattern for resetting state
+  // when a prop changes) rather than in an effect, to avoid an extra
+  // commit/cascading re-render.
+  const [syncedQuery, setSyncedQuery] = useState(initialQuery);
+  const [syncedDateFrom, setSyncedDateFrom] = useState(initialDateFrom);
+  const [syncedDateTo, setSyncedDateTo] = useState(initialDateTo);
+  if (initialQuery !== syncedQuery) {
+    setSyncedQuery(initialQuery);
+    setQuery(initialQuery);
+  }
+  if (initialDateFrom !== syncedDateFrom) {
+    setSyncedDateFrom(initialDateFrom);
+    setDateFrom(initialDateFrom);
+  }
+  if (initialDateTo !== syncedDateTo) {
+    setSyncedDateTo(initialDateTo);
+    setDateTo(initialDateTo);
+  }
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -84,6 +120,38 @@ export default function SamplesClient({
   const [approveError, setApproveError] = useState("");
   const [approveResult, setApproveResult] = useState<BulkApproveResult | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Every filter change is a real server-side query now (search/status/date
+  // all run in the WHERE clause, not client-side), so it always resets
+  // pagination back to the first page — otherwise "after"/"before" from the
+  // old, unfiltered position would carry over and paginate the wrong set.
+  function updateParams(patch: Record<string, string | undefined>) {
+    const sp = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(patch)) {
+      if (value) sp.set(key, value);
+      else sp.delete(key);
+    }
+    sp.delete("after");
+    sp.delete("before");
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  // Debounced so typing doesn't fire a server round-trip per keystroke.
+  useEffect(() => {
+    if (query === initialQuery) return;
+    const handle = setTimeout(() => updateParams({ q: query || undefined }), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  function setStatusFilter(status: string) {
+    updateParams({ status: status === "All" ? undefined : status });
+  }
+
+  function applyDateFilter(from: string, to: string) {
+    updateParams({ from: from || undefined, to: to || undefined });
+  }
 
   const isApprovable = (s: SampleRow) =>
     (s.status === "Awaiting Supervisor Review" && canReviewAsSupervisor(role)) ||
@@ -125,40 +193,14 @@ export default function SamplesClient({
     router.refresh();
   }
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const from = dateFrom ? new Date(dateFrom + "T00:00:00") : null;
-    const to = dateTo ? new Date(dateTo + "T23:59:59") : null;
-    return samples.filter((s) => {
-      if (statusFilter !== "All" && s.status !== statusFilter) return false;
-      if (from && s.receivedDate < from) return false;
-      if (to && s.receivedDate > to) return false;
-      if (!q) return true;
-      return (
-        s.id.toLowerCase().includes(q) ||
-        (s.name ?? "").toLowerCase().includes(q) ||
-        s.type.toLowerCase().includes(q) ||
-        s.source.toLowerCase().includes(q) ||
-        s.collectedBy.toLowerCase().includes(q)
-      );
-    });
-  }, [samples, query, statusFilter, dateFrom, dateTo]);
-
-  const hasDateFilter = dateFrom || dateTo;
-
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: samples.length };
-    for (const status of SAMPLE_STATUSES) counts[status] = 0;
-    for (const s of samples) counts[s.status] = (counts[s.status] ?? 0) + 1;
-    return counts;
-  }, [samples]);
+  const hasDateFilter = Boolean(dateFrom || dateTo);
 
   const groups = useMemo(() => {
     return DAY_GROUP_ORDER.map((label) => ({
       label,
-      items: filtered.filter((s) => dayGroupLabel(s.receivedDate) === label),
+      items: samples.filter((s) => dayGroupLabel(s.receivedDate) === label),
     })).filter((g) => g.items.length > 0);
-  }, [filtered]);
+  }, [samples]);
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
@@ -170,7 +212,7 @@ export default function SamplesClient({
           <div className="min-w-0 shrink-0">
             <div className="text-[20px] font-bold text-text tracking-tight">Samples</div>
             <div className="text-[13px] text-muted mt-0.5 whitespace-nowrap">
-              {samples.length} samples &middot; {statusCounts["In Testing"] ?? 0} in testing
+              {statusCounts.All} samples &middot; {statusCounts["In Testing"] ?? 0} in testing
             </div>
           </div>
           <div className="flex items-center gap-2 min-w-0">
@@ -188,7 +230,7 @@ export default function SamplesClient({
               />
             </div>
             <select
-              value={statusFilter}
+              value={initialStatus}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="h-[38px] px-2.5 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-[#5B6B74] cursor-pointer shrink-0 max-w-[130px]"
             >
@@ -214,9 +256,9 @@ export default function SamplesClient({
               </svg>
             </button>
             <button
-              onClick={() => downloadCsv(filtered)}
+              onClick={() => downloadCsv(samples)}
               aria-label="Export CSV"
-              title="Export CSV"
+              title="Export CSV (current page)"
               className="flex items-center justify-center w-[38px] h-[38px] rounded-[10px] bg-white border border-border text-primary-dark cursor-pointer shrink-0"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -251,14 +293,20 @@ export default function SamplesClient({
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                applyDateFilter(e.target.value, dateTo);
+              }}
               className="text-xs px-2.5 py-2 border border-border rounded-[10px] text-text bg-white"
             />
             <span className="text-xs text-muted">to</span>
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                applyDateFilter(dateFrom, e.target.value);
+              }}
               className="text-xs px-2.5 py-2 border border-border rounded-[10px] text-text bg-white"
             />
           </div>
@@ -333,7 +381,7 @@ export default function SamplesClient({
         <div className="relative -mx-5">
           <div className="flex gap-1.5 overflow-x-auto pb-0.5 px-5">
             {STATUS_OPTIONS.map((opt) => {
-              const active = statusFilter === opt;
+              const active = initialStatus === opt;
               return (
                 <button
                   key={opt}
@@ -362,7 +410,7 @@ export default function SamplesClient({
             {hasDateFilter && !showFilters && " •"}
           </button>
           <button
-            onClick={() => downloadCsv(filtered)}
+            onClick={() => downloadCsv(samples)}
             className="text-xs font-semibold text-primary cursor-pointer"
           >
             Export CSV
@@ -373,14 +421,20 @@ export default function SamplesClient({
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                applyDateFilter(e.target.value, dateTo);
+              }}
               className="flex-1 text-xs px-2.5 py-2 border border-border rounded-[10px] text-text bg-white"
             />
             <span className="text-xs text-muted">to</span>
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                applyDateFilter(dateFrom, e.target.value);
+              }}
               className="flex-1 text-xs px-2.5 py-2 border border-border rounded-[10px] text-text bg-white"
             />
           </div>
@@ -508,7 +562,7 @@ export default function SamplesClient({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s) => {
+                {samples.map((s) => {
                   const statusStyle = STATUS_STYLES[s.status as SampleStatus];
                   const terminal = s.status === "Complete" || s.status === "Rejected";
                   const due = !terminal ? dueLabelFor(s.receivedDate, s.sampleType?.targetTatHours ?? 48) : null;
@@ -583,11 +637,13 @@ export default function SamplesClient({
           </div>
         </div>
 
-        {filtered.length === 0 && (
+        {samples.length === 0 && (
           <div className="px-5">
             <EmptyState>No samples match your search.</EmptyState>
           </div>
         )}
+
+        <CursorPager {...pageInfo} />
       </div>
       </div>
 

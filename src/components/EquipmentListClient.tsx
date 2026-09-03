@@ -1,16 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CreateEquipmentForm } from "@/components/InventoryForms";
-import { bulkRelocateEquipmentAction } from "@/lib/actions/inventory";
+import { bulkRelocateEquipmentAction, exportEquipmentAction } from "@/lib/actions/inventory";
 import { exportToExcel } from "@/lib/exportExcel";
 import StatChip from "@/components/ui/StatChip";
 import EmptyState from "@/components/ui/EmptyState";
 import Chevron from "@/components/ui/Chevron";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
+import CursorPager from "@/components/ui/CursorPager";
+import type { CursorPageInfo } from "@/lib/pagination";
 
 export type EquipmentRow = {
   id: string;
@@ -25,19 +27,35 @@ export type EquipmentRow = {
   overdue: boolean;
 };
 
+export type EquipmentStatusStats = { total: number; operational: number; underMaintenance: number; outOfService: number; overdue: number };
+
 const STATUS_OPTIONS = ["All", "Operational", "Under Maintenance", "Out of Service"];
+const SEARCH_DEBOUNCE_MS = 400;
 
 export default function EquipmentListClient({
   equipment,
   locations,
+  stats,
+  locationCount,
+  initialQuery = "",
+  initialStatus = "All",
+  pageInfo,
 }: {
   equipment: EquipmentRow[];
   locations: { id: string; label: string }[];
+  stats: EquipmentStatusStats;
+  locationCount: number;
+  initialQuery?: string;
+  initialStatus?: string;
+  pageInfo: CursorPageInfo;
 }) {
   const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [search, setSearch] = useState(initialQuery);
   const [formOpen, setFormOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -45,6 +63,15 @@ export default function EquipmentListClient({
   const [relocating, setRelocating] = useState(false);
   const [relocateError, setRelocateError] = useState("");
   const [relocateMessage, setRelocateMessage] = useState("");
+
+  // Adjusted during render (React's documented pattern for resetting state
+  // when a prop changes) so a server round-trip stays in sync without an
+  // extra effect commit/cascading re-render.
+  const [syncedQuery, setSyncedQuery] = useState(initialQuery);
+  if (initialQuery !== syncedQuery) {
+    setSyncedQuery(initialQuery);
+    setSearch(initialQuery);
+  }
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -78,41 +105,48 @@ export default function EquipmentListClient({
     router.refresh();
   }
 
-  const stats = useMemo(() => {
-    const operational = equipment.filter((e) => e.status === "Operational").length;
-    const underMaintenance = equipment.filter((e) => e.status === "Under Maintenance").length;
-    const outOfService = equipment.filter((e) => e.status === "Out of Service").length;
-    const overdue = equipment.filter((e) => e.overdue).length;
-    const locationCount = new Set(equipment.map((e) => e.locationName).filter(Boolean)).size;
-    return { operational, underMaintenance, outOfService, overdue, locationCount };
-  }, [equipment]);
+  function updateParams(patch: Record<string, string | undefined>) {
+    const sp = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(patch)) {
+      if (value) sp.set(key, value);
+      else sp.delete(key);
+    }
+    sp.delete("after");
+    sp.delete("before");
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return equipment.filter((e) => {
-      if (statusFilter !== "All" && e.status !== statusFilter) return false;
-      if (!q) return true;
-      return (
-        e.assetTag.toLowerCase().includes(q) ||
-        e.name.toLowerCase().includes(q) ||
-        (e.locationName ?? "").toLowerCase().includes(q)
-      );
-    });
-  }, [equipment, search, statusFilter]);
+  useEffect(() => {
+    if (search === initialQuery) return;
+    const handle = setTimeout(() => updateParams({ q: search || undefined }), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
-  function handleExportExcel() {
-    exportToExcel(`equipment-export-${new Date().toISOString().slice(0, 10)}.xlsx`, [
-      {
-        name: "Equipment",
-        rows: filtered.map((e) => ({
-          "Asset Tag": e.assetTag,
-          Name: e.name,
-          Location: e.locationName ?? "",
-          "Calibration Due": e.calibrationLabel ?? "",
-          Status: e.status,
-        })),
-      },
-    ]);
+  function setStatusFilter(status: string) {
+    updateParams({ status: status === "All" ? undefined : status });
+  }
+
+  async function handleExportExcel() {
+    setExporting(true);
+    try {
+      const rows = await exportEquipmentAction({ q: search, status: initialStatus });
+      exportToExcel(`equipment-export-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+        {
+          name: "Equipment",
+          rows: rows.map((e) => ({
+            "Asset Tag": e.assetTag,
+            Name: e.name,
+            Location: e.locationName ?? "",
+            "Calibration Due": e.calibrationLabel ?? "",
+            Status: e.status,
+          })),
+        },
+      ]);
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -122,7 +156,7 @@ export default function EquipmentListClient({
         <div className="shrink-0">
           <div className="text-[20px] font-bold text-text tracking-tight whitespace-nowrap">Equipment</div>
           <div className="text-[13px] text-muted mt-0.5">
-            {equipment.length} assets tracked across {stats.locationCount} storage location{stats.locationCount === 1 ? "" : "s"}
+            {stats.total} assets tracked across {locationCount} storage location{locationCount === 1 ? "" : "s"}
           </div>
         </div>
         <div className="no-print flex flex-wrap items-center justify-end gap-2.5">
@@ -139,7 +173,7 @@ export default function EquipmentListClient({
             />
           </div>
           <select
-            value={statusFilter}
+            value={initialStatus}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="h-[38px] px-3 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-[#5B6B74] cursor-pointer"
           >
@@ -152,9 +186,10 @@ export default function EquipmentListClient({
           <button
             type="button"
             onClick={handleExportExcel}
-            className="h-[38px] px-3 rounded-[10px] border border-border bg-white text-[13px] font-semibold text-primary-dark cursor-pointer whitespace-nowrap shrink-0"
+            disabled={exporting}
+            className="h-[38px] px-3 rounded-[10px] border border-border bg-white text-[13px] font-semibold text-primary-dark cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-60"
           >
-            Export Excel
+            {exporting ? "Exporting…" : "Export Excel"}
           </button>
           <button
             type="button"
@@ -216,14 +251,14 @@ export default function EquipmentListClient({
 
       {/* Desktop stat strip */}
       <div className="hidden md:flex md:gap-2.5">
-        <StatChip label="Total assets" value={equipment.length} />
+        <StatChip label="Total assets" value={stats.total} />
         <StatChip label="Operational" value={stats.operational} dotColor="#28A745" />
         <StatChip label="Under maintenance" value={stats.underMaintenance} dotColor="#F5A623" />
         <StatChip label="Out of service" value={stats.outOfService} dotColor="#D0021B" />
         <StatChip label="Calibration overdue" value={stats.overdue} tone="danger" />
       </div>
 
-      {/* Mobile card feed (unchanged) */}
+      {/* Mobile card feed */}
       <div className="flex flex-col gap-2.5 md:hidden">
         {equipment.map((e) => (
           <Link key={e.id} href={`/inventory/equipment/${e.id}`} className="bg-white border border-border rounded-[18px] shadow-card px-4 py-3.5">
@@ -261,8 +296,8 @@ export default function EquipmentListClient({
 
       {/* Desktop table */}
       <div className="hidden md:block">
-        {filtered.length === 0 ? (
-          <EmptyState>{equipment.length === 0 ? "No equipment tracked yet." : "No equipment matches your search."}</EmptyState>
+        {equipment.length === 0 ? (
+          <EmptyState>{stats.total === 0 ? "No equipment tracked yet." : "No equipment matches your search."}</EmptyState>
         ) : (
           <div className="bg-white border border-border rounded-2xl shadow-card-sm overflow-hidden">
             <div className="overflow-x-auto">
@@ -278,7 +313,7 @@ export default function EquipmentListClient({
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((e) => {
+                  {equipment.map((e) => {
                     const selected = selectedIds.has(e.id);
                     return (
                     <tr
@@ -331,6 +366,7 @@ export default function EquipmentListClient({
             </div>
           </div>
         )}
+        <CursorPager {...pageInfo} />
       </div>
     </div>
   );

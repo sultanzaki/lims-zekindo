@@ -6,6 +6,9 @@ import { getSampleDetail } from "@/lib/data";
 import { verifyTrackingAccess, certificateVerificationUrl } from "@/lib/tracking";
 import PrintButton from "@/components/PrintButton";
 import CertificateDocument from "@/components/CertificateDocument";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Certificate of Analysis" };
 
 export default async function PublicCertificatePage({
   searchParams,

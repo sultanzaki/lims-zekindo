@@ -3,6 +3,9 @@ import { getUnreadCount } from "@/lib/data";
 import BottomNav from "@/components/BottomNav";
 import Sidebar from "@/components/Sidebar";
 import ScanModeSwitch from "@/components/ScanModeSwitch";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Scan" };
 
 export default async function ScanPage() {
   const user = await requirePageUser();

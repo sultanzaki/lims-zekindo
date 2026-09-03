@@ -2,53 +2,79 @@ import { requirePageRole } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
-import { formatDate } from "@/lib/format";
-import { buildLocationTree, flattenForSelect } from "@/lib/warehouse";
+import { fetchCursorPage } from "@/lib/pagination";
+import { loadLocations, matchingLocationIds, shapeEquipmentRow, getEquipmentStatusStats, getEquipmentLocationCount } from "@/lib/inventory";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import EquipmentListClient from "@/components/EquipmentListClient";
+import type { Metadata } from "next";
+import type { Prisma } from "@prisma/client";
 
-const STATUS_STYLE: Record<string, { bg: string; color: string; dot: string }> = {
-  Operational: { bg: "#E6F4EA", color: "#1E7A34", dot: "#28A745" },
-  "Under Maintenance": { bg: "#FEF3E0", color: "#9A6100", dot: "#F5A623" },
-  "Out of Service": { bg: "#FDECEA", color: "#B00016", dot: "#D0021B" },
-};
+export const metadata: Metadata = { title: "Equipment" };
 
-export default async function EquipmentPage() {
+const PAGE_SIZE = 50;
+
+const SELECT = {
+  id: true,
+  assetTag: true,
+  name: true,
+  status: true,
+  location: true,
+  locationId: true,
+  nextCalibrationDue: true,
+} satisfies Prisma.EquipmentSelect;
+
+const ORDER_BY: Prisma.EquipmentOrderByWithRelationInput[] = [{ name: "asc" }, { id: "asc" }];
+
+export default async function EquipmentPage({ searchParams }: PageProps<"/inventory/equipment">) {
   const user = await requirePageRole(canManageInventoryAndCatalog);
-  const [equipment, allLocations, unread] = await Promise.all([
-    prisma.equipment.findMany({ orderBy: { name: "asc" }, include: { storageLocation: true } }),
-    prisma.storageLocation.findMany({ select: { id: true, name: true, parentId: true, active: true, notes: true } }),
+  const sp = await searchParams;
+  const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : "");
+
+  const q = get("q").trim();
+  const status = get("status");
+  const after = get("after") || undefined;
+  const before = get("before") || undefined;
+
+  const { locationNodes, locationTree, locations } = await loadLocations();
+
+  const where: Prisma.EquipmentWhereInput = {};
+  if (status && status !== "All") where.status = status;
+  if (q) {
+    const locIds = matchingLocationIds(locationTree, locationNodes, q);
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { assetTag: { contains: q, mode: "insensitive" } },
+      ...(locIds.length > 0 ? [{ locationId: { in: locIds } }] : []),
+    ];
+  }
+
+  const [{ rows, pageInfo }, stats, locationCount, unread] = await Promise.all([
+    fetchCursorPage(
+      (args) => prisma.equipment.findMany({ where, select: SELECT, orderBy: ORDER_BY, ...args }),
+      { after, before, pageSize: PAGE_SIZE }
+    ),
+    getEquipmentStatusStats(),
+    getEquipmentLocationCount(),
     getUnreadCount(user.id),
   ]);
-  const locationNodes = allLocations.map((l) => ({ ...l, directReagents: 0, directEquipment: 0 }));
-  const locationTree = buildLocationTree(locationNodes);
-  const locations = flattenForSelect(locationNodes, { activeOnly: true });
-  const now = new Date().getTime();
 
-  const rows = equipment.map((e) => {
-    const overdue = Boolean(e.nextCalibrationDue && e.nextCalibrationDue.getTime() < now);
-    const style = STATUS_STYLE[e.status] ?? STATUS_STYLE.Operational;
-    const locationName = e.storageLocation ? locationTree.pathFor(e.storageLocation.id) : e.location;
-    return {
-      id: e.id,
-      assetTag: e.assetTag,
-      name: e.name,
-      locationName: locationName || null,
-      status: e.status,
-      statusBg: style.bg,
-      statusColor: style.color,
-      statusDot: style.dot,
-      calibrationLabel: e.nextCalibrationDue ? `${formatDate(e.nextCalibrationDue)}${overdue ? " (overdue)" : ""}` : null,
-      overdue,
-    };
-  });
+  const now = new Date().getTime();
+  const equipmentRows = rows.map((e) => shapeEquipmentRow(e, locationTree, e.location, now));
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Equipment" backHref="/profile" hideDesktop />
-      <EquipmentListClient equipment={rows} locations={locations} />
+      <EquipmentListClient
+        equipment={equipmentRows}
+        locations={locations}
+        stats={stats}
+        locationCount={locationCount}
+        initialQuery={q}
+        initialStatus={status || "All"}
+        pageInfo={pageInfo}
+      />
     </div>
   );
 }

@@ -5,6 +5,9 @@ import { jakartaDayKey } from "@/lib/tz";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import CalendarClient from "@/components/CalendarClient";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "TAT Calendar" };
 
 export default async function CalendarPage({
   searchParams,
