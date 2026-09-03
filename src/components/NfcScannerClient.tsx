@@ -1,85 +1,74 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { resolveNfcTagAction } from "@/lib/actions/nfc";
 
-type Status = "idle" | "starting" | "scanning" | "found" | "unknown" | "inactive" | "error";
+type Status = "starting" | "scanning" | "found" | "unknown" | "inactive" | "error";
 
 export default function NfcScannerClient() {
   const router = useRouter();
-  const [status, setStatus] = useState<Status>("idle");
+  const [status, setStatus] = useState<Status>("starting");
   const [errorMsg, setErrorMsg] = useState("");
-  const cancelledRef = useRef(false);
-  const controllerRef = useRef<AbortController | null>(null);
 
-  useEffect(
-    () => () => {
-      cancelledRef.current = true;
-      controllerRef.current?.abort();
-    },
-    []
-  );
-
-  // Only ever called from a tap (never on mount) — Android hands Chrome
-  // exclusive "reader mode" for NFC reliably when the scan session starts
-  // from a fresh user gesture. Starting it automatically on page load, like
-  // this used to, left a window where a tap could race Chrome's own setup
-  // and fall through to Android's system tag-dispatch chooser ("Open
-  // with…") instead of this page catching the read.
-  async function startScan() {
-    setStatus("starting");
-    setErrorMsg("");
-    cancelledRef.current = false;
+  useEffect(() => {
+    let cancelled = false;
     const controller = new AbortController();
-    controllerRef.current = controller;
 
-    try {
-      const reader = new NDEFReader();
+    async function run() {
+      try {
+        const reader = new NDEFReader();
 
-      reader.addEventListener("reading", (ev) => {
-        void (async () => {
-          if (cancelledRef.current) return;
-          let text = "";
-          for (const record of ev.message.records) {
-            if (record.recordType === "text" && record.data) {
-              text = new TextDecoder(record.encoding || "utf-8").decode(record.data);
-              break;
+        reader.addEventListener("reading", (ev) => {
+          void (async () => {
+            if (cancelled) return;
+            let text = "";
+            for (const record of ev.message.records) {
+              if (record.recordType === "text" && record.data) {
+                text = new TextDecoder(record.encoding || "utf-8").decode(record.data);
+                break;
+              }
             }
-          }
-          const result = await resolveNfcTagAction(text);
-          if (cancelledRef.current) return;
-          if (result.status === "ok") {
-            setStatus("found");
-            controller.abort();
-            router.push(result.redirectPath);
-          } else {
-            setStatus(result.status);
-          }
-        })();
-      });
+            const result = await resolveNfcTagAction(text);
+            if (cancelled) return;
+            if (result.status === "ok") {
+              setStatus("found");
+              controller.abort();
+              router.push(result.redirectPath);
+            } else {
+              setStatus(result.status);
+            }
+          })();
+        });
 
-      reader.addEventListener("readingerror", () => {
-        if (!cancelledRef.current) {
-          setStatus("error");
-          setErrorMsg("Couldn't read this tag. Try holding it steady against the back of your phone.");
-        }
-      });
+        reader.addEventListener("readingerror", () => {
+          if (!cancelled) {
+            setStatus("error");
+            setErrorMsg("Couldn't read this tag. Try holding it steady against the back of your phone.");
+          }
+        });
 
-      await reader.scan({ signal: controller.signal });
-      if (!cancelledRef.current) setStatus("scanning");
-    } catch (err) {
-      if (cancelledRef.current) return;
-      const e = err as { name?: string; message?: string };
-      if (e?.name === "AbortError") return;
-      setStatus("error");
-      setErrorMsg(
-        e?.name === "NotAllowedError"
-          ? "NFC permission denied. Allow NFC access for this site in your browser settings."
-          : e?.message || "NFC is unavailable on this device."
-      );
+        await reader.scan({ signal: controller.signal });
+        if (!cancelled) setStatus("scanning");
+      } catch (err) {
+        if (cancelled) return;
+        const e = err as { name?: string; message?: string };
+        if (e?.name === "AbortError") return;
+        setStatus("error");
+        setErrorMsg(
+          e?.name === "NotAllowedError"
+            ? "NFC permission denied. Allow NFC access for this site in your browser settings."
+            : e?.message || "NFC is unavailable on this device."
+        );
+      }
     }
-  }
+    run();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [router]);
 
   const isMiss = status === "unknown" || status === "inactive" || status === "error";
   const iconColor = isMiss ? "#E5828A" : "#B4C6CF";
@@ -102,12 +91,23 @@ export default function NfcScannerClient() {
             </div>
           </div>
         ) : (
-          <NfcIconButton
-            status={status}
-            color={iconColor}
-            onClick={status === "idle" ? startScan : undefined}
-            shake={isMiss}
-          />
+          <svg
+            key={status}
+            width="56"
+            height="56"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={iconColor}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`relative z-10 transition-colors duration-300 ${status === "scanning" || status === "starting" ? "icon-breathe" : ""} ${
+              isMiss ? "shake-x" : ""
+            }`}
+          >
+            <rect x="5" y="2" width="14" height="20" rx="2" />
+            <path d="M9 18h.01" />
+          </svg>
         )}
       </div>
 
@@ -117,7 +117,6 @@ export default function NfcScannerClient() {
           isMiss ? "shake-x" : ""
         }`}
       >
-        {status === "idle" && "Tap the icon above to start NFC scanning."}
         {status === "starting" && "Requesting NFC access…"}
         {status === "scanning" && (
           <>
@@ -140,40 +139,5 @@ function CheckIcon() {
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 6L9 17l-5-5" />
     </svg>
-  );
-}
-
-function NfcIconButton({
-  status,
-  color,
-  shake,
-  onClick,
-}: {
-  status: Status;
-  color: string;
-  shake: boolean;
-  onClick?: () => void;
-}) {
-  const icon = (
-    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="2" width="14" height="20" rx="2" />
-      <path d="M9 18h.01" />
-    </svg>
-  );
-  const animClass = `relative z-10 transition-colors duration-300 ${status === "idle" || status === "scanning" || status === "starting" ? "icon-breathe" : ""} ${
-    shake ? "shake-x" : ""
-  }`;
-
-  if (status === "idle") {
-    return (
-      <button key={status} type="button" onClick={onClick} aria-label="Start NFC scan" className={`${animClass} rounded-full active:scale-90 cursor-pointer`}>
-        {icon}
-      </button>
-    );
-  }
-  return (
-    <div key={status} className={animClass}>
-      {icon}
-    </div>
   );
 }
