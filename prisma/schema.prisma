@@ -28,6 +28,7 @@ model User {
   notifications Notification[]
   auditLogs     AuditLog[]
   mobileRefreshTokens MobileRefreshToken[]
+  submittedTests Test[]
 
   @@index([accessRole])
 }
@@ -166,10 +167,18 @@ model Test {
   categoricalOrdered     Boolean?
   requiresAttachment     Boolean?
 
+  // Who actually submitted this test's result — null for tests never
+  // submitted, or submitted before this field existed. Lets a reviewer's
+  // approve/reject notify the technician who did the work, not just the
+  // reviewer themself.
+  submittedById String?
+  submittedBy   User?   @relation(fields: [submittedById], references: [id], onDelete: SetNull)
+
   readings    TestReading[]
   attachments TestAttachment[]
 
   @@index([sampleId])
+  @@index([submittedById])
 }
 
 // storagePath points to an object in the Supabase Storage bucket configured
