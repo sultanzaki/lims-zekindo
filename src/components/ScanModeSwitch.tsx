@@ -40,7 +40,9 @@ export default function ScanModeSwitch() {
           </div>
         </div>
       )}
-      {mode === "nfc" ? <NfcScannerClient /> : <ScannerClient />}
+      <div key={mode} className="pop-in flex-1 flex flex-col">
+        {mode === "nfc" ? <NfcScannerClient /> : <ScannerClient />}
+      </div>
     </div>
   );
 }

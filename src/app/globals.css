@@ -436,6 +436,120 @@ input.field-plain:focus {
   animation: nfc-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ---- Scan feedback (QR/barcode + NFC) ----
+   A "hit" is the payoff moment of the whole scan flow, so it gets a
+   dedicated celebration instead of just swapping status text: a single
+   outward ring burst plus a spring-y checkmark pop, shared by both
+   scanners. A miss (unrecognized/error) gets a quick "nope" wiggle so it
+   reads as a reaction, not a silent stall. And an idle waiting scanner
+   breathes gently so it doesn't look frozen while it has nothing to report. */
+@keyframes success-ring-burst {
+  from {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+.success-ring-burst {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  border: 3px solid #28a745;
+  animation: success-ring-burst 650ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes success-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.success-pop {
+  animation: success-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes icon-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+.icon-breathe {
+  animation: icon-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes frame-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(43, 141, 184, 0);
+  }
+  50% {
+    box-shadow: 0 0 26px 3px rgba(43, 141, 184, 0.28);
+  }
+}
+.frame-glow {
+  animation: frame-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes shake-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+.shake-x {
+  animation: shake-x 420ms ease-in-out both;
+}
+
+/* Crossfade when switching between NFC / QR scan modes, or any other
+   content swap that wants a softer entrance than the plain .fade-in. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.pop-in {
+  animation: pop-in 220ms cubic-bezier(0.25, 0.8, 0.4, 1) both;
+}
+
 /* Assistant widget: idle glow on the floating button (before it's ever been
    opened this session), a bouncing 3-dot "typing" indicator, and a blinking
    cursor on the in-progress streamed reply. */
@@ -479,6 +593,86 @@ input.field-plain:focus {
 }
 .blink-cursor {
   animation: blink-cursor 0.9s step-end infinite;
+}
+
+/* Conversation bubbles get a directional, slightly springy entrance instead
+   of a flat fade, so the two sides of the chat read as distinct voices: the
+   user's own messages launch up from the composer, the assistant's replies
+   drift in from its avatar on the left. */
+@keyframes bubble-in-user {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.bubble-in-user {
+  animation: bubble-in-user 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+@keyframes bubble-in-assistant {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.94);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(2px) scale(1.01);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+.bubble-in-assistant {
+  animation: bubble-in-assistant 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+/* Soft glow behind the avatar while the assistant is composing a reply,
+   paired with the .typing-dot bounce it sits next to. */
+@keyframes avatar-think {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(43, 141, 184, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(43, 141, 184, 0);
+  }
+}
+.avatar-think {
+  animation: avatar-think 1.6s ease-in-out infinite;
+}
+
+/* Action-confirmation card: pops in like any assistant bubble, then keeps a
+   gentle pulse while it's actually waiting on the user (dropped the instant
+   it resolves). Confirmed/cancelled/error resolutions each get their own
+   one-shot reaction layered onto the same entrance animation — the .proposal-*
+   variants below combine two keyframes in one `animation` shorthand so the
+   pulse/shake and the pop-in run concurrently without one clobbering the other. */
+@keyframes proposal-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(245, 166, 35, 0);
+  }
+}
+.proposal-pending {
+  animation: bubble-in-assistant 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both, proposal-glow 2s ease-in-out infinite;
+}
+.proposal-resolved {
+  animation: bubble-in-assistant 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+.proposal-resolved-error {
+  animation: bubble-in-assistant 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both, shake-x 420ms ease-in-out 320ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
