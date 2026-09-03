@@ -20,6 +20,10 @@ export async function updateDeviationAction(
   const rootCause = String(formData.get("rootCause") || "").trim();
   const capa = String(formData.get("capa") || "").trim();
   const close = formData.get("close") === "true";
+  const assigneeId = String(formData.get("assigneeId") || "").trim();
+  const dueDateRaw = String(formData.get("dueDate") || "").trim();
+  const severityRaw = String(formData.get("severity") || "").trim();
+  const severity = ["Minor", "Major", "Critical"].includes(severityRaw) ? severityRaw : null;
 
   const deviation = await prisma.deviation.findUnique({ where: { id: deviationId } });
   if (!deviation) return { error: "Deviation not found." };
@@ -31,6 +35,9 @@ export async function updateDeviationAction(
       capa: capa || deviation.capa,
       status: close ? "Closed" : "Investigating",
       closedAt: close ? new Date() : null,
+      assigneeId: assigneeId || null,
+      dueDate: dueDateRaw ? new Date(dueDateRaw) : null,
+      severity,
     },
   });
 

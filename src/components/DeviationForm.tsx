@@ -11,10 +11,18 @@ export default function DeviationForm({
   deviationId,
   rootCause,
   capa,
+  assigneeId,
+  dueDate,
+  severity,
+  assignableUsers,
 }: {
   deviationId: string;
   rootCause: string | null;
   capa: string | null;
+  assigneeId: string | null;
+  dueDate: string | null;
+  severity: string | null;
+  assignableUsers: { id: string; name: string }[];
 }) {
   const [state, formAction, pending] = useActionState(updateDeviationAction, initialState);
 
@@ -35,6 +43,21 @@ export default function DeviationForm({
         rows={2}
         className={`${inputClassSm} resize-none`}
       />
+      <div className="grid grid-cols-2 gap-2">
+        <select name="assigneeId" defaultValue={assigneeId ?? ""} className={inputClassSm}>
+          <option value="">Unassigned</option>
+          {assignableUsers.map((u) => (
+            <option key={u.id} value={u.id}>{u.name}</option>
+          ))}
+        </select>
+        <select name="severity" defaultValue={severity ?? ""} className={inputClassSm}>
+          <option value="">Severity…</option>
+          <option value="Minor">Minor</option>
+          <option value="Major">Major</option>
+          <option value="Critical">Critical</option>
+        </select>
+      </div>
+      <input type="date" name="dueDate" defaultValue={dueDate ?? ""} className={inputClassSm} />
       {state.error && <div className="text-xs text-danger">{state.error}</div>}
       <div className="flex gap-2">
         <Button type="submit" name="close" value="false" disabled={pending} variant="secondary" size="sm">
