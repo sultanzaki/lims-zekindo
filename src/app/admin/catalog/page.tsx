@@ -8,19 +8,28 @@ import SampleTestCatalogClient from "@/components/SampleTestCatalogClient";
 
 export default async function AdminCatalogPage() {
   const user = await requirePageRole(canManageInventoryAndCatalog);
-  const [sampleTypes, unread] = await Promise.all([
+  const [sampleTypes, testPanelRows, unread] = await Promise.all([
     prisma.sampleTypeCatalog.findMany({
       orderBy: { name: "asc" },
       include: { tests: { orderBy: { order: "asc" } } },
     }),
+    prisma.testPanel.findMany({ orderBy: { name: "asc" } }),
     getUnreadCount(user.id),
   ]);
+
+  const allTests = new Map(sampleTypes.flatMap((st) => st.tests.map((t) => [t.id, t.name])));
+  const testPanels = testPanelRows.map((p) => ({
+    id: p.id,
+    name: p.name,
+    active: p.active,
+    testNames: (p.testCatalogIds as string[]).map((id) => allTests.get(id) ?? "(deleted test)"),
+  }));
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Sample & Test Catalog" backHref="/profile" hideDesktop />
-      <SampleTestCatalogClient sampleTypes={sampleTypes} />
+      <SampleTestCatalogClient sampleTypes={sampleTypes} testPanels={testPanels} />
     </div>
   );
 }

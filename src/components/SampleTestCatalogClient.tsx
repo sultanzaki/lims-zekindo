@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CreateSampleTypeForm, CreateTestCatalogForm } from "@/components/CatalogForms";
+import { CreateSampleTypeForm, CreateTestCatalogForm, CreateTestPanelForm } from "@/components/CatalogForms";
 import StatChip from "@/components/ui/StatChip";
 import Modal from "@/components/ui/Modal";
-import { setSampleTypeActiveAction, setTestCatalogActiveAction } from "@/lib/actions/catalog";
+import { setSampleTypeActiveAction, setTestCatalogActiveAction, setTestPanelActiveAction } from "@/lib/actions/catalog";
 
 export type TestRow = {
   id: string;
@@ -26,8 +26,30 @@ export type SampleTypeRow = {
   tests: TestRow[];
 };
 
-export default function SampleTestCatalogClient({ sampleTypes }: { sampleTypes: SampleTypeRow[] }) {
+export type TestPanelRow = {
+  id: string;
+  name: string;
+  active: boolean;
+  testNames: string[];
+};
+
+export default function SampleTestCatalogClient({
+  sampleTypes,
+  testPanels,
+}: {
+  sampleTypes: SampleTypeRow[];
+  testPanels: TestPanelRow[];
+}) {
   const [search, setSearch] = useState("");
+  const [panelFormOpen, setPanelFormOpen] = useState(false);
+
+  const panelTestOptions = useMemo(
+    () =>
+      sampleTypes.flatMap((st) =>
+        st.tests.filter((t) => t.active).map((t) => ({ id: t.id, name: t.name, spec: t.spec, sampleTypeName: st.name }))
+      ),
+    [sampleTypes]
+  );
   const [sampleTypeFormOpen, setSampleTypeFormOpen] = useState(false);
   const [testFormOpen, setTestFormOpen] = useState(false);
 
@@ -82,6 +104,17 @@ export default function SampleTestCatalogClient({ sampleTypes }: { sampleTypes: 
           </button>
           <button
             type="button"
+            onClick={() => setPanelFormOpen(true)}
+            className="flex items-center gap-1.5 h-[38px] px-4 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-primary-dark cursor-pointer whitespace-nowrap"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Panel
+          </button>
+          <button
+            type="button"
             onClick={() => setSampleTypeFormOpen(true)}
             className="flex items-center gap-1.5 h-[38px] px-4 rounded-[10px] bg-primary text-white text-[13px] font-semibold shadow-glow-primary cursor-pointer whitespace-nowrap"
           >
@@ -100,11 +133,15 @@ export default function SampleTestCatalogClient({ sampleTypes }: { sampleTypes: 
       <Modal open={testFormOpen} onClose={() => setTestFormOpen(false)} title="Add Test Definition">
         <CreateTestCatalogForm sampleTypes={sampleTypes.map((s) => ({ id: s.id, name: s.name }))} />
       </Modal>
+      <Modal open={panelFormOpen} onClose={() => setPanelFormOpen(false)} title="Add Test Panel">
+        <CreateTestPanelForm tests={panelTestOptions} />
+      </Modal>
 
       {/* Mobile: always-visible create forms (unchanged) */}
       <div className="flex flex-col gap-4 md:hidden">
         <CreateSampleTypeForm />
         <CreateTestCatalogForm sampleTypes={sampleTypes.map((s) => ({ id: s.id, name: s.name }))} />
+        <CreateTestPanelForm tests={panelTestOptions} />
       </div>
 
       {/* Desktop stat strip */}
@@ -113,7 +150,32 @@ export default function SampleTestCatalogClient({ sampleTypes }: { sampleTypes: 
         <StatChip label="Total tests" value={stats.totalTests} />
         <StatChip label="Active tests" value={stats.activeTests} dotColor="#28A745" />
         <StatChip label="Inactive types" value={stats.inactiveTypes} dotColor="#D0021B" />
+        <StatChip label="Test panels" value={testPanels.length} />
       </div>
+
+      {/* Test Panels */}
+      {testPanels.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="text-[13px] font-semibold text-text">Test Panels</div>
+          <div className="flex flex-col gap-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:items-start">
+            {testPanels.map((p) => (
+              <div key={p.id} className="bg-white border border-border rounded-2xl shadow-card-sm p-3.5">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="text-[13px] font-semibold text-text">
+                    {p.name} {!p.active && <span className="text-danger font-normal">(inactive)</span>}
+                  </div>
+                  <form action={setTestPanelActiveAction.bind(null, p.id, !p.active)}>
+                    <button type="submit" className={`text-[11px] font-semibold cursor-pointer ${p.active ? "text-danger" : "text-success-dark"}`}>
+                      {p.active ? "Deactivate" : "Reactivate"}
+                    </button>
+                  </form>
+                </div>
+                <div className="text-xs text-muted">{p.testNames.join(", ")}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Mobile card grid: unfiltered, unchanged */}
       <div className="flex flex-col gap-3 md:hidden">

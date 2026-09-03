@@ -14,22 +14,67 @@ const PRIORITIES = [
   { value: "STAT", label: "STAT" },
 ] as const;
 
+type TestCatalogOption = { id: string; name: string; spec: string; sampleTypeId: string; sampleTypeName: string };
+type TestPanelOption = { id: string; name: string; testCatalogIds: string[] };
+
 export default function NewSampleForm({
   nextSampleId,
   defaultCollectedBy,
   defaultRequestor,
   sampleTypes,
   businessUnits,
+  testCatalog,
+  testPanels,
 }: {
   nextSampleId: string;
   defaultCollectedBy: string;
   defaultRequestor: string;
-  sampleTypes: { id: string; name: string }[];
+  sampleTypes: { id: string; name: string; tests: { id: string }[] }[];
   businessUnits: { id: string; name: string }[];
+  testCatalog: TestCatalogOption[];
+  testPanels: TestPanelOption[];
 }) {
   const [state, formAction, pending] = useActionState(createSampleAction, initialState);
   const [sampleTypeId, setSampleTypeId] = useState("");
   const [priority, setPriority] = useState<(typeof PRIORITIES)[number]["value"]>("Routine");
+  const [extraTestIds, setExtraTestIds] = useState<string[]>([]);
+  const [testSearch, setTestSearch] = useState("");
+  const [panelToAdd, setPanelToAdd] = useState("");
+
+  const defaultTestIds = new Set(sampleTypes.find((s) => s.id === sampleTypeId)?.tests.map((t) => t.id) ?? []);
+  const extraTestIdSet = new Set(extraTestIds);
+  const testById = new Map(testCatalog.map((t) => [t.id, t]));
+
+  const testSearchResults =
+    testSearch.trim().length > 0
+      ? testCatalog
+          .filter((t) => !defaultTestIds.has(t.id) && !extraTestIdSet.has(t.id))
+          .filter((t) => t.name.toLowerCase().includes(testSearch.trim().toLowerCase()) || t.sampleTypeName.toLowerCase().includes(testSearch.trim().toLowerCase()))
+          .slice(0, 8)
+      : [];
+
+  function addExtraTest(id: string) {
+    if (defaultTestIds.has(id) || extraTestIdSet.has(id)) return;
+    setExtraTestIds((prev) => [...prev, id]);
+    setTestSearch("");
+  }
+
+  function removeExtraTest(id: string) {
+    setExtraTestIds((prev) => prev.filter((x) => x !== id));
+  }
+
+  function addPanel() {
+    const panel = testPanels.find((p) => p.id === panelToAdd);
+    if (!panel) return;
+    setExtraTestIds((prev) => {
+      const next = new Set(prev);
+      for (const id of panel.testCatalogIds) {
+        if (!defaultTestIds.has(id)) next.add(id);
+      }
+      return Array.from(next);
+    });
+    setPanelToAdd("");
+  }
 
   const defaultDateTime = nowAsJakartaLocalInput();
 
@@ -91,6 +136,74 @@ export default function NewSampleForm({
         )}
         {state.error === "Select a sample type." && (
           <div className="text-[11px] text-danger">Select a sample type to continue.</div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="text-[13px] font-semibold text-text">Additional tests (optional)</label>
+        <div className="text-[11px] text-muted -mt-1">
+          The sample type&rsquo;s default tests are always included — add extra tests here or quick-add a panel.
+        </div>
+
+        {testPanels.length > 0 && (
+          <div className="flex items-center gap-2">
+            <select value={panelToAdd} onChange={(e) => setPanelToAdd(e.target.value)} className={`${inputClass} flex-1`}>
+              <option value="">Quick-add a panel…</option>
+              {testPanels.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={addPanel}
+              disabled={!panelToAdd}
+              className="text-[13px] font-semibold px-3.5 py-2.5 rounded-[10px] border border-border bg-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            >
+              Add
+            </button>
+          </div>
+        )}
+
+        <div className="relative">
+          <input
+            value={testSearch}
+            onChange={(e) => setTestSearch(e.target.value)}
+            placeholder="Search tests to add…"
+            className={inputClass}
+          />
+          {testSearchResults.length > 0 && (
+            <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-border rounded-[10px] shadow-card-sm overflow-hidden">
+              {testSearchResults.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => addExtraTest(t.id)}
+                  className="w-full text-left px-3.5 py-2 text-[13px] hover:bg-chip-bg cursor-pointer border-b border-border-soft last:border-b-0"
+                >
+                  <span className="font-medium text-text">{t.name}</span>
+                  <span className="text-muted"> &middot; {t.sampleTypeName}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {extraTestIds.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {extraTestIds.map((id) => {
+              const t = testById.get(id);
+              if (!t) return null;
+              return (
+                <span key={id} className="inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 rounded-full bg-primary-soft text-primary-dark">
+                  <input type="hidden" name="extraTestIds" value={id} />
+                  {t.name}
+                  <button type="button" onClick={() => removeExtraTest(id)} className="text-primary-dark/70 hover:text-primary-dark cursor-pointer font-bold">
+                    ×
+                  </button>
+                </span>
+              );
+            })}
+          </div>
         )}
       </div>
 

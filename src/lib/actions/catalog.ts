@@ -206,6 +206,46 @@ export async function setTestCatalogActiveAction(id: string, active: boolean) {
   revalidatePath("/admin/catalog");
 }
 
+export async function createTestPanelAction(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const user = await requireRole(canManageInventoryAndCatalog);
+  const name = String(formData.get("name") || "").trim();
+  const testCatalogIds = formData.getAll("testCatalogIds").map((v) => String(v)).filter(Boolean);
+
+  if (!name) return { error: "Name is required." };
+  if (testCatalogIds.length === 0) return { error: "Select at least one test." };
+
+  const existing = await prisma.testPanel.findUnique({ where: { name } });
+  if (existing) return { error: "That test panel already exists." };
+
+  const validCount = await prisma.testCatalog.count({ where: { id: { in: testCatalogIds } } });
+  if (validCount !== testCatalogIds.length) return { error: "One or more selected tests are invalid." };
+
+  const created = await prisma.testPanel.create({ data: { name, testCatalogIds } });
+
+  await logAudit({
+    userId: user.id,
+    action: "catalog.test_panel_created",
+    entityType: "TestPanel",
+    entityId: created.id,
+    detail: `${name} (${testCatalogIds.length} tests)`,
+  });
+
+  revalidatePath("/admin/catalog");
+  revalidatePath("/samples/new");
+  return {};
+}
+
+export async function setTestPanelActiveAction(id: string, active: boolean) {
+  const user = await requireRole(canManageInventoryAndCatalog);
+  await prisma.testPanel.update({ where: { id }, data: { active } });
+  await logAudit({ userId: user.id, action: active ? "catalog.test_panel_activated" : "catalog.test_panel_deactivated", entityType: "TestPanel", entityId: id });
+  revalidatePath("/admin/catalog");
+  revalidatePath("/samples/new");
+}
+
 export async function createBusinessUnitAction(
   _prevState: FormState,
   formData: FormData
