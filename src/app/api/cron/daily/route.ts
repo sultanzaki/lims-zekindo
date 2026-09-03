@@ -17,10 +17,18 @@ const EXPIRY_WINDOW_MS = 14 * DAY_MS;
 // title is a deliberately stable, deterministic key per entity+condition.
 const DEDUP_WINDOW_MS = 20 * 60 * 60 * 1000;
 
-async function alreadyNotified(title: string): Promise<boolean> {
+// Batches the dedup check into one query per run (per candidate list)
+// instead of one round-trip per candidate item — each check function below
+// collects all its candidate titles up front, then asks once which of them
+// already went out inside the window.
+async function alreadyNotifiedTitles(titles: string[]): Promise<Set<string>> {
+  if (titles.length === 0) return new Set();
   const since = new Date(Date.now() - DEDUP_WINDOW_MS);
-  const existing = await prisma.notification.findFirst({ where: { title, createdAt: { gte: since } } });
-  return existing != null;
+  const existing = await prisma.notification.findMany({
+    where: { title: { in: titles }, createdAt: { gte: since } },
+    select: { title: true },
+  });
+  return new Set(existing.map((n) => n.title));
 }
 
 async function usersWithRoles(roles: string[]): Promise<string[]> {
@@ -39,16 +47,17 @@ async function checkOverdueTat(): Promise<number> {
     AND s."receivedDate" + (COALESCE(c."targetTatHours", 48) || ' hours')::interval < now()
   `;
 
+  const candidates = overdue.map((s) => ({
+    title: `Overdue TAT: ${s.id}`,
+    body: `${s.type} (${s.id}) is past its target turnaround time and still open.`,
+    sampleId: s.id,
+  }));
+  const notified = await alreadyNotifiedTitles(candidates.map((c) => c.title));
+
   let sent = 0;
-  for (const s of overdue) {
-    const title = `Overdue TAT: ${s.id}`;
-    if (await alreadyNotified(title)) continue;
-    await notifyUsers({
-      userIds: recipients,
-      title,
-      body: `${s.type} (${s.id}) is past its target turnaround time and still open.`,
-      sampleId: s.id,
-    });
+  for (const c of candidates) {
+    if (notified.has(c.title)) continue;
+    await notifyUsers({ userIds: recipients, title: c.title, body: c.body, sampleId: c.sampleId });
     sent++;
   }
   return sent;
@@ -63,22 +72,31 @@ async function checkReagents(): Promise<number> {
     select: { id: true, name: true, lotNumber: true, quantity: true, minStockLevel: true, unit: true, expiryDate: true },
   });
 
-  let sent = 0;
+  const candidates: { title: string; body: string }[] = [];
   for (const r of reagents) {
-    let title: string | null = null;
-    let body = "";
     if (r.expiryDate && r.expiryDate.getTime() < now) {
-      title = `Reagent expired: ${r.name} (Lot ${r.lotNumber})`;
-      body = `${r.name}, lot ${r.lotNumber}, expired on ${r.expiryDate.toDateString()}.`;
+      candidates.push({
+        title: `Reagent expired: ${r.name} (Lot ${r.lotNumber})`,
+        body: `${r.name}, lot ${r.lotNumber}, expired on ${r.expiryDate.toDateString()}.`,
+      });
     } else if (r.quantity <= r.minStockLevel) {
-      title = `Reagent low stock: ${r.name} (Lot ${r.lotNumber})`;
-      body = `${r.name}, lot ${r.lotNumber}: ${r.quantity} ${r.unit} remaining (min ${r.minStockLevel} ${r.unit}).`;
+      candidates.push({
+        title: `Reagent low stock: ${r.name} (Lot ${r.lotNumber})`,
+        body: `${r.name}, lot ${r.lotNumber}: ${r.quantity} ${r.unit} remaining (min ${r.minStockLevel} ${r.unit}).`,
+      });
     } else if (r.expiryDate && r.expiryDate.getTime() - now < EXPIRY_WINDOW_MS) {
-      title = `Reagent expiring soon: ${r.name} (Lot ${r.lotNumber})`;
-      body = `${r.name}, lot ${r.lotNumber}, expires on ${r.expiryDate.toDateString()}.`;
+      candidates.push({
+        title: `Reagent expiring soon: ${r.name} (Lot ${r.lotNumber})`,
+        body: `${r.name}, lot ${r.lotNumber}, expires on ${r.expiryDate.toDateString()}.`,
+      });
     }
-    if (!title || (await alreadyNotified(title))) continue;
-    await notifyUsers({ userIds: recipients, title, body });
+  }
+  const notified = await alreadyNotifiedTitles(candidates.map((c) => c.title));
+
+  let sent = 0;
+  for (const c of candidates) {
+    if (notified.has(c.title)) continue;
+    await notifyUsers({ userIds: recipients, title: c.title, body: c.body });
     sent++;
   }
   return sent;
@@ -94,21 +112,28 @@ async function checkEquipment(): Promise<number> {
     select: { id: true, name: true, assetTag: true, nextCalibrationDue: true },
   });
 
-  let sent = 0;
+  const candidates: { title: string; body: string }[] = [];
   for (const e of equipment) {
     if (!e.nextCalibrationDue) continue;
     const due = e.nextCalibrationDue.getTime();
-    let title: string | null = null;
-    let body = "";
     if (due < now) {
-      title = `Calibration overdue: ${e.name} (${e.assetTag})`;
-      body = `${e.name} (${e.assetTag}) calibration was due ${e.nextCalibrationDue.toDateString()}.`;
+      candidates.push({
+        title: `Calibration overdue: ${e.name} (${e.assetTag})`,
+        body: `${e.name} (${e.assetTag}) calibration was due ${e.nextCalibrationDue.toDateString()}.`,
+      });
     } else if (due - now < EXPIRY_WINDOW_MS) {
-      title = `Calibration due soon: ${e.name} (${e.assetTag})`;
-      body = `${e.name} (${e.assetTag}) calibration is due ${e.nextCalibrationDue.toDateString()}.`;
+      candidates.push({
+        title: `Calibration due soon: ${e.name} (${e.assetTag})`,
+        body: `${e.name} (${e.assetTag}) calibration is due ${e.nextCalibrationDue.toDateString()}.`,
+      });
     }
-    if (!title || (await alreadyNotified(title))) continue;
-    await notifyUsers({ userIds: recipients, title, body });
+  }
+  const notified = await alreadyNotifiedTitles(candidates.map((c) => c.title));
+
+  let sent = 0;
+  for (const c of candidates) {
+    if (notified.has(c.title)) continue;
+    await notifyUsers({ userIds: recipients, title: c.title, body: c.body });
     sent++;
   }
   return sent;
@@ -126,16 +151,17 @@ async function checkRetention(): Promise<number> {
     select: { id: true, type: true, retentionUntil: true },
   });
 
+  const candidates = overdue.map((s) => ({
+    title: `Retention passed: ${s.id}`,
+    body: `${s.type} (${s.id}) passed its retention date on ${s.retentionUntil?.toDateString()} and hasn't been marked disposed.`,
+    sampleId: s.id,
+  }));
+  const notified = await alreadyNotifiedTitles(candidates.map((c) => c.title));
+
   let sent = 0;
-  for (const s of overdue) {
-    const title = `Retention passed: ${s.id}`;
-    if (await alreadyNotified(title)) continue;
-    await notifyUsers({
-      userIds: recipients,
-      title,
-      body: `${s.type} (${s.id}) passed its retention date on ${s.retentionUntil?.toDateString()} and hasn't been marked disposed.`,
-      sampleId: s.id,
-    });
+  for (const c of candidates) {
+    if (notified.has(c.title)) continue;
+    await notifyUsers({ userIds: recipients, title: c.title, body: c.body, sampleId: c.sampleId });
     sent++;
   }
   return sent;
@@ -152,18 +178,18 @@ async function checkOverdueDeviations(): Promise<number> {
     select: { id: true, sampleId: true, assigneeId: true, dueDate: true },
   });
 
+  const candidates = overdue.map((d) => ({
+    title: `Deviation overdue: ${d.sampleId}`,
+    body: `The deviation opened on sample ${d.sampleId} was due ${d.dueDate?.toDateString()} and is still open.`,
+    sampleId: d.sampleId,
+    recipients: d.assigneeId ? [d.assigneeId] : fallbackRecipients,
+  }));
+  const notified = await alreadyNotifiedTitles(candidates.map((c) => c.title));
+
   let sent = 0;
-  for (const d of overdue) {
-    const recipients = d.assigneeId ? [d.assigneeId] : fallbackRecipients;
-    if (recipients.length === 0) continue;
-    const title = `Deviation overdue: ${d.sampleId}`;
-    if (await alreadyNotified(title)) continue;
-    await notifyUsers({
-      userIds: recipients,
-      title,
-      body: `The deviation opened on sample ${d.sampleId} was due ${d.dueDate?.toDateString()} and is still open.`,
-      sampleId: d.sampleId,
-    });
+  for (const c of candidates) {
+    if (c.recipients.length === 0 || notified.has(c.title)) continue;
+    await notifyUsers({ userIds: c.recipients, title: c.title, body: c.body, sampleId: c.sampleId });
     sent++;
   }
   return sent;

@@ -2,11 +2,20 @@
 
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { uploadAttachment } from "@/lib/storage";
+import {
+  REAGENT_SOON_MS,
+  EXPORT_CAP,
+  loadLocations,
+  matchingLocationIds,
+  shapeReagentRow,
+  shapeEquipmentRow,
+} from "@/lib/inventory";
 
 export type FormState = { error?: string };
 
@@ -180,6 +189,40 @@ export async function bulkRelocateReagentsAction(ids: string[], locationId: stri
   revalidatePath("/inventory/reagents");
   revalidatePath("/inventory/warehouse");
   return { moved };
+}
+
+// Export re-runs the current search/category filter server-side, uncapped
+// by the list's page size (up to EXPORT_CAP) — so "Export Excel" covers the
+// full filtered set the same way it did before pagination, without the
+// list's normal page load ever fetching more than PAGE_SIZE rows.
+export async function exportReagentsAction(filter: { q?: string; category?: string }) {
+  await requireRole(canManageInventoryAndCatalog);
+  const { locationNodes, locationTree } = await loadLocations();
+
+  const where: Prisma.ReagentWhereInput = {};
+  const q = (filter.q || "").trim();
+  if (filter.category && filter.category !== "All") where.category = filter.category;
+  if (q) {
+    const locIds = matchingLocationIds(locationTree, locationNodes, q);
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { lotNumber: { contains: q, mode: "insensitive" } },
+      ...(locIds.length > 0 ? [{ locationId: { in: locIds } }] : []),
+    ];
+  }
+
+  const reagents = await prisma.reagent.findMany({
+    where,
+    orderBy: { name: "asc" },
+    take: EXPORT_CAP,
+    select: {
+      id: true, name: true, category: true, lotNumber: true, quantity: true, unit: true,
+      minStockLevel: true, expiryDate: true, location: true, locationId: true,
+    },
+  });
+
+  const now = new Date().getTime();
+  return reagents.map((r) => shapeReagentRow(r, locationTree, r.location, now, REAGENT_SOON_MS));
 }
 
 // ---------- Equipment ----------
@@ -384,4 +427,32 @@ export async function bulkRelocateEquipmentAction(ids: string[], locationId: str
   revalidatePath("/inventory/equipment");
   revalidatePath("/inventory/warehouse");
   return { moved };
+}
+
+// Same on-demand, uncapped-by-page-size export as exportReagentsAction above.
+export async function exportEquipmentAction(filter: { q?: string; status?: string }) {
+  await requireRole(canManageInventoryAndCatalog);
+  const { locationNodes, locationTree } = await loadLocations();
+
+  const where: Prisma.EquipmentWhereInput = {};
+  const q = (filter.q || "").trim();
+  if (filter.status && filter.status !== "All") where.status = filter.status;
+  if (q) {
+    const locIds = matchingLocationIds(locationTree, locationNodes, q);
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { assetTag: { contains: q, mode: "insensitive" } },
+      ...(locIds.length > 0 ? [{ locationId: { in: locIds } }] : []),
+    ];
+  }
+
+  const equipment = await prisma.equipment.findMany({
+    where,
+    orderBy: { name: "asc" },
+    take: EXPORT_CAP,
+    select: { id: true, assetTag: true, name: true, status: true, location: true, locationId: true, nextCalibrationDue: true },
+  });
+
+  const now = new Date().getTime();
+  return equipment.map((e) => shapeEquipmentRow(e, locationTree, e.location, now));
 }
