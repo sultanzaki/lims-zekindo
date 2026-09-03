@@ -380,6 +380,11 @@ model StorageLocation {
   @@index([parentId])
 }
 
+// metadata: optional structured before/after diff, shape
+// { [fieldName]: { from: unknown, to: unknown } } — only populated at the
+// highest-value call sites (status transitions, role/active toggles).
+// `detail` stays the plain free-text summary everywhere else; the two are
+// independent, not migrated into each other.
 model AuditLog {
   id         String   @id @default(cuid())
   userId     String?
@@ -388,6 +393,7 @@ model AuditLog {
   entityType String
   entityId   String
   detail     String?
+  metadata   Json?
   createdAt  DateTime @default(now())
 
   @@index([entityType, entityId])

@@ -28,6 +28,7 @@ export default async function AdminAuditPage() {
     entityId: e.entityId,
     entityLabel: e.entityType === "User" ? userNameById.get(e.entityId) ?? null : null,
     detail: e.detail,
+    metadata: e.metadata as Record<string, { from: unknown; to: unknown }> | null,
     createdAt: e.createdAt,
     actorName: e.user?.name ?? "System",
   }));

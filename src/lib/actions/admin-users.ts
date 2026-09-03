@@ -76,6 +76,7 @@ export async function setUserActiveAction(userId: string, active: boolean) {
     action: active ? "user.reactivated" : "user.deactivated",
     entityType: "User",
     entityId: userId,
+    metadata: { active: { from: !active, to: active } },
   });
   revalidatePath("/admin/users");
 }

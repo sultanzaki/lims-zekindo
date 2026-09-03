@@ -1,4 +1,8 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+
+/** Per-field before/after diff for the highest-value audit entries (status transitions, role/active toggles). */
+export type AuditMetadata = Record<string, { from: unknown; to: unknown }>;
 
 export async function logAudit(params: {
   userId: string | null;
@@ -6,6 +10,7 @@ export async function logAudit(params: {
   entityType: string;
   entityId: string;
   detail?: string;
+  metadata?: AuditMetadata;
 }) {
   await prisma.auditLog.create({
     data: {
@@ -14,6 +19,7 @@ export async function logAudit(params: {
       entityType: params.entityType,
       entityId: params.entityId,
       detail: params.detail ?? null,
+      metadata: (params.metadata as Prisma.InputJsonValue | undefined) ?? undefined,
     },
   });
 }

@@ -316,7 +316,14 @@ async function performSupervisorApprove(sample: { id: string }, user: { id: stri
       },
     },
   });
-  await logAudit({ userId: user.id, action: "sample.supervisor_approved", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
+  await logAudit({
+    userId: user.id,
+    action: "sample.supervisor_approved",
+    entityType: "Sample",
+    entityId: sample.id,
+    detail: `e-signed by ${user.email}`,
+    metadata: { status: { from: "Awaiting Supervisor Review", to: "Awaiting QA Approval" } },
+  });
 }
 
 async function performQaApprove(sample: { id: string; type: string }, user: { id: string; name: string; role: string; email: string }) {
@@ -340,7 +347,14 @@ async function performQaApprove(sample: { id: string; type: string }, user: { id
     body: `${sample.type} passed QA review and is ready for release.`,
     sampleId: sample.id,
   });
-  await logAudit({ userId: user.id, action: "sample.qa_approved", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
+  await logAudit({
+    userId: user.id,
+    action: "sample.qa_approved",
+    entityType: "Sample",
+    entityId: sample.id,
+    detail: `e-signed by ${user.email}`,
+    metadata: { status: { from: "Awaiting QA Approval", to: "Complete" } },
+  });
 }
 
 export async function supervisorApproveAction(
@@ -385,7 +399,14 @@ async function performSupervisorReject(sample: { id: string; type: string }, use
     sampleId: sample.id,
   });
   await openDeviationForRejection(sample.id, sample.type, user.id, "supervisor", reason);
-  await logAudit({ userId: user.id, action: "sample.supervisor_rejected", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
+  await logAudit({
+    userId: user.id,
+    action: "sample.supervisor_rejected",
+    entityType: "Sample",
+    entityId: sample.id,
+    detail: `e-signed by ${user.email}`,
+    metadata: { status: { from: "Awaiting Supervisor Review", to: "Rejected" } },
+  });
 }
 
 export async function supervisorRejectAction(
@@ -567,7 +588,14 @@ async function performQaReject(sample: { id: string; type: string }, user: { id:
     sampleId: sample.id,
   });
   await openDeviationForRejection(sample.id, sample.type, user.id, "QA", reason);
-  await logAudit({ userId: user.id, action: "sample.qa_rejected", entityType: "Sample", entityId: sample.id, detail: `e-signed by ${user.email}` });
+  await logAudit({
+    userId: user.id,
+    action: "sample.qa_rejected",
+    entityType: "Sample",
+    entityId: sample.id,
+    detail: `e-signed by ${user.email}`,
+    metadata: { status: { from: "Awaiting QA Approval", to: "Rejected" } },
+  });
 }
 
 export async function qaRejectAction(
