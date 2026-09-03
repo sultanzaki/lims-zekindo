@@ -8,6 +8,9 @@ import { signOutAction } from "@/lib/actions/auth";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Chevron from "@/components/ui/Chevron";
 import InstallPwaButton from "@/components/InstallPwaButton";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Profile" };
 
 export default async function ProfilePage() {
   const user = await requirePageUser();

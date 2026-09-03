@@ -13,6 +13,13 @@ import SectionLabel from "@/components/ui/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
 import { ChangeStatusForm, LogCalibrationForm, LogMaintenanceForm } from "@/components/EquipmentDetailForms";
 import NfcTagPanel from "@/components/NfcTagPanel";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const equipment = await prisma.equipment.findUnique({ where: { id }, select: { name: true } });
+  return { title: equipment?.name ?? "Equipment" };
+}
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Operational: { bg: "#E6F4EA", color: "#1E7A34" },

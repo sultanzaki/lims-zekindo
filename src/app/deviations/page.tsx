@@ -9,6 +9,7 @@ import Sidebar from "@/components/Sidebar";
 import DeviationForm from "@/components/DeviationForm";
 import DeviationsExportBar from "@/components/DeviationsExportBar";
 import EmptyState from "@/components/ui/EmptyState";
+import type { Metadata } from "next";
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Open: { bg: "#FDECEA", color: "#B00016" },
@@ -23,6 +24,8 @@ const SEVERITY_STYLE: Record<string, { bg: string; color: string }> = {
 };
 
 const SEVERITIES = ["Minor", "Major", "Critical"];
+
+export const metadata: Metadata = { title: "Deviations" };
 
 export default async function DeviationsPage({
   searchParams,

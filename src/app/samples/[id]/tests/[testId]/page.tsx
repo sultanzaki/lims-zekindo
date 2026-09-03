@@ -8,6 +8,9 @@ import Sidebar from "@/components/Sidebar";
 import TestResultForm from "@/components/TestResultForm";
 import TestReadingsPanel from "@/components/TestReadingsPanel";
 import TestAttachmentsPanel from "@/components/TestAttachmentsPanel";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Enter Result" };
 
 export default async function TestEntryPage({
   params,

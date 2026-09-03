@@ -8,6 +8,9 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
 import LabelCard from "@/components/LabelCard";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Equipment Label" };
 
 export default async function EquipmentLabelPage({
   params,

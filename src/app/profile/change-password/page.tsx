@@ -3,6 +3,9 @@ import { getUnreadCount } from "@/lib/data";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Change Password" };
 
 export default async function ChangePasswordPage() {
   const user = await requirePageUser();

@@ -6,6 +6,9 @@ import { certificateVerificationUrl } from "@/lib/tracking";
 import BackHeader from "@/components/BackHeader";
 import PrintButton from "@/components/PrintButton";
 import CertificateDocument from "@/components/CertificateDocument";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Certificate of Analysis" };
 
 export default async function CertificatePage({
   params,

@@ -3,6 +3,13 @@ import { verifyPortalAccess } from "@/lib/tracking";
 import { prisma } from "@/lib/db";
 import PublicPageHeader from "@/components/PublicPageHeader";
 import PortalSampleList from "@/components/PortalSampleList";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  const bu = await verifyPortalAccess(token);
+  return { title: bu ? `${bu.name} Portal` : "Portal" };
+}
 
 function NotFoundScreen() {
   return (

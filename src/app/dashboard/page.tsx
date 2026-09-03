@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import DashboardMobileHeader from "@/components/DashboardMobileHeader";
 import DashboardDesktopHeader from "@/components/DashboardDesktopHeader";
 import Card from "@/components/ui/Card";
+import type { Metadata } from "next";
 
 type QuickAction = { href: string; label: string; icon: React.ReactNode };
 
@@ -78,6 +79,8 @@ function quickActionsFor(role: string): QuickAction[] {
   }
   return actions;
 }
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
   const user = await requirePageUser();

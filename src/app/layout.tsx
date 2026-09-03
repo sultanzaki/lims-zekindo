@@ -24,14 +24,26 @@ const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_URL}`
     : "http://localhost:3000";
 
+const SITE_NAME = "Zekindo Laboratory Information Management System";
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "LIMS Mobile",
+  title: {
+    default: SITE_NAME,
+    template: `%s · ${SITE_NAME}`,
+  },
   description: "Laboratory Information Management System",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Zekindo LIMS",
+  },
+  // This is an authenticated internal LIMS plus a token-gated client portal —
+  // nothing here is meant to be discoverable via search, so block indexing
+  // outright rather than leaving it to per-page opt-outs.
+  robots: {
+    index: false,
+    follow: false,
   },
 };
 

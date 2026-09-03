@@ -7,10 +7,13 @@ import PrintButton from "@/components/PrintButton";
 import LabelCard, { type LabelSize } from "@/components/LabelCard";
 import LabelSizeSwitch from "@/components/LabelSizeSwitch";
 import EmptyState from "@/components/ui/EmptyState";
+import type { Metadata } from "next";
 
 function parseSize(value: string | undefined): LabelSize {
   return value === "small" || value === "medium" ? value : "large";
 }
+
+export const metadata: Metadata = { title: "Batch Labels" };
 
 export default async function SampleLabelBatchPage({
   searchParams,
