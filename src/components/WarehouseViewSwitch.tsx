@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import WarehouseMap3D, { type WarehouseRack } from "@/components/WarehouseMap3D";
+import WarehouseHierarchyGraph, { type WarehouseGraphNode } from "@/components/WarehouseHierarchyGraph";
 
-type View = "list" | "3d";
+type View = "list" | "graph";
 
-export default function WarehouseViewSwitch({ racks, children }: { racks: WarehouseRack[]; children: React.ReactNode }) {
+export default function WarehouseViewSwitch({ nodes, children }: { nodes: WarehouseGraphNode[]; children: React.ReactNode }) {
   const [view, setView] = useState<View>("list");
 
   return (
@@ -13,7 +13,7 @@ export default function WarehouseViewSwitch({ racks, children }: { racks: Wareho
       <div className="relative inline-flex self-start bg-chip-bg rounded-full p-1">
         <div
           className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white shadow-card-sm transition-transform duration-200 ease-out"
-          style={{ transform: view === "3d" ? "translateX(100%)" : "translateX(0%)" }}
+          style={{ transform: view === "graph" ? "translateX(100%)" : "translateX(0%)" }}
         />
         <button
           type="button"
@@ -24,15 +24,15 @@ export default function WarehouseViewSwitch({ racks, children }: { racks: Wareho
         </button>
         <button
           type="button"
-          onClick={() => setView("3d")}
-          className={`relative z-10 text-xs font-semibold px-4 py-2 rounded-full transition-colors ${view === "3d" ? "text-text" : "text-muted"}`}
+          onClick={() => setView("graph")}
+          className={`relative z-10 text-xs font-semibold px-4 py-2 rounded-full transition-colors ${view === "graph" ? "text-text" : "text-muted"}`}
         >
-          3D Map
+          Hierarchy
         </button>
       </div>
 
       <div key={view} className="pop-in">
-        {view === "list" ? children : <WarehouseMap3D racks={racks} />}
+        {view === "list" ? children : <WarehouseHierarchyGraph nodes={nodes} />}
       </div>
     </div>
   );
