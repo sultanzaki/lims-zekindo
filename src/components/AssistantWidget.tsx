@@ -17,6 +17,14 @@ function AssistantIcon({ size = 24, color = "#fff" }: { size?: number; color?: s
   );
 }
 
+function MiniCheckIcon() {
+  return (
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
 type DisplayItem =
   | { id: string; kind: "message"; role: "user" | "assistant"; content: string; streaming?: boolean }
   | { id: string; kind: "tool_result"; tool: string; result: unknown }
@@ -262,7 +270,7 @@ export default function AssistantWidget() {
         type="button"
         onClick={openWidget}
         aria-label="Open assistant"
-        className={`fixed right-5 z-40 w-14 h-14 rounded-full bg-primary shadow-[0_8px_24px_rgba(26,95,122,0.4)] flex items-center justify-center transition-transform hover:scale-105 hover:bg-primary-dark bottom-[calc(54px+max(env(safe-area-inset-bottom),20px)+14px)] md:bottom-6 ${everOpened ? "" : "assistant-fab-pulse"}`}
+        className={`fixed right-5 z-40 w-14 h-14 rounded-full bg-primary shadow-[0_8px_24px_rgba(26,95,122,0.4)] flex items-center justify-center transition-transform hover:scale-105 active:scale-90 hover:bg-primary-dark bottom-[calc(54px+max(env(safe-area-inset-bottom),20px)+14px)] md:bottom-6 ${everOpened ? "" : "assistant-fab-pulse"}`}
       >
         <AssistantIcon />
       </button>
@@ -295,7 +303,7 @@ export default function AssistantWidget() {
                 </div>
                 <div className="text-[10px] md:text-[11px] text-muted truncate">Samples, stok, kalibrasi, analytics</div>
               </div>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="w-8 h-8 rounded-full flex items-center justify-center text-muted hover:bg-chip-bg hover:text-text shrink-0">
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="w-8 h-8 rounded-full flex items-center justify-center text-muted hover:bg-chip-bg hover:text-text active:scale-90 transition-transform shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
@@ -305,7 +313,7 @@ export default function AssistantWidget() {
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-3.5 py-3 md:px-4 md:py-4 flex flex-col gap-2.5 bg-page-bg">
               {displayItems.length === 0 && (
-                <div className="fade-in flex items-start gap-2 self-start max-w-[88%]">
+                <div className="bubble-in-assistant flex items-start gap-2 self-start max-w-[88%]">
                   <div className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center shrink-0 mt-0.5">
                     <AssistantIcon size={13} color="#1A5F7A" />
                   </div>
@@ -325,14 +333,14 @@ export default function AssistantWidget() {
                     return (
                       <div
                         key={item.id}
-                        className="fade-in text-[13px] leading-relaxed rounded-[14px] rounded-br-[4px] px-3.5 py-2.5 max-w-[88%] whitespace-pre-wrap self-end text-white bg-primary shadow-card-sm"
+                        className="bubble-in-user text-[13px] leading-relaxed rounded-[14px] rounded-br-[4px] px-3.5 py-2.5 max-w-[88%] whitespace-pre-wrap self-end text-white bg-primary shadow-card-sm"
                       >
                         {item.content}
                       </div>
                     );
                   }
                   return (
-                    <div key={item.id} className="fade-in flex items-start gap-2 self-start max-w-[88%]">
+                    <div key={item.id} className="bubble-in-assistant flex items-start gap-2 self-start max-w-[88%]">
                       <div className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center shrink-0 mt-0.5">
                         <AssistantIcon size={13} color="#1A5F7A" />
                       </div>
@@ -345,20 +353,28 @@ export default function AssistantWidget() {
                 }
                 if (item.kind === "tool_result") {
                   return (
-                    <div key={item.id} className="fade-in self-start w-[92%] pl-8">
+                    <div key={item.id} className="bubble-in-assistant self-start w-[92%] pl-8">
                       <ToolResultCard tool={item.tool} result={item.result} onNavigate={() => setOpen(false)} />
                     </div>
                   );
                 }
-                // proposal card
+                // proposal card. Keyed by status too so it re-mounts (and
+                // replays its entrance animation) the moment it resolves —
+                // a little re-pop that reads as "something just happened".
                 const isActive = item.status === "pending";
                 const passwordError = passwordErrors[item.proposal.toolCallId];
+                const cardAnim = isActive ? "proposal-pending" : item.status === "error" ? "proposal-resolved-error" : "proposal-resolved";
                 return (
                   <div
-                    key={item.id}
-                    className="fade-in self-start max-w-[92%] pl-8 w-[92%] bg-warning-bg border border-warning/30 rounded-[14px] rounded-bl-[4px] px-3.5 py-3 flex flex-col gap-2"
+                    key={`${item.id}-${item.status}`}
+                    className={`${cardAnim} self-start max-w-[92%] pl-8 w-[92%] bg-warning-bg border border-warning/30 rounded-[14px] rounded-bl-[4px] px-3.5 py-3 flex flex-col gap-2`}
                   >
-                    <div className="text-[11px] font-semibold text-warning-dark uppercase tracking-wide">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-warning-dark uppercase tracking-wide">
+                      {item.status === "confirmed" && (
+                        <span className="success-pop w-3.5 h-3.5 rounded-full bg-success flex items-center justify-center shrink-0">
+                          <MiniCheckIcon />
+                        </span>
+                      )}
                       {isActive ? "Confirm action" : item.status === "confirmed" ? "Action completed" : item.status === "error" ? "Action failed" : "Cancelled"}
                     </div>
                     <div className="text-[13px] text-warning-dark">{item.proposal.description}</div>
@@ -384,7 +400,7 @@ export default function AssistantWidget() {
                             type="button"
                             onClick={() => handleCancel(item.proposal)}
                             disabled={resolvingId !== null}
-                            className="flex-1 text-xs font-semibold px-3 py-2 rounded-full border border-warning/40 text-warning-dark bg-white disabled:opacity-50"
+                            className="flex-1 text-xs font-semibold px-3 py-2 rounded-full border border-warning/40 text-warning-dark bg-white disabled:opacity-50 active:scale-95 transition-transform"
                           >
                             Cancel
                           </button>
@@ -392,7 +408,7 @@ export default function AssistantWidget() {
                             type="button"
                             onClick={() => handleConfirm(item.proposal)}
                             disabled={resolvingId !== null}
-                            className="flex-1 text-xs font-semibold px-3 py-2 rounded-full bg-warning-dark text-white disabled:opacity-50"
+                            className="flex-1 text-xs font-semibold px-3 py-2 rounded-full bg-warning-dark text-white disabled:opacity-50 active:scale-95 transition-transform"
                           >
                             {resolvingId === item.proposal.toolCallId ? "Working…" : "Confirm"}
                           </button>
@@ -408,8 +424,8 @@ export default function AssistantWidget() {
               })}
 
               {busy && !pendingProposals.length && displayItems.at(-1)?.kind !== "message" && (
-                <div className="fade-in flex items-start gap-2 self-start">
-                  <div className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center shrink-0 mt-0.5">
+                <div className="bubble-in-assistant flex items-start gap-2 self-start">
+                  <div className="avatar-think w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center shrink-0 mt-0.5">
                     <AssistantIcon size={13} color="#1A5F7A" />
                   </div>
                   <div className="bg-white shadow-card-sm rounded-[14px] rounded-bl-[4px] px-3.5 py-3 flex items-center gap-1">
@@ -419,7 +435,7 @@ export default function AssistantWidget() {
                   </div>
                 </div>
               )}
-              {error && <div className="fade-in self-start text-xs text-danger px-1">{error}</div>}
+              {error && <div className="shake-x self-start text-xs text-danger px-1">{error}</div>}
             </div>
 
             <div className="border-t border-border-soft p-2.5 md:p-3.5 shrink-0 bg-white">
@@ -443,7 +459,7 @@ export default function AssistantWidget() {
                     type="button"
                     onClick={stopStreaming}
                     aria-label="Stop"
-                    className="w-10 h-10 rounded-full bg-danger text-white flex items-center justify-center shrink-0"
+                    className="w-10 h-10 rounded-full bg-danger text-white flex items-center justify-center shrink-0 active:scale-90 transition-transform"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>
                   </button>
@@ -452,7 +468,7 @@ export default function AssistantWidget() {
                     type="submit"
                     disabled={pendingProposals.length > 0 || !input.trim()}
                     aria-label="Send"
-                    className="w-10 h-10 rounded-full bg-primary shadow-glow-primary text-white flex items-center justify-center shrink-0 disabled:opacity-40 disabled:shadow-none"
+                    className="w-10 h-10 rounded-full bg-primary shadow-glow-primary text-white flex items-center justify-center shrink-0 disabled:opacity-40 disabled:shadow-none active:scale-90 transition-transform"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="22" y1="2" x2="11" y2="13" />

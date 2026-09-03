@@ -595,6 +595,86 @@ input.field-plain:focus {
   animation: blink-cursor 0.9s step-end infinite;
 }
 
+/* Conversation bubbles get a directional, slightly springy entrance instead
+   of a flat fade, so the two sides of the chat read as distinct voices: the
+   user's own messages launch up from the composer, the assistant's replies
+   drift in from its avatar on the left. */
+@keyframes bubble-in-user {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.bubble-in-user {
+  animation: bubble-in-user 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+@keyframes bubble-in-assistant {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.94);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(2px) scale(1.01);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+.bubble-in-assistant {
+  animation: bubble-in-assistant 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+/* Soft glow behind the avatar while the assistant is composing a reply,
+   paired with the .typing-dot bounce it sits next to. */
+@keyframes avatar-think {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(43, 141, 184, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(43, 141, 184, 0);
+  }
+}
+.avatar-think {
+  animation: avatar-think 1.6s ease-in-out infinite;
+}
+
+/* Action-confirmation card: pops in like any assistant bubble, then keeps a
+   gentle pulse while it's actually waiting on the user (dropped the instant
+   it resolves). Confirmed/cancelled/error resolutions each get their own
+   one-shot reaction layered onto the same entrance animation — the .proposal-*
+   variants below combine two keyframes in one `animation` shorthand so the
+   pulse/shake and the pop-in run concurrently without one clobbering the other. */
+@keyframes proposal-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(245, 166, 35, 0);
+  }
+}
+.proposal-pending {
+  animation: bubble-in-assistant 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both, proposal-glow 2s ease-in-out infinite;
+}
+.proposal-resolved {
+  animation: bubble-in-assistant 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+.proposal-resolved-error {
+  animation: bubble-in-assistant 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both, shake-x 420ms ease-in-out 320ms both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
