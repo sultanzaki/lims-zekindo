@@ -121,14 +121,14 @@ export default function ReagentsListClient({
   return (
     <div className="flex-1 px-5 md:px-9 pt-4.5 md:pt-7 pb-7 md:pb-9 flex flex-col gap-3.5 md:gap-5 md:max-w-[1400px] md:w-full">
       {/* Desktop header + toolbar */}
-      <div className="hidden md:flex md:items-start md:justify-between md:gap-6 md:pr-10">
-        <div>
-          <div className="text-[20px] font-bold text-text tracking-tight">Reagents &amp; Chemicals</div>
+      <div className="hidden md:flex md:flex-wrap md:items-start md:justify-between md:gap-x-6 md:gap-y-2.5 md:pr-10">
+        <div className="shrink-0">
+          <div className="text-[20px] font-bold text-text tracking-tight whitespace-nowrap">Reagents &amp; Chemicals</div>
           <div className="text-[13px] text-muted mt-0.5">
             {reagents.length} items tracked across {stats.locationCount} storage location{stats.locationCount === 1 ? "" : "s"}
           </div>
         </div>
-        <div className="no-print flex items-center gap-2.5">
+        <div className="no-print flex flex-wrap items-center justify-end gap-2.5">
           <div className="flex items-center gap-2 h-[38px] px-3 rounded-[10px] bg-white border border-border w-[220px]">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#93A6B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
               <circle cx="11" cy="11" r="7" />
