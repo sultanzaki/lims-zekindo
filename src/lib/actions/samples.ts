@@ -274,11 +274,13 @@ export async function deleteSampleReportAction(sampleId: string, reportId: strin
   revalidatePath(`/samples/${sampleId}`);
 }
 
-async function openDeviationForRejection(sampleId: string, sampleType: string, userId: string, stage: string) {
+async function openDeviationForRejection(sampleId: string, sampleType: string, userId: string, stage: string, reason?: string) {
   await prisma.deviation.create({
     data: {
       sampleId,
-      description: `Result rejected at ${stage} review. ${sampleType} did not meet acceptance criteria.`,
+      description: reason
+        ? `Result rejected at ${stage} review: ${reason}`
+        : `Result rejected at ${stage} review. ${sampleType} did not meet acceptance criteria.`,
       status: "Open",
       openedBy: userId,
     },
@@ -376,7 +378,7 @@ export async function supervisorApproveAction(
   return {};
 }
 
-async function performSupervisorReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }) {
+async function performSupervisorReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }, reason?: string) {
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
   const submitterIds = await getSubmitterIds(sample.id);
   await prisma.sample.update({
@@ -384,17 +386,19 @@ async function performSupervisorReject(sample: { id: string; type: string }, use
     data: {
       status: "Rejected",
       custodyEvents: {
-        create: [{ label: `Supervisor Rejected (${user.name})`, time: new Date(), order: eventCount }],
+        create: [{ label: `Supervisor Rejected (${user.name})`, detail: reason, time: new Date(), order: eventCount }],
       },
     },
   });
   await notifyUsers({
     userIds: [user.id, ...submitterIds],
     title: `Supervisor rejected ${sample.id}`,
-    body: `${sample.type} did not pass supervisor review. Recollection may be required.`,
+    body: reason
+      ? `${sample.type}: ${reason}`
+      : `${sample.type} did not pass supervisor review. Recollection may be required.`,
     sampleId: sample.id,
   });
-  await openDeviationForRejection(sample.id, sample.type, user.id, "supervisor");
+  await openDeviationForRejection(sample.id, sample.type, user.id, "supervisor", reason);
   await logAudit({
     userId: user.id,
     action: "sample.supervisor_rejected",
@@ -414,11 +418,13 @@ export async function supervisorRejectAction(
   const verified = await verifySignature(reviewer.id, formData);
   if ("error" in verified) return verified;
   const user = verified.user;
+  const reason = String(formData.get("reason") || "").trim();
+  if (!reason) return { error: "Enter a reason for rejecting this sample." };
 
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting Supervisor Review") return { error: "This sample is no longer awaiting supervisor review." };
 
-  await performSupervisorReject(sample, user);
+  await performSupervisorReject(sample, user, reason);
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
@@ -565,23 +571,23 @@ export async function rejectSampleForAssistant(sampleId: string, actingUser: Ass
   return { ok: false, error: `Sample is not awaiting review (current status: ${sample.status}).` };
 }
 
-async function performQaReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }) {
+async function performQaReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }, reason?: string) {
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
   const submitterIds = await getSubmitterIds(sample.id);
   await prisma.sample.update({
     where: { id: sample.id },
     data: {
       status: "Rejected",
-      custodyEvents: { create: [{ label: "QA Rejected", time: new Date(), order: eventCount }] },
+      custodyEvents: { create: [{ label: "QA Rejected", detail: reason, time: new Date(), order: eventCount }] },
     },
   });
   await notifyUsers({
     userIds: [user.id, ...submitterIds],
     title: `QA rejected ${sample.id}`,
-    body: `${sample.type} did not meet spec. Recollection requested.`,
+    body: reason ? `${sample.type}: ${reason}` : `${sample.type} did not meet spec. Recollection requested.`,
     sampleId: sample.id,
   });
-  await openDeviationForRejection(sample.id, sample.type, user.id, "QA");
+  await openDeviationForRejection(sample.id, sample.type, user.id, "QA", reason);
   await logAudit({
     userId: user.id,
     action: "sample.qa_rejected",
@@ -601,11 +607,13 @@ export async function qaRejectAction(
   const verified = await verifySignature(reviewer.id, formData);
   if ("error" in verified) return verified;
   const user = verified.user;
+  const reason = String(formData.get("reason") || "").trim();
+  if (!reason) return { error: "Enter a reason for rejecting this sample." };
 
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting QA Approval") return { error: "This sample is no longer awaiting QA approval." };
 
-  await performQaReject(sample, user);
+  await performQaReject(sample, user, reason);
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
