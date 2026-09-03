@@ -6,13 +6,13 @@ import EmptyState from "@/components/ui/EmptyState";
 
 export type WarehouseGraphNode = { id: string; name: string; parentId: string | null; active: boolean; itemCount: number };
 
-type PositionedNode = WarehouseGraphNode & { x: number; y: number; children: PositionedNode[] };
+type PositionedNode = WarehouseGraphNode & { x: number; y: number; depth: number; children: PositionedNode[] };
 
-const NODE_W = 148;
-const NODE_H = 60;
-const GAP_X = 26;
+const NODE_W = 168;
+const NODE_H = 64;
+const GAP_X = 16;
 const GAP_Y = 56;
-const PADDING = 24;
+const PADDING = 32;
 
 // Classic "tidy tree" layout: leaves get sequential slots left-to-right,
 // and every parent sits centered over the span of its own children — a
@@ -41,7 +41,7 @@ function layout(nodes: WarehouseGraphNode[]): { positioned: PositionedNode[]; wi
       kids.length > 0
         ? (kids[0].x + kids[kids.length - 1].x) / 2
         : cursor++ * (NODE_W + GAP_X);
-    const positioned: PositionedNode = { ...node, x, y: depth * (NODE_H + GAP_Y), children: kids };
+    const positioned: PositionedNode = { ...node, x, y: depth * (NODE_H + GAP_Y), depth, children: kids };
     positionedById.set(node.id, positioned);
     return positioned;
   }
@@ -62,6 +62,32 @@ function elbowPath(parent: PositionedNode, child: PositionedNode) {
   return `M ${px} ${py} V ${midY} H ${cx} V ${cy}`;
 }
 
+// Same glyph-per-level idea as WarehouseTree's LocationIcon (depth 0 =
+// building, depth 1 = room, depth 2+ = shelf) so the two views read as one
+// consistent vocabulary rather than two unrelated designs of the same data.
+function LocationIcon({ depth }: { depth: number }) {
+  if (depth === 0) {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z" />
+      </svg>
+    );
+  }
+  if (depth === 1) {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="1.5" />
+        <path d="M3 10h18M9 10v10" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B8DB8" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 6h16M4 12h16M4 18h16M4 6v.01M4 12v.01M4 18v.01" />
+    </svg>
+  );
+}
+
 export default function WarehouseHierarchyGraph({ nodes }: { nodes: WarehouseGraphNode[] }) {
   const router = useRouter();
   const { positioned, width, height } = useMemo(() => layout(nodes), [nodes]);
@@ -72,11 +98,11 @@ export default function WarehouseHierarchyGraph({ nodes }: { nodes: WarehouseGra
   }
 
   return (
-    <div className="rounded-[20px] border border-border bg-white overflow-auto">
+    <div className="rounded-[20px] border border-border bg-white shadow-card overflow-auto">
       <div className="relative" style={{ width, height, minWidth: "100%" }}>
         <svg width={width} height={height} className="absolute inset-0 pointer-events-none">
           {edges.map(({ parent, child }) => (
-            <path key={`${parent.id}-${child.id}`} d={elbowPath(parent, child)} fill="none" stroke="#D8E2E7" strokeWidth={1.75} strokeLinejoin="round" />
+            <path key={`${parent.id}-${child.id}`} d={elbowPath(parent, child)} fill="none" stroke="#CBD8DF" strokeWidth={2} strokeLinejoin="round" />
           ))}
         </svg>
 
@@ -95,15 +121,18 @@ export default function WarehouseHierarchyGraph({ nodes }: { nodes: WarehouseGra
                 "--stagger": i,
               } as React.CSSProperties
             }
-            className={`stagger-item text-left rounded-[10px] border bg-white shadow-card-sm px-3 py-2 flex flex-col justify-center gap-0.5 cursor-pointer transition-shadow hover:shadow-card active:scale-95 ${
-              node.active ? "border-border" : "border-dashed border-faint opacity-60"
-            }`}
+            className="stagger-item text-left rounded-[14px] border border-border bg-white shadow-card-sm px-3.5 flex items-center gap-2.5 cursor-pointer transition-shadow hover:shadow-card active:scale-95"
           >
-            <span className="text-[12px] font-semibold text-text truncate">{node.name}</span>
-            <span className="text-[10.5px] text-muted">
-              {node.itemCount} item{node.itemCount === 1 ? "" : "s"}
-              {!node.active && " · inactive"}
-            </span>
+            <div className="w-8 h-8 rounded-[10px] bg-primary-soft flex items-center justify-center shrink-0">
+              <LocationIcon depth={node.depth} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-text truncate">{node.name}</div>
+              <div className="text-[11px] text-muted mt-0.5">
+                {node.itemCount} item{node.itemCount === 1 ? "" : "s"}
+                {!node.active && <span className="ml-1 font-semibold text-danger">(inactive)</span>}
+              </div>
+            </div>
           </button>
         ))}
       </div>
