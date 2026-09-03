@@ -11,7 +11,7 @@ export default function BackHeader({
 }) {
   return (
     <>
-      <div className="md:hidden sticky top-0 bg-white border-b border-border flex items-center gap-3 px-4 py-3.5 z-10">
+      <div className="no-print md:hidden sticky top-0 bg-white border-b border-border flex items-center gap-3 px-4 py-3.5 z-10">
         <Link
           href={backHref}
           className="w-10 h-10 rounded-full bg-chip-bg border border-border flex items-center justify-center shrink-0"
