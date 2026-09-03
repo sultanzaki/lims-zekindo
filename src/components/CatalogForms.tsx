@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createSampleTypeAction, createTestCatalogAction, createBusinessUnitAction, type FormState } from "@/lib/actions/catalog";
+import { useRepeatableRows } from "@/lib/useRepeatableRows";
 import { inputClassSm } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
 
@@ -9,23 +10,39 @@ const initialState: FormState = {};
 
 export function CreateSampleTypeForm() {
   const [state, formAction, pending] = useActionState(createSampleTypeAction, initialState);
+  const { ids, addRow, removeRow } = useRepeatableRows();
   return (
     <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
       <div className="text-[13px] font-semibold text-text">Add Sample Type</div>
-      <input name="name" placeholder="e.g. Total Plate Count" required className={inputClassSm} />
-      <div className="grid grid-cols-2 gap-2.5">
-        <div className="flex flex-col gap-1">
-          <label className="text-[11px] text-muted">Target TAT (hours)</label>
-          <input name="targetTatHours" type="number" defaultValue={48} min={1} className={inputClassSm} />
+      {ids.map((id, i) => (
+        <div key={id} className="flex flex-col gap-2.5">
+          {i > 0 && <div className="border-t border-border-soft pt-2.5" />}
+          <div className="flex items-center gap-2">
+            <input name="name" placeholder="e.g. Total Plate Count" required className={`${inputClassSm} flex-1`} />
+            {ids.length > 1 && (
+              <button type="button" onClick={() => removeRow(id)} className="text-xs font-semibold text-danger cursor-pointer shrink-0">
+                Remove
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-muted">Target TAT (hours)</label>
+              <input name="targetTatHours" type="number" defaultValue={48} min={1} className={inputClassSm} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-muted">Retention (days)</label>
+              <input name="retentionDays" type="number" defaultValue={30} min={1} className={inputClassSm} />
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-[11px] text-muted">Retention (days)</label>
-          <input name="retentionDays" type="number" defaultValue={30} min={1} className={inputClassSm} />
-        </div>
-      </div>
+      ))}
+      <button type="button" onClick={addRow} className="self-start text-xs font-semibold text-primary cursor-pointer">
+        + Add another
+      </button>
       {state.error && <div className="text-xs text-danger">{state.error}</div>}
       <Button type="submit" disabled={pending} size="sm">
-        {pending ? "Adding…" : "Add Sample Type"}
+        {pending ? "Adding…" : ids.length > 1 ? `Add ${ids.length} Sample Types` : "Add Sample Type"}
       </Button>
     </form>
   );
@@ -159,13 +176,26 @@ export function CreateTestCatalogForm({ sampleTypes }: { sampleTypes: { id: stri
 
 export function CreateBusinessUnitForm() {
   const [state, formAction, pending] = useActionState(createBusinessUnitAction, initialState);
+  const { ids, addRow, removeRow } = useRepeatableRows();
   return (
     <form action={formAction} className="flex flex-col gap-2.5 bg-white border border-border rounded-[18px] shadow-card p-4">
       <div className="text-[13px] font-semibold text-text">Add Business Unit</div>
-      <input name="name" placeholder="e.g. Marketing, R&D, Production" required className={inputClassSm} />
+      {ids.map((id) => (
+        <div key={id} className="flex items-center gap-2">
+          <input name="name" placeholder="e.g. Marketing, R&D, Production" required className={`${inputClassSm} flex-1`} />
+          {ids.length > 1 && (
+            <button type="button" onClick={() => removeRow(id)} className="text-xs font-semibold text-danger cursor-pointer shrink-0">
+              Remove
+            </button>
+          )}
+        </div>
+      ))}
+      <button type="button" onClick={addRow} className="self-start text-xs font-semibold text-primary cursor-pointer">
+        + Add another
+      </button>
       {state.error && <div className="text-xs text-danger">{state.error}</div>}
       <Button type="submit" disabled={pending} size="sm">
-        {pending ? "Adding…" : "Add Business Unit"}
+        {pending ? "Adding…" : ids.length > 1 ? `Add ${ids.length} Business Units` : "Add Business Unit"}
       </Button>
     </form>
   );
