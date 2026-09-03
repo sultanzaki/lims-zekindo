@@ -436,6 +436,120 @@ input.field-plain:focus {
   animation: nfc-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ---- Scan feedback (QR/barcode + NFC) ----
+   A "hit" is the payoff moment of the whole scan flow, so it gets a
+   dedicated celebration instead of just swapping status text: a single
+   outward ring burst plus a spring-y checkmark pop, shared by both
+   scanners. A miss (unrecognized/error) gets a quick "nope" wiggle so it
+   reads as a reaction, not a silent stall. And an idle waiting scanner
+   breathes gently so it doesn't look frozen while it has nothing to report. */
+@keyframes success-ring-burst {
+  from {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+.success-ring-burst {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  border: 3px solid #28a745;
+  animation: success-ring-burst 650ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes success-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.success-pop {
+  animation: success-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes icon-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+.icon-breathe {
+  animation: icon-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes frame-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(43, 141, 184, 0);
+  }
+  50% {
+    box-shadow: 0 0 26px 3px rgba(43, 141, 184, 0.28);
+  }
+}
+.frame-glow {
+  animation: frame-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes shake-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+.shake-x {
+  animation: shake-x 420ms ease-in-out both;
+}
+
+/* Crossfade when switching between NFC / QR scan modes, or any other
+   content swap that wants a softer entrance than the plain .fade-in. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.pop-in {
+  animation: pop-in 220ms cubic-bezier(0.25, 0.8, 0.4, 1) both;
+}
+
 /* Assistant widget: idle glow on the floating button (before it's ever been
    opened this session), a bouncing 3-dot "typing" indicator, and a blinking
    cursor on the in-progress streamed reply. */

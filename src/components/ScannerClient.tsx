@@ -50,23 +50,44 @@ export default function ScannerClient() {
     };
   }, [router]);
 
+  const cornerColor = status === "found" ? "#28A745" : "#2B8DB8";
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8 mx-3.5 mt-3.5 mb-2.5 bg-scanner-bg rounded-[20px]">
-      <div className="relative w-[232px] h-[232px] rounded-[20px] overflow-hidden bg-white/[0.04]">
+      <div
+        className={`relative w-[232px] h-[232px] rounded-[20px] overflow-hidden bg-white/[0.04] ${
+          status === "scanning" ? "frame-glow" : ""
+        }`}
+      >
         <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
-        <Corner style={{ top: 0, left: 0, borderTop: "3.5px solid #2B8DB8", borderLeft: "3.5px solid #2B8DB8", borderRadius: "14px 0 0 0" }} />
-        <Corner style={{ top: 0, right: 0, borderTop: "3.5px solid #2B8DB8", borderRight: "3.5px solid #2B8DB8", borderRadius: "0 14px 0 0" }} />
-        <Corner style={{ bottom: 0, left: 0, borderBottom: "3.5px solid #2B8DB8", borderLeft: "3.5px solid #2B8DB8", borderRadius: "0 0 0 14px" }} />
-        <Corner style={{ bottom: 0, right: 0, borderBottom: "3.5px solid #2B8DB8", borderRight: "3.5px solid #2B8DB8", borderRadius: "0 0 14px 0" }} />
+        <Corner pos="tl" color={cornerColor} />
+        <Corner pos="tr" color={cornerColor} />
+        <Corner pos="bl" color={cornerColor} />
+        <Corner pos="br" color={cornerColor} />
         {status === "scanning" && (
           <div
             className="scan-line absolute left-5 right-5 h-[2px]"
             style={{ background: "#2B8DB8", boxShadow: "0 0 14px rgba(43,141,184,0.9)" }}
           />
         )}
+        {status === "found" && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <span className="success-ring-burst" />
+              <div className="success-pop relative z-10 w-14 h-14 rounded-full bg-success flex items-center justify-center shadow-[0_4px_16px_rgba(40,167,69,0.5)]">
+                <CheckIcon />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="text-center text-[#B4C6CF] text-[14px] leading-relaxed">
+      <div
+        key={status}
+        className={`text-center text-[14px] leading-relaxed ${
+          status === "found" ? "pop-in text-[#6EE7A8] font-semibold" : "text-[#B4C6CF]"
+        } ${status === "error" ? "shake-x" : ""}`}
+      >
         {status === "starting" && "Requesting camera access…"}
         {status === "scanning" && (
           <>
@@ -75,7 +96,7 @@ export default function ScannerClient() {
             Scanning works offline.
           </>
         )}
-        {status === "found" && "Sample found — opening…"}
+        {status === "found" && "Got it — opening…"}
         {status === "error" && (errorMsg || "Camera unavailable. Use manual entry below.")}
       </div>
 
@@ -99,6 +120,24 @@ export default function ScannerClient() {
   );
 }
 
-function Corner({ style }: { style: React.CSSProperties }) {
-  return <div className="absolute w-[38px] h-[38px]" style={style} />;
+type CornerPos = "tl" | "tr" | "bl" | "br";
+
+/** Corner border color transitions to green once a code is found. */
+function Corner({ pos, color }: { pos: CornerPos; color: string }) {
+  const border = `3.5px solid ${color}`;
+  const styles: Record<CornerPos, React.CSSProperties> = {
+    tl: { top: 0, left: 0, borderTop: border, borderLeft: border, borderRadius: "14px 0 0 0" },
+    tr: { top: 0, right: 0, borderTop: border, borderRight: border, borderRadius: "0 14px 0 0" },
+    bl: { bottom: 0, left: 0, borderBottom: border, borderLeft: border, borderRadius: "0 0 0 14px" },
+    br: { bottom: 0, right: 0, borderBottom: border, borderRight: border, borderRadius: "0 0 14px 0" },
+  };
+  return <div className="absolute w-[38px] h-[38px] transition-colors duration-300" style={styles[pos]} />;
+}
+
+function CheckIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
 }
