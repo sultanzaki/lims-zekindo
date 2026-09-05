@@ -667,7 +667,7 @@ export default function SamplesClient({
       </div>
 
       {selectMode && selectedIds.size > 0 && (
-        <div className="fixed left-0 right-0 bottom-[calc(84px+env(safe-area-inset-bottom))] md:bottom-4 z-30 px-5 flex justify-center">
+        <div className="fixed left-0 right-0 bottom-[calc(100px+env(safe-area-inset-bottom))] md:bottom-4 z-30 px-5 flex justify-center">
           <div className="w-full max-w-[420px] bg-white border border-border rounded-[16px] shadow-[0_8px_28px_rgba(16,42,58,0.18)] px-4 py-3 flex items-center gap-2.5">
             <span className="text-xs font-semibold text-text shrink-0">{selectedIds.size} selected</span>
             <div className="flex-1" />

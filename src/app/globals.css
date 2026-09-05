@@ -80,7 +80,7 @@ body {
    the last row/card/button is not hidden behind it. Screens that scroll a
    full-bleed dark area (scanner) already set their own padding. */
 .pb-bottom-nav {
-  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
 }
 
 @media (min-width: 768px) {
