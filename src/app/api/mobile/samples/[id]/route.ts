@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireMobileUser } from "@/lib/mobile-auth";
 import { getSampleDetail } from "@/lib/data";
 import { prisma } from "@/lib/db";
-import { signedAttachmentUrl } from "@/lib/storage";
+import { signedUrlFor } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           fileSize: a.fileSize,
           uploadedBy: a.uploadedBy,
           uploadedAt: a.uploadedAt,
-          url: await signedAttachmentUrl(a.storagePath),
+          url: await signedUrlFor(a.fileType, a.storagePath),
         }))
       ),
     }))
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       fileSize: r.fileSize,
       uploadedBy: r.uploadedBy,
       uploadedAt: r.uploadedAt,
-      url: await signedAttachmentUrl(r.storagePath),
+      url: await signedUrlFor(r.fileType, r.storagePath),
     }))
   );
 

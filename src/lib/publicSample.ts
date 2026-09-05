@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { signedAttachmentUrl } from "@/lib/storage";
+import { signedUrlFor } from "@/lib/storage";
 import { stageIndexFor } from "@/lib/publicStage";
 
 export { stageIndexFor, clientStageLabel, clientStageColors } from "@/lib/publicStage";
@@ -33,7 +33,7 @@ export async function preparePublicSampleView(sample: PublicSample) {
     sample.tests.map(async (test) => ({
       ...test,
       attachments: completed
-        ? await Promise.all(test.attachments.map(async (a) => ({ ...a, url: await signedAttachmentUrl(a.storagePath) })))
+        ? await Promise.all(test.attachments.map(async (a) => ({ ...a, url: await signedUrlFor(a.fileType, a.storagePath) })))
         : [],
     }))
   );
@@ -42,7 +42,7 @@ export async function preparePublicSampleView(sample: PublicSample) {
   const progressPct = totalCount > 0 ? Math.round((testedCount / totalCount) * 100) : 0;
 
   const reportsWithUrls = completed
-    ? await Promise.all(sample.reports.map(async (r) => ({ ...r, url: await signedAttachmentUrl(r.storagePath) })))
+    ? await Promise.all(sample.reports.map(async (r) => ({ ...r, url: await signedUrlFor(r.fileType, r.storagePath) })))
     : [];
 
   return {

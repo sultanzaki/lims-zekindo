@@ -10,6 +10,7 @@ import { getNextSampleId } from "@/lib/data";
 import { logAudit } from "@/lib/audit";
 import { canReviewAsSupervisor, canApproveAsQa, isAdmin } from "@/lib/roles";
 import { uploadAttachment, deleteAttachment } from "@/lib/storage";
+import { detectUploadType } from "@/lib/fileType";
 import { parseJakartaLocalDateTime } from "@/lib/tz";
 import { generateAccessCode } from "@/lib/tracking";
 import { notifyUsers, getSubmitterIds } from "@/lib/notify";
@@ -21,15 +22,6 @@ import {
 } from "@/lib/sample-actions-core";
 
 const MAX_REPORT_BYTES = 20 * 1024 * 1024;
-const ALLOWED_REPORT_TYPES = new Set([
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "image/jpeg",
-  "image/png",
-]);
 const canManageReports = (role: string) => canReviewAsSupervisor(role) || canApproveAsQa(role) || isAdmin(role);
 
 export type FormState = { error?: string };
@@ -239,7 +231,13 @@ export async function uploadSampleReportAction(
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload." };
   if (file.size > MAX_REPORT_BYTES) return { error: "File is too large (max 20MB)." };
-  if (!ALLOWED_REPORT_TYPES.has(file.type)) {
+
+  // Content-based validation — the client's file.type label is not trusted
+  // on its own. Only files whose magic bytes match an allowed type are
+  // accepted; the stored fileType is the detected one so signed URLs serve
+  // the correct Content-Type.
+  const detected = await detectUploadType(file, file.type);
+  if (!detected) {
     return { error: "Unsupported file type. Use a PDF, Word, Excel, or image file." };
   }
 
@@ -250,7 +248,7 @@ export async function uploadSampleReportAction(
   const storagePath = `reports/${sampleId}/${randomUUID()}-${safeName}`;
 
   try {
-    await uploadAttachment(storagePath, file);
+    await uploadAttachment(storagePath, file, detected.mime);
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Upload failed." };
   }
@@ -259,7 +257,7 @@ export async function uploadSampleReportAction(
     data: {
       sampleId,
       fileName: file.name,
-      fileType: file.type,
+      fileType: detected.mime,
       fileSize: file.size,
       storagePath,
       uploadedBy: user.name,

@@ -4,7 +4,7 @@ import { getUnreadCount } from "@/lib/data";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { signedAttachmentUrl } from "@/lib/storage";
+import { signedUrlFor } from "@/lib/storage";
 import { pathForLocationId } from "@/lib/warehouse";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
@@ -57,7 +57,9 @@ export default async function EquipmentDetailPage({
   const events = await Promise.all(
     equipment.events.map(async (e) => ({
       ...e,
-      attachmentUrl: e.attachmentStoragePath ? await signedAttachmentUrl(e.attachmentStoragePath) : null,
+      attachmentUrl: e.attachmentStoragePath && e.attachmentFileType
+        ? await signedUrlFor(e.attachmentFileType, e.attachmentStoragePath)
+        : null,
     }))
   );
 

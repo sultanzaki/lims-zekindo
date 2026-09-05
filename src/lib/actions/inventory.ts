@@ -8,6 +8,7 @@ import { requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { uploadAttachment } from "@/lib/storage";
+import { detectUploadType } from "@/lib/fileType";
 import {
   REAGENT_SOON_MS,
   EXPORT_CAP,
@@ -27,10 +28,17 @@ async function uploadOptionalFile(
 ): Promise<{ fileName: string; fileType: string; fileSize: number; storagePath: string } | null> {
   if (!(file instanceof File) || file.size === 0) return null;
   if (file.size > MAX_ATTACHMENT_BYTES) throw new Error("File is too large (max 10MB).");
+  // Content-based validation — the client's file.type label is not trusted
+  // on its own (it is trivially spoofable). Reject files whose magic bytes
+  // don't match an allowed type instead of storing them with a fake label.
+  const detected = await detectUploadType(file, file.type);
+  if (!detected) {
+    throw new Error("Unsupported file type. Use a PDF, image (JPG/PNG/WebP), or Excel/CSV file.");
+  }
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const storagePath = `${pathPrefix}/${randomUUID()}-${safeName}`;
-  await uploadAttachment(storagePath, file);
-  return { fileName: file.name, fileType: file.type, fileSize: file.size, storagePath };
+  await uploadAttachment(storagePath, file, detected.mime);
+  return { fileName: file.name, fileType: detected.mime, fileSize: file.size, storagePath };
 }
 
 // ---------- Reagents & Chemicals ----------
