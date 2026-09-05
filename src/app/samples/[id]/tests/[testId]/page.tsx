@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { requirePageUser } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/data";
 import { prisma } from "@/lib/db";
-import { signedAttachmentUrl } from "@/lib/storage";
+import { signedUrlFor } from "@/lib/storage";
 import BackHeader from "@/components/BackHeader";
 import Sidebar from "@/components/Sidebar";
 import TestResultForm from "@/components/TestResultForm";
@@ -34,7 +34,7 @@ export default async function TestEntryPage({
 
   const isMulti = test.resultMode === "MULTI";
   const attachments = await Promise.all(
-    test.attachments.map(async (a) => ({ ...a, url: await signedAttachmentUrl(a.storagePath) }))
+    test.attachments.map(async (a) => ({ ...a, url: await signedUrlFor(a.fileType, a.storagePath) }))
   );
 
   return (

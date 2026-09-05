@@ -4,7 +4,7 @@ import { getSampleDetail, getUnreadCount } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canReviewAsSupervisor, canApproveAsQa, isAdmin } from "@/lib/roles";
-import { signedAttachmentUrl } from "@/lib/storage";
+import { signedUrlFor } from "@/lib/storage";
 import { formatAccessCode } from "@/lib/tracking";
 import SampleDetailClient from "@/components/SampleDetailClient";
 import {
@@ -62,13 +62,13 @@ export default async function SampleDetailPage({
         attachments: await Promise.all(
           test.attachments.map(async (a) => ({
             ...a,
-            url: a.fileType.startsWith("image/") || canDownloadDocs ? await signedAttachmentUrl(a.storagePath) : null,
+            url: a.fileType.startsWith("image/") || canDownloadDocs ? await signedUrlFor(a.fileType, a.storagePath) : null,
           }))
         ),
       }))
     ),
     reports: await Promise.all(
-      sample.reports.map(async (r) => ({ ...r, url: await signedAttachmentUrl(r.storagePath) }))
+      sample.reports.map(async (r) => ({ ...r, url: await signedUrlFor(r.fileType, r.storagePath) }))
     ),
   };
 

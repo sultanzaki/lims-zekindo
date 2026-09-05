@@ -2,9 +2,13 @@ import { randomUUID } from "crypto";
 import { prisma } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { uploadAttachment } from "@/lib/storage";
+import { detectUploadType } from "@/lib/fileType";
 import type { User } from "@prisma/client";
 
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+// Legacy allow-list kept for the client-side hint + backward-compatible
+// message wording; the authoritative check is now content-based
+// (detectUploadType in lib/fileType.ts).
 export const ALLOWED_ATTACHMENT_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -150,8 +154,19 @@ export async function uploadTestAttachmentCore(
 ): Promise<ActionResult> {
   if (file.size === 0) return { ok: false, error: "Choose a file to upload." };
   if (file.size > MAX_ATTACHMENT_BYTES) return { ok: false, error: "File is too large (max 10MB)." };
-  if (!ALLOWED_ATTACHMENT_TYPES.has(file.type)) {
-    return { ok: false, error: "Unsupported file type. Use a photo (JPG/PNG) or an Excel/CSV file." };
+
+  // Content-based validation — the client's file.type label is not trusted
+  // on its own (it is trivially spoofable). We read the file's magic bytes
+  // and only accept a match against the allow-list.
+  const detected = await detectUploadType(file, file.type);
+  if (!detected) {
+    return { ok: false, error: "Unsupported file type. Use a photo (JPG/PNG/WebP) or an Excel/CSV file." };
+  }
+  // HEIC photos from iPhones are not detectable by our magic-byte set and
+  // can't be rendered inline by browsers anyway — reject them with a clear
+  // message rather than accepting an unverifiable upload.
+  if (file.type === "image/heic" || file.type === "image/heif") {
+    return { ok: false, error: "HEIC photos are not supported here. Convert to JPG/PNG first." };
   }
 
   const test = await prisma.test.findUnique({ where: { id: testId } });
@@ -164,7 +179,7 @@ export async function uploadTestAttachmentCore(
   const storagePath = `${sampleId}/${testId}/${randomUUID()}-${safeName}`;
 
   try {
-    await uploadAttachment(storagePath, file);
+    await uploadAttachment(storagePath, file, detected.mime);
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Upload failed." };
   }
@@ -173,7 +188,9 @@ export async function uploadTestAttachmentCore(
     data: {
       testId,
       fileName: file.name,
-      fileType: file.type,
+      // Store the content-detected type, not the client label, so the
+      // signed URL later serves it with the correct Content-Type.
+      fileType: detected.mime,
       fileSize: file.size,
       storagePath,
       uploadedBy: user.name,
