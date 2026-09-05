@@ -88,6 +88,7 @@ export default function SamplesClient({
   const searchParams = useSearchParams();
 
   const [query, setQuery] = useState(initialQuery);
+  const [status, setStatus] = useState(initialStatus);
   const [showFilters, setShowFilters] = useState(Boolean(initialDateFrom || initialDateTo));
   const [dateFrom, setDateFrom] = useState(initialDateFrom);
   const [dateTo, setDateTo] = useState(initialDateTo);
@@ -98,11 +99,16 @@ export default function SamplesClient({
   // when a prop changes) rather than in an effect, to avoid an extra
   // commit/cascading re-render.
   const [syncedQuery, setSyncedQuery] = useState(initialQuery);
+  const [syncedStatus, setSyncedStatus] = useState(initialStatus);
   const [syncedDateFrom, setSyncedDateFrom] = useState(initialDateFrom);
   const [syncedDateTo, setSyncedDateTo] = useState(initialDateTo);
   if (initialQuery !== syncedQuery) {
     setSyncedQuery(initialQuery);
     setQuery(initialQuery);
+  }
+  if (initialStatus !== syncedStatus) {
+    setSyncedStatus(initialStatus);
+    setStatus(initialStatus);
   }
   if (initialDateFrom !== syncedDateFrom) {
     setSyncedDateFrom(initialDateFrom);
@@ -194,13 +200,20 @@ export default function SamplesClient({
   }
 
   const hasDateFilter = Boolean(dateFrom || dateTo);
+  const hasStatusFilter = status !== "All";
 
+  // When a status filter is active, date-based grouping is confusing (the
+  // list was filtered by status, not by day) — fall back to a single flat
+  // group so the pills and the rows tell the same story.
   const groups = useMemo(() => {
+    if (hasStatusFilter) {
+      return [{ label: "All results", items: samples }];
+    }
     return DAY_GROUP_ORDER.map((label) => ({
       label,
       items: samples.filter((s) => dayGroupLabel(s.receivedDate) === label),
     })).filter((g) => g.items.length > 0);
-  }, [samples]);
+  }, [samples, hasStatusFilter]);
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
@@ -230,8 +243,11 @@ export default function SamplesClient({
               />
             </div>
             <select
-              value={initialStatus}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setStatusFilter(e.target.value);
+              }}
               className="h-[38px] px-2.5 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-[#5B6B74] cursor-pointer shrink-0 max-w-[130px]"
             >
               {STATUS_OPTIONS.map((opt) => (
@@ -381,11 +397,14 @@ export default function SamplesClient({
         <div className="relative -mx-5">
           <div className="flex gap-1.5 overflow-x-auto pb-0.5 px-5">
             {STATUS_OPTIONS.map((opt) => {
-              const active = initialStatus === opt;
+              const active = status === opt;
               return (
                 <button
                   key={opt}
-                  onClick={() => setStatusFilter(opt)}
+                  onClick={() => {
+                    setStatus(opt);
+                    setStatusFilter(opt);
+                  }}
                   className="inline-flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 rounded-full whitespace-nowrap shrink-0 cursor-pointer border transition-colors duration-150"
                   style={{
                     background: active ? "#1A5F7A" : "#FFFFFF",
