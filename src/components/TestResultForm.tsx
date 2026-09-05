@@ -57,10 +57,12 @@ export default function TestResultForm({
   const belowLimit = result.startsWith("<");
 
   function handleNumberChange(raw: string) {
-    // Keep only digits and a single decimal point; the "<" (below detection
-    // limit) prefix is toggled separately since a numeric keyboard has no
-    // key for it.
-    let v = raw.replace(/[^0-9.]/g, "");
+    // Keep only digits, a comma or a single decimal point; the "<" (below
+    // detection limit) prefix is toggled separately since a numeric
+    // keyboard has no key for it. A comma is accepted as the decimal
+    // separator (common in Indonesian lab entry) and normalized to a dot
+    // before storing — the backend's spec parser already handles both.
+    let v = raw.replace(/[^0-9.,]/g, "").replace(/,/g, ".");
     const firstDot = v.indexOf(".");
     if (firstDot !== -1) v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
     setResult((belowLimit ? "<" : "") + v);
