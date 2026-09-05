@@ -41,7 +41,7 @@ export function parseSpecVerdict(spec: string | null | undefined, result: string
     return result.trim().toLowerCase() === limit.value.trim().toLowerCase() ? "Pass" : "Fail";
   }
 
-  const n = parseFloat(String(result).replace(/[^0-9.\-]/g, ""));
+  const n = parseFloat(String(result).replace(/[^0-9.\-]/g, "").replace(",", "."));
   if (Number.isNaN(n)) return null;
   if (limit.kind === "lte") return n <= limit.value ? "Pass" : "Fail";
   return n >= limit.value ? "Pass" : "Fail";
@@ -145,7 +145,7 @@ export function parseStructuredVerdict(cfg: ResultTypeConfig, result: string | n
   if (!trimmed) return null;
 
   if (cfg.resultType === "NUMERIC") {
-    const n = parseFloat(trimmed.replace(/[^0-9.\-]/g, ""));
+    const n = parseFloat(trimmed.replace(/[^0-9.\-]/g, "").replace(",", "."));
     if (Number.isNaN(n)) return null;
     switch (cfg.numericMode) {
       case "lte":

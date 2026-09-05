@@ -167,13 +167,15 @@ export async function getSampleDetail(id: string) {
 }
 
 export async function getNextSampleId() {
-  const latest = await prisma.sample.findMany({
-    where: { id: { startsWith: "LAB-24-" } },
-    select: { id: true },
+  // Transaction with a row lock on a dedicated counter row makes ID
+  // generation safe under concurrency — two simultaneous sample creations
+  // can no longer read the same max and both receive the same ID.
+  return prisma.$transaction(async (tx) => {
+    const counter = await tx.sampleIdCounter.upsert({
+      where: { id: "default" },
+      update: { lastValue: { increment: 1 } },
+      create: { id: "default", lastValue: 144 },
+    });
+    return `LAB-24-${String(counter.lastValue).padStart(4, "0")}`;
   });
-  const maxNum = latest.reduce((max, s) => {
-    const n = parseInt(s.id.replace("LAB-24-0", "").replace("LAB-24-", ""), 10);
-    return Number.isFinite(n) ? Math.max(max, n) : max;
-  }, 144);
-  return `LAB-24-0${maxNum + 1}`;
 }

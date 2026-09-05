@@ -320,16 +320,20 @@ async function verifySignature(userId: string, formData: FormData): Promise<{ us
 // one sample at a time through the review panel — the only thing bulk mode
 // changes is how many samples get looped through, not what happens to each.
 async function performSupervisorApprove(sample: { id: string }, user: { id: string; name: string; role: string; email: string }) {
+  // Conditional update — the status guard lives in the WHERE clause, so two
+  // reviewers approving at the same instant can't both pass the pre-check
+  // and double-transition the sample. Exactly one caller wins. (updateMany
+  // can't nest custodyEvents.create, so the transition is split: the guarded
+  // status flip first, then the custody event on the row we just won.)
+  const updated = await prisma.sample.updateMany({
+    where: { id: sample.id, status: "Awaiting Supervisor Review" },
+    data: { status: "Awaiting QA Approval", reviewedByRole: user.role },
+  });
+  if (updated.count === 0) throw new Error("Sample no longer awaiting supervisor review");
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
   await prisma.sample.update({
     where: { id: sample.id },
-    data: {
-      status: "Awaiting QA Approval",
-      reviewedByRole: user.role,
-      custodyEvents: {
-        create: [{ label: `Supervisor Reviewed (${user.name})`, time: new Date(), order: eventCount }],
-      },
-    },
+    data: { custodyEvents: { create: [{ label: `Supervisor Reviewed (${user.name})`, time: new Date(), order: eventCount }] } },
   });
   await logAudit({
     userId: user.id,
@@ -342,20 +346,20 @@ async function performSupervisorApprove(sample: { id: string }, user: { id: stri
 }
 
 async function performQaApprove(sample: { id: string; type: string }, user: { id: string; name: string; role: string; email: string }) {
+  // Same guarded transition as performSupervisorApprove — the status check
+  // lives in the WHERE so only one concurrent approver wins.
+  const updated = await prisma.sample.updateMany({
+    where: { id: sample.id, status: "Awaiting QA Approval" },
+    data: { status: "Complete", approvedBy: `${user.name}, ${user.role}`, approvedAt: new Date() },
+  });
+  if (updated.count === 0) throw new Error("Sample no longer awaiting QA approval");
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
   const submitterIds = await getSubmitterIds(sample.id);
-  await prisma.$transaction([
-    prisma.test.updateMany({ where: { sampleId: sample.id, status: "awaiting" }, data: { status: "complete" } }),
-    prisma.sample.update({
-      where: { id: sample.id },
-      data: {
-        status: "Complete",
-        approvedBy: `${user.name}, ${user.role}`,
-        approvedAt: new Date(),
-        custodyEvents: { create: [{ label: "QA Approved", time: new Date(), order: eventCount }] },
-      },
-    }),
-  ]);
+  await prisma.sample.update({
+    where: { id: sample.id },
+    data: { custodyEvents: { create: [{ label: "QA Approved", time: new Date(), order: eventCount }] } },
+  });
+  await prisma.test.updateMany({ where: { sampleId: sample.id, status: "awaiting" }, data: { status: "complete" } });
   await notifyUsers({
     userIds: [user.id, ...submitterIds],
     title: `Result approved — ${sample.id}`,
@@ -385,7 +389,11 @@ export async function supervisorApproveAction(
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting Supervisor Review") return { error: "This sample is no longer awaiting supervisor review." };
 
-  await performSupervisorApprove(sample, user);
+  try {
+    await performSupervisorApprove(sample, user);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Approval failed." };
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
@@ -394,16 +402,17 @@ export async function supervisorApproveAction(
 }
 
 async function performSupervisorReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }, reason?: string) {
+  // Guarded transition — same anti-double-action pattern as approve.
+  const updated = await prisma.sample.updateMany({
+    where: { id: sample.id, status: "Awaiting Supervisor Review" },
+    data: { status: "Rejected" },
+  });
+  if (updated.count === 0) throw new Error("Sample no longer awaiting supervisor review");
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
   const submitterIds = await getSubmitterIds(sample.id);
   await prisma.sample.update({
     where: { id: sample.id },
-    data: {
-      status: "Rejected",
-      custodyEvents: {
-        create: [{ label: `Supervisor Rejected (${user.name})`, detail: reason, time: new Date(), order: eventCount }],
-      },
-    },
+    data: { custodyEvents: { create: [{ label: `Supervisor Rejected (${user.name})`, detail: reason, time: new Date(), order: eventCount }] } },
   });
   await notifyUsers({
     userIds: [user.id, ...submitterIds],
@@ -439,7 +448,11 @@ export async function supervisorRejectAction(
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting Supervisor Review") return { error: "This sample is no longer awaiting supervisor review." };
 
-  await performSupervisorReject(sample, user, reason);
+  try {
+    await performSupervisorReject(sample, user, reason);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Rejection failed." };
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
@@ -462,7 +475,11 @@ export async function qaApproveAction(
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting QA Approval") return { error: "This sample is no longer awaiting QA approval." };
 
-  await performQaApprove(sample, user);
+  try {
+    await performQaApprove(sample, user);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Approval failed." };
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");
@@ -491,22 +508,32 @@ export async function bulkApproveSamplesAction(sampleIds: string[], password: st
   let approved = 0;
   const skipped: { id: string; reason: string }[] = [];
 
+  // Each per-sample transition runs in its own transaction (via the
+  // conditional updateMany inside performSupervisorApprove/performQaApprove).
+  // A failure on one sample is caught below and recorded as skipped rather
+  // than aborting the whole batch partway, so the user always gets a
+  // truthful approved/skipped breakdown and a mid-batch DB error can't
+  // leave the samples list in an unknown state.
   for (const sampleId of sampleIds) {
-    const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
-    if (!sample) {
-      skipped.push({ id: sampleId, reason: "Sample not found" });
-      continue;
-    }
-    if (sample.status === "Awaiting Supervisor Review" && canReviewAsSupervisor(user.accessRole)) {
-      await performSupervisorApprove(sample, user);
-      approved++;
-    } else if (sample.status === "Awaiting QA Approval" && canApproveAsQa(user.accessRole)) {
-      await performQaApprove(sample, user);
-      approved++;
-    } else if (sample.status === "Awaiting Supervisor Review" || sample.status === "Awaiting QA Approval") {
-      skipped.push({ id: sampleId, reason: "You don't have permission to approve this stage" });
-    } else {
-      skipped.push({ id: sampleId, reason: `No longer awaiting review (now ${sample.status})` });
+    try {
+      const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
+      if (!sample) {
+        skipped.push({ id: sampleId, reason: "Sample not found" });
+        continue;
+      }
+      if (sample.status === "Awaiting Supervisor Review" && canReviewAsSupervisor(user.accessRole)) {
+        await performSupervisorApprove(sample, user);
+        approved++;
+      } else if (sample.status === "Awaiting QA Approval" && canApproveAsQa(user.accessRole)) {
+        await performQaApprove(sample, user);
+        approved++;
+      } else if (sample.status === "Awaiting Supervisor Review" || sample.status === "Awaiting QA Approval") {
+        skipped.push({ id: sampleId, reason: "You don't have permission to approve this stage" });
+      } else {
+        skipped.push({ id: sampleId, reason: `No longer awaiting review (now ${sample.status})` });
+      }
+    } catch (e) {
+      skipped.push({ id: sampleId, reason: e instanceof Error ? e.message : "Approval failed" });
     }
   }
 
@@ -587,14 +614,17 @@ export async function rejectSampleForAssistant(sampleId: string, actingUser: Ass
 }
 
 async function performQaReject(sample: { id: string; type: string }, user: { id: string; name: string; email: string }, reason?: string) {
+  // Guarded transition — same anti-double-action pattern as approve.
+  const updated = await prisma.sample.updateMany({
+    where: { id: sample.id, status: "Awaiting QA Approval" },
+    data: { status: "Rejected" },
+  });
+  if (updated.count === 0) throw new Error("Sample no longer awaiting QA approval");
   const eventCount = await prisma.custodyEvent.count({ where: { sampleId: sample.id } });
   const submitterIds = await getSubmitterIds(sample.id);
   await prisma.sample.update({
     where: { id: sample.id },
-    data: {
-      status: "Rejected",
-      custodyEvents: { create: [{ label: "QA Rejected", detail: reason, time: new Date(), order: eventCount }] },
-    },
+    data: { custodyEvents: { create: [{ label: "QA Rejected", detail: reason, time: new Date(), order: eventCount }] } },
   });
   await notifyUsers({
     userIds: [user.id, ...submitterIds],
@@ -628,7 +658,11 @@ export async function qaRejectAction(
   const sample = await prisma.sample.findUnique({ where: { id: sampleId } });
   if (!sample || sample.status !== "Awaiting QA Approval") return { error: "This sample is no longer awaiting QA approval." };
 
-  await performQaReject(sample, user, reason);
+  try {
+    await performQaReject(sample, user, reason);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Rejection failed." };
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/samples");

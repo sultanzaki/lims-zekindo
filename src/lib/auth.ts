@@ -16,7 +16,12 @@ const secret = new TextEncoder().encode(
 );
 
 export async function createSession(userId: string) {
-  const token = await new SignJWT({ userId })
+  // sessionVersion is embedded so changing the password (or an admin
+  // resetting it) can invalidate every previously-issued session by bumping
+  // the counter — a stolen, still-unexpired cookie dies the moment the
+  // password changes instead of living out its 30-day TTL.
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { sessionVersion: true } });
+  const token = await new SignJWT({ userId, sv: user?.sessionVersion ?? 0 })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("30d")
@@ -43,7 +48,16 @@ export async function getSessionUserId(): Promise<string | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret);
-    return (payload.userId as string) ?? null;
+    const userId = payload.userId as string | undefined;
+    if (!userId) return null;
+    // Reject sessions whose version no longer matches the user's current
+    // sessionVersion (bumped on password change/reset) — see createSession.
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { sessionVersion: true },
+    });
+    if (!user || (payload.sv as number | undefined) !== user.sessionVersion) return null;
+    return userId;
   } catch {
     return null;
   }
