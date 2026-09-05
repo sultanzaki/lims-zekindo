@@ -17,8 +17,11 @@ export default async function NotificationsPage() {
   const notifications = await prisma.notification.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
+    take: 50,
   });
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  // Count unread separately so it stays accurate even after the 50-row cap
+  // (a user with 200 unread notifications still sees the true badge count).
+  const unreadCount = await prisma.notification.count({ where: { userId: user.id, unread: true } });
 
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">

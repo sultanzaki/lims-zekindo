@@ -154,7 +154,13 @@ export async function getSampleDetail(id: string) {
   return prisma.sample.findUnique({
     where: { id },
     include: {
-      tests: { orderBy: { order: "asc" }, include: { attachments: { orderBy: { uploadedAt: "desc" } } } },
+      tests: {
+        orderBy: { order: "asc" },
+        include: {
+          attachments: { orderBy: { uploadedAt: "desc" } },
+          correctedBy: { select: { name: true } },
+        },
+      },
       custodyEvents: { orderBy: { order: "asc" } },
       sampleType: true,
       businessUnit: true,

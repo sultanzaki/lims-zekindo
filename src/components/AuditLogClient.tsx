@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatDateTime, dayGroupLabel } from "@/lib/format";
 import { auditActionInfo, AUDIT_CATEGORY_STYLE, type AuditCategory } from "@/lib/audit-labels";
 import EmptyState from "@/components/ui/EmptyState";
+import { loadOlderAuditEntriesAction } from "@/lib/actions/audit";
 
 type Entry = {
   id: string;
@@ -27,6 +28,8 @@ function metadataSummary(metadata: Entry["metadata"]): string | null {
 
 const CATEGORY_OPTIONS: ("All" | AuditCategory)[] = ["All", "create", "approve", "reject", "update", "remove", "security"];
 const DAY_GROUP_ORDER = ["Today", "Yesterday", "Earlier"] as const;
+// Must match the page-size the server page + loadOlderAuditEntriesAction use.
+export const AUDIT_INITIAL_PAGE_SIZE = 500;
 
 function CategoryIcon({ category, color }: { category: AuditCategory; color: string }) {
   const common = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -73,9 +76,17 @@ function downloadCsv(rows: Entry[]) {
   URL.revokeObjectURL(url);
 }
 
-export default function AuditLogClient({ entries }: { entries: Entry[] }) {
+export default function AuditLogClient({
+  entries: initialEntries,
+}: {
+  entries: Entry[];
+}) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"All" | AuditCategory>("All");
+  const [entries, setEntries] = useState(initialEntries);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(entries.length >= AUDIT_INITIAL_PAGE_SIZE);
+  const [loadError, setLoadError] = useState("");
 
   const enriched = useMemo(
     () => entries.map((e) => ({ ...e, ...auditActionInfo(e.action) })),
@@ -313,6 +324,37 @@ export default function AuditLogClient({ entries }: { entries: Entry[] }) {
       </div>
 
       {filtered.length === 0 && <EmptyState>No activity matches your search.</EmptyState>}
+
+      {hasMore && (
+        <div className="flex flex-col items-center gap-1.5 pt-1">
+          {loadError && <div className="text-xs text-danger">{loadError}</div>}
+          <button
+            type="button"
+            disabled={loadingMore}
+            onClick={async () => {
+              setLoadingMore(true);
+              setLoadError("");
+              try {
+                const last = entries[entries.length - 1];
+                if (!last) return;
+                const { rows, hasMore: more } = await loadOlderAuditEntriesAction(last.createdAt);
+                setEntries((prev) => {
+                  const existing = new Set(prev.map((e) => e.id));
+                  return [...prev, ...rows.filter((r) => !existing.has(r.id))];
+                });
+                setHasMore(more);
+              } catch {
+                setLoadError("Couldn't load older events. Try again.");
+              } finally {
+                setLoadingMore(false);
+              }
+            }}
+            className="text-[13px] font-semibold px-5 py-2.5 rounded-full border border-border bg-white text-primary-dark hover:bg-chip-bg transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            {loadingMore ? "Loading…" : "Load older events"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

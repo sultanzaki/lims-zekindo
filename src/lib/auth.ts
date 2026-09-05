@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 
 const COOKIE_NAME = "lims_session";
@@ -63,11 +64,32 @@ export async function getSessionUserId(): Promise<string | null> {
   }
 }
 
-export async function getCurrentUser() {
-  const userId = await getSessionUserId();
-  if (!userId) return null;
-  return prisma.user.findUnique({ where: { id: userId } });
-}
+// React cache() — dedupes getCurrentUser() calls within a single render.
+// Without it, a page calling requirePageUser() + getUnreadCount() + a data
+// loader each triggers its own DB round-trip for the same user row. With it,
+// the first call in a request wins and every later call in the same render
+// reuses the result — one query instead of two per page.
+
+export const getCurrentUser = cache(async () => {
+  const jar = await cookies();
+  const token = jar.get(COOKIE_NAME)?.value;
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, secret);
+    const userId = payload.userId as string | undefined;
+    if (!userId) return null;
+    // Single query: fetch the full user AND its sessionVersion together, so
+    // the version check costs nothing extra (previously getSessionUserId +
+    // getCurrentUser made two findUnique calls for the same row).
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user || (payload.sv as number | undefined) !== user.sessionVersion) return null;
+    return user;
+  } catch {
+    return null;
+  }
+});
 
 export async function requireUser() {
   const user = await getCurrentUser();

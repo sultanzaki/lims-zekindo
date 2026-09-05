@@ -17,6 +17,7 @@ import Sidebar from "@/components/Sidebar";
 import SectionLabel from "@/components/ui/SectionLabel";
 import Button from "@/components/ui/Button";
 import LinkButton from "@/components/ui/LinkButton";
+import ResultCorrection from "@/components/ResultCorrection";
 
 type SampleDetailBase = NonNullable<Awaited<ReturnType<typeof getSampleDetail>>>;
 type BaseTest = SampleDetailBase["tests"][number];
@@ -152,6 +153,16 @@ export default function SampleDetailClient({
                       <span>limit {test.spec}</span>
                     </div>
                   </div>
+                )}
+                {actions.canManageReports && (
+                  <ResultCorrection
+                    sampleId={sample.id}
+                    testId={test.id}
+                    currentResult={test.result}
+                    previousResult={test.previousResult}
+                    correctedAt={test.correctedAt}
+                    correctedByName={test.correctedBy?.name ?? null}
+                  />
                 )}
               </>
             ) : (

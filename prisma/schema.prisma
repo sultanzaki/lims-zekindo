@@ -32,7 +32,8 @@ model User {
   notifications Notification[]
   auditLogs     AuditLog[]
   mobileRefreshTokens MobileRefreshToken[]
-  submittedTests Test[]
+  submittedTests Test[] @relation("TestSubmittedBy")
+  correctedTests Test[] @relation("TestCorrectedBy")
   assignedDeviations Deviation[]
 
   @@index([accessRole])
@@ -106,6 +107,11 @@ model Sample {
   // need an index to stay fast once this table is large.
   @@index([createdAt])
   @@index([receivedDate])
+  // Analytics queries filter on approval window (last-30-days KPI/compliance)
+  // and group by type; the daily retention cron filters Complete + retention.
+  @@index([approvedAt])
+  @@index([type])
+  @@index([status, retentionUntil])
 }
 
 // A finished lab report document for the whole sample (e.g. a signed-off
@@ -182,7 +188,17 @@ model Test {
   // approve/reject notify the technician who did the work, not just the
   // reviewer themself.
   submittedById String?
-  submittedBy   User?   @relation(fields: [submittedById], references: [id], onDelete: SetNull)
+  submittedBy   User?   @relation("TestSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull)
+
+  // Correction trail (typographical-error / transcription fixes on an
+  // already-approved result). The previous value is snapshotted here before
+  // overwrite so the CoA and audit trail always show what changed; a NULL
+  // previousResult means the current result has never been corrected.
+  previousResult    String?
+  correctionReason  String?
+  correctedById     String?
+  correctedBy       User?   @relation("TestCorrectedBy", fields: [correctedById], references: [id], onDelete: SetNull)
+  correctedAt       DateTime?
 
   readings    TestReading[]
   attachments TestAttachment[]
@@ -232,6 +248,8 @@ model CustodyEvent {
   order     Int      @default(0)
 
   @@index([sampleId])
+  // Dashboard overdue/rejection analytics filter on event time windows.
+  @@index([time])
 }
 
 model Notification {
@@ -429,6 +447,11 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([createdAt])
+  // BI / anomaly detection filters on action + time window (e.g. all
+  // test.result_submitted events in the last 90 days). The createdAt index
+  // alone can't narrow by action — with hundreds of thousands of log rows
+  // this composite is what keeps those queries from full-scanning.
+  @@index([action, createdAt])
 }
 
 // entityType values: "SAMPLE" | "EQUIPMENT" | "REAGENT"
