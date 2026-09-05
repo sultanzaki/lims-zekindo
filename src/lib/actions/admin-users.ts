@@ -85,7 +85,12 @@ export async function resetPasswordAction(userId: string): Promise<FormState> {
   const admin = await requireRole(isAdmin);
   const tempPassword = randomPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  // sessionVersion increment invalidates every session the target user had
+  // open before the reset — a leaked cookie can't survive a password reset.
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash, sessionVersion: { increment: 1 } },
+  });
   await logAudit({ userId: admin.id, action: "user.password_reset", entityType: "User", entityId: userId });
   revalidatePath("/admin/users");
   return { tempPassword };

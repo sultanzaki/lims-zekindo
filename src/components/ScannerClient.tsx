@@ -30,7 +30,15 @@ export default function ScannerClient() {
           // labels) encode the full app path directly, e.g.
           // "/inventory/equipment/abc123". Older sample labels just encode
           // the bare Sample ID, so fall back to the sample route for those.
-          router.push(text.startsWith("/") ? text : `/samples/${text}`);
+          // A protocol-relative value ("//evil.com") must not be treated as
+          // an internal path — Next's router would otherwise navigate off-app.
+          if (text.startsWith("//")) {
+            router.push(`/samples/${encodeURIComponent(text)}`);
+          } else if (text.startsWith("/")) {
+            router.push(text);
+          } else {
+            router.push(`/samples/${encodeURIComponent(text)}`);
+          }
         }
       })
       .then(() => {

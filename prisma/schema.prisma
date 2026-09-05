@@ -24,6 +24,10 @@ model User {
   createdAt     DateTime @default(now())
   failedLoginAttempts Int      @default(0)
   lockedUntil         DateTime?
+  // Bumped every time the user's password changes (self or admin reset).
+  // Sessions embed the version that was current when they were issued, so a
+  // password change invalidates every previously-issued cookie.
+  sessionVersion      Int      @default(0)
 
   notifications Notification[]
   auditLogs     AuditLog[]
@@ -474,4 +478,12 @@ model Deviation {
   @@index([sampleId])
   @@index([status])
   @@index([assigneeId])
+}
+
+// Atomic counter backing getNextSampleId() — a single row that is
+// increment-updated inside a transaction so two concurrent sample creations
+// can never read the same max and both be handed the same Sample ID.
+model SampleIdCounter {
+  id        String @id
+  lastValue Int    @default(144)
 }

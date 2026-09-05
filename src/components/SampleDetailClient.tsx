@@ -32,7 +32,7 @@ type Tab = (typeof TABS)[number];
 
 function parseResultNumber(result: string | null | undefined): number | null {
   if (!result) return null;
-  const n = parseFloat(String(result).replace(/[^0-9.\-]/g, ""));
+  const n = parseFloat(String(result).replace(/[^0-9.\-]/g, "").replace(",", "."));
   return Number.isNaN(n) ? null : n;
 }
 
