@@ -61,9 +61,32 @@
   --font-mono: var(--font-roboto-mono);
 }
 
-html,
+html {
+  min-height: 100%;
+}
+
 body {
-  height: 100%;
+  /* min-height (not height) so long content still scrolls the document:
+     `height: 100%` pins body to the viewport and, combined with the
+     mobile keyboard's visual-viewport shrink, can trap the bottom of a
+     long form (submit button unreachable). min-height keeps the page
+     growing naturally while still letting h-full/flex children fill. */
+  min-height: 100%;
+}
+
+/* BottomNav is position:fixed on mobile (it must never ride along with the
+   page scroll). Every screen that renders BottomNav needs bottom padding on
+   its scrollable content at least as tall as the nav (~76px + safe area) so
+   the last row/card/button is not hidden behind it. Screens that scroll a
+   full-bleed dark area (scanner) already set their own padding. */
+.pb-bottom-nav {
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  .pb-bottom-nav {
+    padding-bottom: 0;
+  }
 }
 
 html {
@@ -101,6 +124,19 @@ input,
 select,
 textarea {
   font-family: var(--font-poppins), sans-serif;
+}
+
+/* iOS auto-zooms into any focused input whose computed font-size is below
+   16px, which on a long form feels like the page "jumps" and the submit
+   button becomes unreachable. We render inputs at 15px on mobile for a
+   tighter look, so force the effective size up to 16px only while an input
+   is focused on coarse-pointer (touch) devices. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 .font-mono-data {

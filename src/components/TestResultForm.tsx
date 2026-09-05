@@ -200,7 +200,7 @@ export default function TestResultForm({
         </Field>
       </div>
 
-      <div className="px-5 pb-7 pt-3 mt-auto">
+      <div className="px-5 pb-28 md:pb-7 pt-3 mt-auto">
         {state.error && <div className="text-xs font-medium text-danger mb-3">{state.error}</div>}
         <Button type="submit" disabled={pending || !result}>
           {pending ? "Submitting…" : "Submit for QA Review"}

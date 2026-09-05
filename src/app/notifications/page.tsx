@@ -37,7 +37,7 @@ export default async function NotificationsPage() {
         </div>
       </div>
 
-      <div className="flex-1 px-5 md:px-8 pt-3.5 pb-5 flex flex-col gap-2.5 md:max-w-[720px] md:w-full">
+      <div className="flex-1 px-5 md:px-8 pt-3.5 pb-5 pb-bottom-nav flex flex-col gap-2.5 md:max-w-[720px] md:w-full">
         {notifications.map((n, i) => {
           const accent = notifAccent(n.title);
           return (

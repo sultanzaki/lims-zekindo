@@ -270,7 +270,7 @@ export default function AssistantWidget() {
         type="button"
         onClick={openWidget}
         aria-label="Open assistant"
-        className={`fixed right-5 z-40 w-14 h-14 rounded-full bg-primary shadow-[0_8px_24px_rgba(26,95,122,0.4)] flex items-center justify-center transition-transform hover:scale-105 active:scale-90 hover:bg-primary-dark bottom-[calc(54px+max(env(safe-area-inset-bottom),20px)+14px)] md:bottom-6 ${everOpened ? "" : "assistant-fab-pulse"}`}
+        className={`fixed right-5 z-40 w-14 h-14 rounded-full bg-primary shadow-[0_8px_24px_rgba(26,95,122,0.4)] flex items-center justify-center transition-transform hover:scale-105 active:scale-90 hover:bg-primary-dark bottom-[calc(84px+env(safe-area-inset-bottom)+14px)] md:bottom-6 ${everOpened ? "" : "assistant-fab-pulse"}`}
       >
         <AssistantIcon />
       </button>

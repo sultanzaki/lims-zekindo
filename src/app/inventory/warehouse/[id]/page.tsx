@@ -61,7 +61,7 @@ export default async function StorageLocationDetailPage({
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title={location.name} backHref={ancestors.length > 0 ? `/inventory/warehouse/${ancestors[ancestors.length - 1].id}` : "/inventory/warehouse"} />
-      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-4 md:max-w-[720px] md:w-full">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-28 md:pb-10 flex flex-col gap-4 md:max-w-[720px] md:w-full">
         {ancestors.length > 0 && (
           <div className="flex items-center gap-1 text-xs text-muted -mt-1 flex-wrap">
             <Link href="/inventory/warehouse" className="hover:text-primary">

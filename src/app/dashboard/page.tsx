@@ -277,7 +277,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ============ Mobile ============ */}
-      <div className="md:hidden flex-1 px-5 pb-5 pt-4 flex flex-col gap-5">
+      <div className="md:hidden flex-1 px-5 pb-5 pb-bottom-nav pt-4 flex flex-col gap-5">
         <div
           className="rounded-[20px] p-[18px]"
           style={{

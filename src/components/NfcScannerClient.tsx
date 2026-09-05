@@ -74,7 +74,7 @@ export default function NfcScannerClient() {
   const iconColor = isMiss ? "#E5828A" : "#B4C6CF";
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8 mx-3.5 mt-3.5 mb-2.5 bg-scanner-bg rounded-[20px]">
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8 mx-3.5 mt-3.5 mb-2.5 pb-bottom-nav bg-scanner-bg rounded-[20px]">
       <div className="relative w-[140px] h-[140px] flex items-center justify-center">
         {status === "scanning" && (
           <>

@@ -23,7 +23,7 @@ export default function EditSampleForm({
   const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
-    <form action={formAction} className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-5 md:max-w-[480px] md:w-full">
+    <form action={formAction} className="flex-1 px-5 md:px-8 pt-4.5 pb-28 md:pb-10 flex flex-col gap-5 md:max-w-[480px] md:w-full">
       <Field label="Sample Name" htmlFor="name">
         <input id="name" name="name" type="text" required defaultValue={defaultName} className={inputClass} />
       </Field>

@@ -61,7 +61,7 @@ export default function ScannerClient() {
   const cornerColor = status === "found" ? "#28A745" : "#2B8DB8";
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8 mx-3.5 mt-3.5 mb-2.5 bg-scanner-bg rounded-[20px]">
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8 mx-3.5 mt-3.5 mb-2.5 pb-bottom-nav bg-scanner-bg rounded-[20px]">
       <div
         className={`relative w-[232px] h-[232px] rounded-[20px] overflow-hidden bg-white/[0.04] ${
           status === "scanning" ? "frame-glow" : ""

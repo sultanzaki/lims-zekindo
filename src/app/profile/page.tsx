@@ -26,7 +26,7 @@ export default async function ProfilePage() {
         </div>
       </div>
 
-      <div className="flex-1 px-5 md:px-8 pt-3.5 pb-6 md:pb-8 flex flex-col gap-5 md:max-w-[640px] md:w-full">
+      <div className="flex-1 px-5 md:px-8 pt-3.5 pb-6 md:pb-8 pb-bottom-nav flex flex-col gap-5 md:max-w-[640px] md:w-full">
         <div className="bg-white border border-border rounded-2xl shadow-card p-4 flex items-center gap-3.5">
           <div className="w-[54px] h-[54px] rounded-full bg-primary-soft flex items-center justify-center text-lg font-bold text-primary-dark shrink-0">
             {user.initials}

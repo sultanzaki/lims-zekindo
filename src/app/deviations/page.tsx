@@ -65,7 +65,7 @@ export default async function DeviationsPage({
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <BackHeader title="Deviations" backHref="/profile" />
-      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-7 flex flex-col gap-3.5 md:max-w-[1200px] md:w-full">
+      <div className="flex-1 px-5 md:px-8 pt-4.5 pb-28 md:pb-10 flex flex-col gap-3.5 md:max-w-[1200px] md:w-full">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <form className="no-print flex items-center gap-2" method="get">
             <span className="text-xs text-muted">Severity:</span>
