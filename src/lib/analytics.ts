@@ -160,9 +160,14 @@ function foldToOther(sorted: { label: string; count: number }[], limit: number) 
   return [...head, { label: "Other", count: otherCount }];
 }
 
-export async function getTatComplianceByType() {
+export async function getTatComplianceByType(lookbackDays = 90) {
+  // Bounded window — the analytics page is about recent performance, and
+  // loading every Complete sample since the beginning of time grows without
+  // limit (the worst unbounded query in the app at high volume). 90 days of
+  // approvals is plenty for a meaningful TAT picture.
+  const since = new Date(Date.now() - lookbackDays * DAY_MS);
   const samples = await prisma.sample.findMany({
-    where: { status: "Complete" },
+    where: { status: "Complete", approvedAt: { gte: since } },
     select: { type: true, receivedDate: true, approvedAt: true, sampleType: { select: { targetTatHours: true } } },
   });
 

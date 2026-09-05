@@ -20,39 +20,39 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
-      <div className="px-5 md:px-8 pt-6 md:pt-10 pb-4 bg-white border-b border-border">
+      <div className="sticky top-0 bg-white border-b border-border-soft px-5 md:px-8 pt-6 md:pt-10 pb-3.5 z-10">
         <div className="md:max-w-[640px] md:w-full">
           <h1 className="text-[19px] font-bold text-text tracking-tight">Profile</h1>
         </div>
       </div>
 
-      <div className="flex-1 p-5 md:px-8 flex flex-col gap-5 md:max-w-[640px] md:w-full">
-        <div className="bg-white border border-border rounded-[18px] shadow-card p-4 flex items-center gap-3.5">
+      <div className="flex-1 px-5 md:px-8 pt-3.5 pb-6 md:pb-8 flex flex-col gap-5 md:max-w-[640px] md:w-full">
+        <div className="bg-white border border-border rounded-2xl shadow-card p-4 flex items-center gap-3.5">
           <div className="w-[54px] h-[54px] rounded-full bg-primary-soft flex items-center justify-center text-lg font-bold text-primary-dark shrink-0">
             {user.initials}
           </div>
-          <div>
-            <div className="text-base font-bold text-text">{user.name}</div>
+          <div className="min-w-0 flex-1">
+            <div className="text-base font-bold text-text truncate">{user.name}</div>
             <div className="text-[13px] text-muted mt-0.5">
               {user.role} · {user.section}
             </div>
-            <div className="text-xs text-faint mt-0.5 font-mono-data">
+            <div className="text-xs text-faint mt-0.5 font-mono-data truncate">
               {user.employeeId} · {ROLE_LABELS[role as AccessRole] ?? role}
             </div>
           </div>
         </div>
 
         <div>
-          <SectionLabel className="mb-2.5 px-1">Tools</SectionLabel>
-          <div className="bg-white border border-border rounded-[18px] shadow-card overflow-hidden">
-            <SettingsRow label="TAT Calendar" href="/calendar" last />
+          <SectionLabel className="mb-2 px-1">Tools</SectionLabel>
+          <div className="bg-white border border-border rounded-2xl shadow-card overflow-hidden">
+            <SettingsRow label="TAT Calendar" subtitle="View open samples by due date" href="/calendar" last />
           </div>
         </div>
 
         {(canReviewAsSupervisor(role) || canManageInventoryAndCatalog(role)) && (
           <div>
-            <SectionLabel className="mb-2.5 px-1">Lab Management</SectionLabel>
-            <div className="bg-white border border-border rounded-[18px] shadow-card overflow-hidden">
+            <SectionLabel className="mb-2 px-1">Lab Management</SectionLabel>
+            <div className="bg-white border border-border rounded-2xl shadow-card overflow-hidden">
               <SettingsRow
                 label="Open Lab Management"
                 subtitle="Analytics, catalog, inventory & admin"
@@ -64,8 +64,8 @@ export default async function ProfilePage() {
         )}
 
         <div>
-          <SectionLabel className="mb-2.5 px-1">Settings</SectionLabel>
-          <div className="bg-white border border-border rounded-[18px] shadow-card overflow-hidden">
+          <SectionLabel className="mb-2 px-1">Settings</SectionLabel>
+          <div className="bg-white border border-border rounded-2xl shadow-card overflow-hidden">
             <InstallPwaButton />
             <SettingsRow label="Change Password" href="/profile/change-password" />
             <SettingsRow label="Help & Support" href="/help" last />
@@ -75,13 +75,13 @@ export default async function ProfilePage() {
         <form action={signOutAction}>
           <button
             type="submit"
-            className="w-full text-center text-sm font-semibold text-danger py-3.5 cursor-pointer bg-white border border-border rounded-[18px] shadow-card-sm min-h-[50px]"
+            className="w-full text-center text-sm font-semibold text-danger py-3.5 cursor-pointer bg-white border border-border rounded-2xl shadow-card-sm min-h-[50px]"
           >
             Sign Out
           </button>
         </form>
         <div className="text-center text-[11px] text-faint mt-auto">
-          LIMS Mobile · v1.4.2
+          Zekindo LIMS · v1.4.2
           <br />
           Powered by Product Specialist Microbiology
         </div>

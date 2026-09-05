@@ -26,6 +26,29 @@ const canManageReports = (role: string) => canReviewAsSupervisor(role) || canApp
 
 export type FormState = { error?: string };
 
+// Live duplicate-suggestion check used by the New Sample form: as the
+// technician types a name + requestor, the client calls this (debounced)
+// to surface samples logged recently under a similar name, so a repeat
+// login is caught before submit rather than after.
+export async function findRecentSimilarSamplesAction(args: {
+  name: string;
+  requestorName?: string | null;
+}): Promise<{ id: string; name: string | null; type: string; receivedDate: Date }[]> {
+  await requireUser();
+  const name = (args.name || "").trim();
+  if (name.length < 3) return [];
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // look back 7 days
+  return prisma.sample.findMany({
+    where: {
+      name: { contains: name, mode: "insensitive" },
+      receivedDate: { gte: since },
+    },
+    select: { id: true, name: true, type: true, receivedDate: true },
+    orderBy: { receivedDate: "desc" },
+    take: 5,
+  });
+}
+
 export async function createSampleAction(
   _prevState: FormState,
   formData: FormData
@@ -49,6 +72,27 @@ export async function createSampleAction(
   if (!sampleTypeId) {
     return { error: "Select a sample type." };
   }
+
+  // --- Duplicate-sample guard ------------------------------------------
+  // A very common lab error is logging the same physical sample twice (or
+  // two samples from the same batch under slightly different names). Block
+  // an exact duplicate within a short window, and surface near-matches as a
+  // warning the technician must consciously override.
+  const duplicateWindowStart = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const exactDup = await prisma.sample.findFirst({
+    where: {
+      name: { equals: name, mode: "insensitive" },
+      requestorName: requestorName ? { equals: requestorName, mode: "insensitive" } : undefined,
+      receivedDate: { gte: duplicateWindowStart },
+    },
+    select: { id: true },
+  });
+  if (exactDup) {
+    return {
+      error: `A sample named "${name}" for this requestor was already logged in the last 24h (${exactDup.id}). If this is truly a different sample, rename it or note the batch/sublot to distinguish it.`,
+    };
+  }
+  // -----------------------------------------------------------------------
 
   const sampleType = await prisma.sampleTypeCatalog.findUnique({
     where: { id: sampleTypeId },
@@ -155,6 +199,61 @@ export async function submitTestResultAction(
   revalidatePath("/samples");
   revalidatePath(`/samples/${sampleId}`);
   redirect(`/samples/${sampleId}`);
+}
+
+// Correct an already-approved test result (typo / transcription fix on a
+// Complete sample). Restricted to supervisors/QA/admins because a published
+// COA may already be out — the change is snapshotted (previousResult + who/
+// when/why) and appears in the audit trail. Technicians cannot correct their
+// own submitted result after approval; that path is reject → recollection.
+export async function correctTestResultAction(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const user = await requireRole(canManageReports); // supervisor+ (same bar as report mgmt)
+
+  const sampleId = String(formData.get("sampleId") || "");
+  const testId = String(formData.get("testId") || "");
+  const result = String(formData.get("result") || "").trim();
+  const reason = String(formData.get("reason") || "").trim();
+
+  if (!result) return { error: "Enter the corrected result." };
+  if (!reason) return { error: "Enter a reason for the correction." };
+
+  const test = await prisma.test.findUnique({ where: { id: testId } });
+  if (!test || test.sampleId !== sampleId) return { error: "Test not found." };
+  // Only tests whose result is already in (awaiting or complete) can be
+  // corrected; pending tests are edited through the normal entry form.
+  if (test.status === "pending") return { error: "This test hasn't been submitted yet — edit it through the normal form." };
+  if (test.result === result) return { error: "The result is already that value — no correction needed." };
+
+  await prisma.test.update({
+    where: { id: testId },
+    data: {
+      // Snapshot the old value before overwrite — this is the correction
+      // trail. Repeated corrections chain: previousResult holds whatever
+      // was there immediately before this edit.
+      previousResult: test.result,
+      result,
+      correctionReason: reason,
+      correctedById: user.id,
+      correctedAt: new Date(),
+    },
+  });
+
+  await logAudit({
+    userId: user.id,
+    action: "test.result_corrected",
+    entityType: "Test",
+    entityId: testId,
+    detail: `${test.result ?? ""} → ${result}`,
+    metadata: { result: { from: test.result ?? "", to: result }, reason: { from: "", to: reason } },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/samples");
+  revalidatePath(`/samples/${sampleId}`);
+  return {};
 }
 
 export async function addTestReadingAction(

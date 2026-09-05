@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -136,12 +137,29 @@ export default function Sidebar({
   const pathname = usePathname();
   const groups = buildGroups(role);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1");
+  // Hydration-safe collapsed state: SSR always renders the expanded sidebar
+  // (width 16rem). The user's stored preference is read in an effect after
+  // mount and applied without a mismatch — reading localStorage in the
+  // useState initializer would make the first client render differ from the
+  // server render (React hydration warning + layout flash).
+  const [collapsed, setCollapsed] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    try {
+      if (localStorage.getItem(STORAGE_KEY) === "1") setCollapsed(true);
+    } catch {
+      // localStorage unavailable (private mode etc.) — stay expanded
+    }
+  }, []);
+
+  useEffect(() => {
     document.documentElement.style.setProperty("--sidebar-w", collapsed ? COLLAPSED_W : EXPANDED_W);
-    localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
+    try {
+      localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
+    } catch {
+      // ignore storage write failures
+    }
   }, [collapsed]);
 
   useEffect(() => {
@@ -167,7 +185,7 @@ export default function Sidebar({
     <NotificationsBell unreadCount={unreadCount} />
     <aside
       style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
-      className="no-print hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-border z-20 transition-[width] duration-200 overflow-hidden"
+      className="no-print hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-border z-20 transition-[width] duration-200"
     >
       <div className="flex items-center h-16 shrink-0 border-b border-border px-3.5 gap-1.5">
         {!collapsed && (

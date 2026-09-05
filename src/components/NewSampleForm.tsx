@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { createSampleAction, type FormState } from "@/lib/actions/samples";
+import { useActionState, useEffect, useState, useRef } from "react";
+import Link from "next/link";
+import { createSampleAction, findRecentSimilarSamplesAction, type FormState } from "@/lib/actions/samples";
 import { nowAsJakartaLocalInput } from "@/lib/tz";
 import Field, { inputClass } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
@@ -40,6 +41,30 @@ export default function NewSampleForm({
   const [extraTestIds, setExtraTestIds] = useState<string[]>([]);
   const [testSearch, setTestSearch] = useState("");
   const [panelToAdd, setPanelToAdd] = useState("");
+  const [name, setName] = useState("");
+  const [similarSamples, setSimilarSamples] = useState<Awaited<ReturnType<typeof findRecentSimilarSamplesAction>>>([]);
+  const dupCheckSeq = useRef(0);
+
+  // Live duplicate warning: after the user pauses typing in the name field,
+  // ask the server for recently-logged samples with a similar name and show
+  // them under the field so a repeat login is caught before submit.
+  useEffect(() => {
+    const q = name.trim();
+    if (q.length < 3) {
+      setSimilarSamples([]);
+      return;
+    }
+    const seq = ++dupCheckSeq.current;
+    const handle = setTimeout(async () => {
+      try {
+        const rows = await findRecentSimilarSamplesAction({ name: q });
+        if (dupCheckSeq.current === seq) setSimilarSamples(rows);
+      } catch {
+        // ignore — duplicate check is a nicety, never blocks the form
+      }
+    }, 600);
+    return () => clearTimeout(handle);
+  }, [name]);
 
   const defaultTestIds = new Set(sampleTypes.find((s) => s.id === sampleTypeId)?.tests.map((t) => t.id) ?? []);
   const extraTestIdSet = new Set(extraTestIds);
@@ -103,9 +128,27 @@ export default function NewSampleForm({
           name="name"
           type="text"
           required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Bottled Drinking Water 600ml"
           className={inputClass}
         />
+        {similarSamples.length > 0 && (
+          <div className="mt-2 flex flex-col gap-1.5 rounded-[10px] border border-warning/40 bg-warning-bg px-3 py-2">
+            <div className="text-[11px] font-semibold text-warning-dark">
+              Similar samples logged in the last 7 days — double-check this isn&rsquo;t a repeat login:
+            </div>
+            {similarSamples.map((s) => (
+              <Link
+                key={s.id}
+                href={`/samples/${s.id}`}
+                className="text-[11px] text-warning-dark underline underline-offset-2 truncate"
+              >
+                {s.id} · {s.name ?? s.type}
+              </Link>
+            ))}
+          </div>
+        )}
       </Field>
 
       <div className="flex flex-col gap-2">

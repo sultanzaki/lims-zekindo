@@ -1,6 +1,12 @@
 "use client";
 
-import ExcelJS from "exceljs";
+// exceljs is deliberately NOT imported at module scope here — it's a large
+// library (~23 MB unpacked / several hundred KB minified) and statically
+// importing it pulls it into the initial bundle of every page that renders
+// an export button (Analytics, Deviations, Reagents list, Equipment list),
+// even though it's only needed in the moment the user clicks "Export".
+// Importing it inside exportToExcel() keeps it in a separate lazy chunk that
+// the browser only fetches on first export click.
 
 export type ExportSheet = { name: string; rows: Record<string, string | number | null>[] };
 
@@ -10,6 +16,10 @@ export type ExportSheet = { name: string; rows: Record<string, string | number |
 // .xlsx workbook instead of a CSV string. Columns are derived from each
 // sheet's first row so callers don't need to declare a column list.
 export async function exportToExcel(filename: string, sheets: ExportSheet[]) {
+  // exceljs is CommonJS — dynamic import returns the module namespace whose
+  // properties are the CJS exports (Workbook, etc.), so no .default dance.
+  const ExcelJS = await import("exceljs");
+
   const workbook = new ExcelJS.Workbook();
   workbook.created = new Date();
 
