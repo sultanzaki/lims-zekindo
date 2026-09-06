@@ -70,7 +70,11 @@ export default async function NotificationsPage() {
             </Link>
           );
         })}
-        {notifications.length === 0 && <EmptyState>No notifications yet.</EmptyState>}
+        {notifications.length === 0 && (
+          <EmptyState mascot mood="sleep">
+            No notifications yet.
+          </EmptyState>
+        )}
       </div>
 
       <BottomNav active="notif" unreadCount={unreadCount} />

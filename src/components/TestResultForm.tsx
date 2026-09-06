@@ -6,6 +6,7 @@ import { submitTestResultAction, type FormState } from "@/lib/actions/samples";
 import { parseSpecLimit, parseVerdict, parseOptionList, type ResultTypeConfig } from "@/lib/spec";
 import Field, { inputClass } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
+import { FlaskSpinner } from "@/components/FlaskMascot";
 
 const initialState: FormState = {};
 
@@ -203,7 +204,13 @@ export default function TestResultForm({
       <div className="px-5 pb-28 md:pb-7 pt-3 mt-auto">
         {state.error && <div className="text-xs font-medium text-danger mb-3">{state.error}</div>}
         <Button type="submit" disabled={pending || !result}>
-          {pending ? "Submitting…" : "Submit for QA Review"}
+          {pending ? (
+            <span className="inline-flex items-center gap-2 justify-center">
+              <FlaskSpinner size={16} /> Submitting…
+            </span>
+          ) : (
+            "Submit for QA Review"
+          )}
         </Button>
       </div>
     </form>

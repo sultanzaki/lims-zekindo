@@ -658,7 +658,9 @@ export default function SamplesClient({
 
         {samples.length === 0 && (
           <div className="px-5">
-            <EmptyState>No samples match your search.</EmptyState>
+            <EmptyState mascot mood="happy">
+              No samples match your search.
+            </EmptyState>
           </div>
         )}
 

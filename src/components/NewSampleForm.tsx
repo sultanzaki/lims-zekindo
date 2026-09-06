@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { FlaskSpinner } from "@/components/FlaskMascot";
 import { createSampleAction, findRecentSimilarSamplesAction, type FormState } from "@/lib/actions/samples";
 import { nowAsJakartaLocalInput } from "@/lib/tz";
 import Field, { inputClass } from "@/components/ui/Field";
@@ -341,7 +342,13 @@ export default function NewSampleForm({
 
       <div className="md:flex md:justify-end">
         <Button type="submit" disabled={pending} className="mt-1 md:mt-0 md:w-auto md:px-8">
-          {pending ? "Logging in…" : "Log Sample In"}
+          {pending ? (
+            <span className="inline-flex items-center gap-2 justify-center">
+              <FlaskSpinner size={16} /> Logging in…
+            </span>
+          ) : (
+            "Log Sample In"
+          )}
         </Button>
       </div>
     </form>
