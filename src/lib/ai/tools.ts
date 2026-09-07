@@ -11,6 +11,11 @@ import {
   logMaintenanceAction,
 } from "@/lib/actions/inventory";
 import { markDisposedAction, approveSampleForAssistant, rejectSampleForAssistant } from "@/lib/actions/samples";
+import {
+  createSampleForAssistant,
+  submitTestResultForAssistant,
+  openDeviationForAssistant,
+} from "@/lib/assistant/assistant-sample-actions";
 
 export type AiUser = Awaited<ReturnType<typeof requireUser>>;
 
@@ -449,6 +454,99 @@ const getAnalyticsSummary: ReadTool = {
   },
 };
 
+// ---------- Read tools (auto-executed, never mutate anything) ----------
+
+const getLabBriefing: ReadTool = {
+  readonly: true,
+  name: "get_lab_briefing",
+  description:
+    "One-call morning briefing / current-state snapshot of the whole lab: how many samples are open in each stage, what's overdue, how many await your review, low-stock or expiring reagents, equipment needing calibration, and open deviations. Use this for 'ringkasan kondisi lab', 'what needs attention', 'morning briefing', or 'apa yang harus saya kerjakan' — it returns everything in a single compact object instead of five separate calls.",
+  parameters: { type: "object", properties: {}, required: [] },
+  run: async (_args, user) => {
+    const now = Date.now();
+    const soonMs = 14 * 24 * 3600000;
+    const OPEN = ["Pending Login", "In Testing", "Awaiting Supervisor Review", "Awaiting QA Approval"] as const;
+
+    const [statusCounts, samples, reagents, equipment, deviations, myNotifications] = await Promise.all([
+      prisma.sample.groupBy({ by: ["status"], _count: { _all: true } }),
+      prisma.sample.findMany({
+        where: { status: { in: [...OPEN] } },
+        select: { id: true, name: true, type: true, status: true, receivedDate: true, sampleType: { select: { targetTatHours: true } } },
+      }),
+      prisma.reagent.findMany({ select: { id: true, name: true, quantity: true, unit: true, minStockLevel: true, expiryDate: true } }),
+      prisma.equipment.findMany({ where: { nextCalibrationDue: { lt: new Date(now + soonMs) } }, select: { id: true, name: true, nextCalibrationDue: true } }),
+      prisma.deviation.findMany({ where: { status: { not: "Closed" } }, select: { id: true, sampleId: true, description: true, status: true }, take: 10 }),
+      prisma.notification.findMany({ where: { userId: user.id, unread: true }, select: { title: true, sampleId: true }, take: 10 }),
+    ]);
+
+    const overdue = samples
+      .map((s) => {
+        const targetHours = s.sampleType?.targetTatHours ?? 48;
+        return { id: s.id, name: s.name, type: s.type, status: s.status, hoursOverdue: Math.round((now - s.receivedDate.getTime() - targetHours * 3600000) / 3600000) };
+      })
+      .filter((s) => s.hoursOverdue > 0)
+      .sort((a, b) => b.hoursOverdue - a.hoursOverdue);
+
+    const lowStock = reagents.filter((r) => r.quantity <= r.minStockLevel);
+    const expiring = reagents.filter((r) => r.expiryDate && r.expiryDate.getTime() - now < soonMs);
+
+    const byStatus: Record<string, number> = {};
+    for (const s of samples) byStatus[s.status] = (byStatus[s.status] ?? 0) + 1;
+    for (const row of statusCounts) byStatus[row.status] = row._count._all;
+
+    return {
+      openByStatus: byStatus,
+      overdueCount: overdue.length,
+      overdue: overdue.slice(0, 10),
+      awaitingMyAction: samples.filter((s) => s.status === "Awaiting Supervisor Review" || s.status === "Awaiting QA Approval").length,
+      lowStockCount: lowStock.length,
+      lowStock: lowStock.slice(0, 8).map((r) => ({ name: r.name, quantity: `${r.quantity} ${r.unit}`, min: r.minStockLevel })),
+      expiringSoonCount: expiring.length,
+      expiringSoon: expiring.slice(0, 8).map((r) => ({ name: r.name, expiry: r.expiryDate })),
+      calibrationsDueCount: equipment.length,
+      calibrationsDue: equipment.slice(0, 8).map((e) => ({ name: e.name, due: e.nextCalibrationDue })),
+      openDeviationsCount: deviations.length,
+      myUnreadNotifications: myNotifications.length,
+      notifications: myNotifications.slice(0, 5).map((n) => ({ title: n.title, sampleId: n.sampleId })),
+    };
+  },
+};
+
+const findSampleType: ReadTool = {
+  readonly: true,
+  name: "find_sample_type",
+  description:
+    "Search active sample types (e.g. 'Bottled Drinking Water', 'Cooling Water', 'Crude Glycerin') by name to get the exact sampleTypeId and its default test list. ALWAYS call this before proposing create_sample — never guess a sampleTypeId; create_sample needs the exact name.",
+  parameters: { type: "object", properties: { query: { type: "string", description: "Sample type name to search, e.g. 'drinking water'" } }, required: ["query"] },
+  run: async (args) => {
+    const query = String(args.query ?? "");
+    if (!query) return { error: "Enter a sample type name to search." };
+    const types = await prisma.sampleTypeCatalog.findMany({
+      where: { active: true, name: { contains: query, mode: "insensitive" } },
+      select: { id: true, name: true, targetTatHours: true, retentionDays: true, _count: { select: { tests: true } } },
+      orderBy: { name: "asc" },
+      take: 8,
+    });
+    return { count: types.length, sampleTypes: types.map((t) => ({ sampleTypeId: t.id, name: t.name, targetTatHours: t.targetTatHours, defaultTestCount: t._count.tests })) };
+  },
+};
+
+const getSampleTypesList: ReadTool = {
+  readonly: true,
+  name: "list_sample_types",
+  description:
+    "List ALL active sample types (names only + default test counts) when the user isn't sure what the exact type is called. Use find_sample_type when they have a name in mind.",
+  parameters: { type: "object", properties: {}, required: [] },
+  run: async () => {
+    const types = await prisma.sampleTypeCatalog.findMany({
+      where: { active: true },
+      select: { id: true, name: true, targetTatHours: true },
+      orderBy: { name: "asc" },
+    });
+    return { count: types.length, sampleTypes: types.map((t) => ({ sampleTypeId: t.id, name: t.name, targetTatHours: t.targetTatHours })) };
+  },
+};
+
 // ---------- Write tools (proposed, executed only after human confirmation,
 // always by calling the exact same server action a form submit would use —
 // same role gate, same audit log entry, same notifications) ----------
@@ -638,6 +736,75 @@ const rejectSample: WriteTool = {
   },
 };
 
+const createSample: WriteTool = {
+  readonly: false,
+  name: "create_sample",
+  description:
+    "Log in a NEW sample (creates the sample with status Pending Login and auto-assigns the sample type's default tests). Call find_sample_type or list_sample_types FIRST to get the exact sample type name — never guess it. If the user mentioned tests that are NOT in the type's defaults, note that extra tests must be added after creation.",
+  parameters: {
+    type: "object",
+    properties: {
+      name: { type: "string", description: "Sample name, e.g. 'Bottled Drinking Water 600ml - Batch A'" },
+      sampleTypeName: { type: "string", description: "Exact sample type name as returned by find_sample_type" },
+      source: { type: "string", description: "Where the sample came from, e.g. 'Production line 2'" },
+      requestorName: { type: "string", description: "Who requested the test" },
+      businessUnitName: { type: "string", description: "Client/department name, e.g. 'Marketing'" },
+      collectedBy: { type: "string", description: "Who collected the sample (defaults to the current user)" },
+      collectedDate: { type: "string", description: "ISO datetime when collected, e.g. 2026-09-05T08:00" },
+      storageLocation: { type: "string", description: "Where the physical sample is stored" },
+      priority: { type: "string", enum: ["Routine", "Urgent", "STAT"], description: "Default Routine" },
+    },
+    required: ["name", "sampleTypeName"],
+  },
+  describe: async (args) => {
+    const priority = args.priority ? ` [${args.priority}]` : "";
+    const requestor = args.requestorName ? `, requestor ${args.requestorName}` : "";
+    return `Log in new sample "${args.name}" (type: ${args.sampleTypeName})${requestor}${priority}`;
+  },
+  run: async (args, user) => createSampleForAssistant(user, args as never),
+};
+
+const submitTestResult: WriteTool = {
+  readonly: false,
+  name: "submit_test_result",
+  description:
+    "Submit the result for ONE pending test on a sample (moves that test to awaiting-review). Resolves the test by exact name on the given sample — call get_sample_status first to confirm the sample exists, the test is still pending, and to see the unit/spec. This is a real result entry: never invent a value; only submit what the technician states.",
+  parameters: {
+    type: "object",
+    properties: {
+      sampleId: { type: "string", description: "e.g. LAB-24-0144" },
+      testName: { type: "string", description: "Exact test name shown on the sample, e.g. 'Total Plate Count'" },
+      result: { type: "string", description: "The numeric result with unit context or categorical value, e.g. '4.2e4' or 'Negative'" },
+      notes: { type: "string", description: "Optional notes / observations" },
+    },
+    required: ["sampleId", "testName", "result"],
+  },
+  describe: async (args) => `Submit result "${args.result}" for test "${args.testName}" on ${args.sampleId}`,
+  run: async (args, user) => submitTestResultForAssistant(user, args as never),
+};
+
+const openDeviation: WriteTool = {
+  readonly: false,
+  name: "open_deviation",
+  description:
+    "Open a deviation (OOS/CAPA observation) record against a sample. Use when a result is out of spec, something went wrong in testing, or the user wants to formally flag an issue for investigation.",
+  parameters: {
+    type: "object",
+    properties: {
+      sampleId: { type: "string", description: "e.g. LAB-24-0144" },
+      description: { type: "string", description: "What deviated / the observation" },
+      severity: { type: "string", enum: ["Low", "Medium", "High", "Critical"] },
+      assigneeName: { type: "string", description: "Name of the person to own the investigation (search list_users first)" },
+    },
+    required: ["sampleId", "description"],
+  },
+  describe: async (args) => {
+    const severity = args.severity ? ` [${args.severity}]` : "";
+    return `Open deviation on ${args.sampleId}: ${String(args.description).slice(0, 80)}${severity}`;
+  },
+  run: async (args, user) => openDeviationForAssistant(user, args as never),
+};
+
 export const AI_TOOLS: AnyTool[] = [
   getOverdueSamples,
   getSampleStatus,
@@ -657,6 +824,9 @@ export const AI_TOOLS: AnyTool[] = [
   searchEquipment,
   getUpcomingCalibrations,
   getAnalyticsSummary,
+  getLabBriefing,
+  findSampleType,
+  getSampleTypesList,
   recordReagentUsage,
   logEquipmentCalibration,
   logEquipmentMaintenance,
@@ -664,6 +834,9 @@ export const AI_TOOLS: AnyTool[] = [
   markSampleDisposed,
   approveSample,
   rejectSample,
+  createSample,
+  submitTestResult,
+  openDeviation,
 ];
 
 export function findTool(name: string): AnyTool | undefined {

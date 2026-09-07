@@ -423,6 +423,93 @@ export default function ToolResultCard({ tool, result, onNavigate }: { tool: str
       return <ListCard title="Business Units" count={rows.length} rows={rows} emptyText="No business units yet." onNavigate={onNavigate} />;
     }
 
+    case "get_lab_briefing": {
+      const byStatus = (r.openByStatus as Record<string, number>) ?? {};
+      const overdue = (r.overdue as Array<Record<string, unknown>>) ?? [];
+      const lowStock = (r.lowStock as Array<Record<string, unknown>>) ?? [];
+      const expiring = (r.expiringSoon as Array<Record<string, unknown>>) ?? [];
+      const calibrations = (r.calibrationsDue as Array<Record<string, unknown>>) ?? [];
+      const notifications = (r.notifications as Array<Record<string, unknown>>) ?? [];
+      const byStatusRows: Row[] = Object.entries(byStatus).map(([status, count]) => ({
+        key: status,
+        primary: status,
+        trailing: String(count),
+        badge: sampleBadge(status),
+      }));
+      return (
+        <div className="bg-white border border-border rounded-[14px] overflow-hidden">
+          <div className="px-3 py-2 border-b border-border-soft bg-chip-bg/60">
+            <span className="text-[11px] font-bold text-text uppercase tracking-wide">Lab Briefing</span>
+          </div>
+          <div className="p-2.5 flex flex-wrap gap-2">
+            <StatTile label="Overdue" value={String(r.overdueCount ?? 0)} tone={Number(r.overdueCount ?? 0) > 0 ? "danger" : "success"} />
+            <StatTile label="Await Review" value={String(r.awaitingMyAction ?? 0)} tone={Number(r.awaitingMyAction ?? 0) > 0 ? "warning" : "success"} />
+            <StatTile label="Low Stock" value={String(r.lowStockCount ?? 0)} tone={Number(r.lowStockCount ?? 0) > 0 ? "danger" : "success"} />
+            <StatTile label="Expiring" value={String(r.expiringSoonCount ?? 0)} tone={Number(r.expiringSoonCount ?? 0) > 0 ? "warning" : "success"} />
+            <StatTile label="Calibrations" value={String(r.calibrationsDueCount ?? 0)} tone={Number(r.calibrationsDueCount ?? 0) > 0 ? "warning" : "success"} />
+            <StatTile label="Deviations" value={String(r.openDeviationsCount ?? 0)} tone={Number(r.openDeviationsCount ?? 0) > 0 ? "warning" : "success"} />
+          </div>
+          <div className="grid grid-cols-2 gap-px bg-border-soft">
+            <div className="bg-white min-w-0">
+              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-muted uppercase tracking-wide">Open samples</div>
+              <div className="flex flex-col divide-y divide-border-soft max-h-[140px] overflow-y-auto">
+                {byStatusRows.length === 0 ? <div className="px-3 py-2 text-[11px] text-muted">None.</div> : byStatusRows.map((row) => <RowLine key={row.key} row={row} onNavigate={onNavigate} />)}
+              </div>
+            </div>
+            <div className="bg-white min-w-0">
+              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-muted uppercase tracking-wide">Needs attention</div>
+              <div className="flex flex-col divide-y divide-border-soft max-h-[140px] overflow-y-auto">
+                {overdue.length === 0 && lowStock.length === 0 && expiring.length === 0 && calibrations.length === 0 && (
+                  <div className="px-3 py-2 text-[11px] text-muted">All clear.</div>
+                )}
+                {overdue.map((s) => (
+                  <Link key={`ov-${s.id}`} href={`/samples/${s.id}`} onClick={onNavigate} className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-chip-bg transition-colors">
+                    <span className="text-[11.5px] font-semibold text-text truncate">{(s.name as string) || String(s.id)}</span>
+                    <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={TONE.danger}>{String(s.hoursOverdue)}h late</span>
+                  </Link>
+                ))}
+                {lowStock.map((rg) => (
+                  <div key={`ls-${rg.name}`} className="flex items-center justify-between gap-2 px-3 py-2">
+                    <span className="text-[11.5px] font-semibold text-text truncate">{String(rg.name)}</span>
+                    <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={TONE.danger}>low stock</span>
+                  </div>
+                ))}
+                {expiring.map((rg) => (
+                  <div key={`ex-${rg.name}`} className="flex items-center justify-between gap-2 px-3 py-2">
+                    <span className="text-[11.5px] font-semibold text-text truncate">{String(rg.name)}</span>
+                    <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={TONE.warning}>expiring</span>
+                  </div>
+                ))}
+                {calibrations.map((e) => (
+                  <div key={`cal-${e.name}`} className="flex items-center justify-between gap-2 px-3 py-2">
+                    <span className="text-[11.5px] font-semibold text-text truncate">{String(e.name)}</span>
+                    <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={TONE.warning}>cal due</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {notifications.length > 0 && (
+            <div className="border-t border-border-soft px-3 py-1.5 text-[10.5px] text-muted">
+              {notifications.length} unread notification{notifications.length > 1 ? "s" : ""} — {notifications.map((n) => String(n.title)).join(" · ")}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case "find_sample_type":
+    case "list_sample_types": {
+      const sampleTypes = (r.sampleTypes as Array<Record<string, unknown>>) ?? [];
+      const rows: Row[] = sampleTypes.map((t) => ({
+        key: String(t.sampleTypeId),
+        primary: String(t.name),
+        secondary: `TAT ${t.targetTatHours}h`,
+        trailing: t.defaultTestCount !== undefined ? `${t.defaultTestCount} tests` : undefined,
+      }));
+      return <ListCard title={tool === "find_sample_type" ? "Sample Types" : "All Sample Types"} count={rows.length} rows={rows} emptyText="No sample types found." onNavigate={onNavigate} />;
+    }
+
     default:
       return null;
   }

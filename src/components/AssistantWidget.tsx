@@ -439,6 +439,27 @@ export default function AssistantWidget() {
             </div>
 
             <div className="border-t border-border-soft p-2.5 md:p-3.5 shrink-0 bg-white">
+              {displayItems.length === 0 && (
+                <div className="flex flex-wrap gap-1.5 pb-2.5">
+                  {[
+                    "Ringkasan kondisi lab",
+                    "Sample yang overdue",
+                    "Stok reagen rendah",
+                    "Alat perlu kalibrasi",
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => {
+                        setInput(suggestion);
+                      }}
+                      className="text-[11.5px] font-semibold px-3 py-1.5 rounded-full border border-border bg-page-bg text-muted hover:bg-primary-soft hover:text-primary-dark hover:border-primary/30 transition-colors cursor-pointer"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
