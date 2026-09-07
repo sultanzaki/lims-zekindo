@@ -14,6 +14,7 @@ import { detectUploadType } from "@/lib/fileType";
 import { parseJakartaLocalDateTime } from "@/lib/tz";
 import { generateAccessCode } from "@/lib/tracking";
 import { notifyUsers, getSubmitterIds } from "@/lib/notify";
+import { toUserMessage, handleActionError } from "@/lib/userFacingError";
 import {
   submitTestResultCore,
   addTestReadingCore,
@@ -349,7 +350,7 @@ export async function uploadSampleReportAction(
   try {
     await uploadAttachment(storagePath, file, detected.mime);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Upload failed." };
+    return handleActionError(e);
   }
 
   await prisma.sampleReport.create({
@@ -489,7 +490,7 @@ export async function supervisorApproveAction(
   try {
     await performSupervisorApprove(sample, user);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Approval failed." };
+    return handleActionError(e);
   }
 
   revalidatePath("/dashboard");
@@ -548,7 +549,7 @@ export async function supervisorRejectAction(
   try {
     await performSupervisorReject(sample, user, reason);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Rejection failed." };
+    return handleActionError(e);
   }
 
   revalidatePath("/dashboard");
@@ -575,7 +576,7 @@ export async function qaApproveAction(
   try {
     await performQaApprove(sample, user);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Approval failed." };
+    return handleActionError(e);
   }
 
   revalidatePath("/dashboard");
@@ -630,7 +631,7 @@ export async function bulkApproveSamplesAction(sampleIds: string[], password: st
         skipped.push({ id: sampleId, reason: `No longer awaiting review (now ${sample.status})` });
       }
     } catch (e) {
-      skipped.push({ id: sampleId, reason: e instanceof Error ? e.message : "Approval failed" });
+      skipped.push({ id: sampleId, reason: toUserMessage(e) });
     }
   }
 
@@ -758,7 +759,7 @@ export async function qaRejectAction(
   try {
     await performQaReject(sample, user, reason);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Rejection failed." };
+    return handleActionError(e);
   }
 
   revalidatePath("/dashboard");

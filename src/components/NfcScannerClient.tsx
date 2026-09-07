@@ -58,7 +58,11 @@ export default function NfcScannerClient() {
         setErrorMsg(
           e?.name === "NotAllowedError"
             ? "NFC permission denied. Allow NFC access for this site in your browser settings."
-            : e?.message || "NFC is unavailable on this device."
+            : e?.name === "NotSupportedError"
+              ? "NFC isn't supported on this device or browser. Use QR scanning instead."
+              : e?.name === "NotReadableError"
+                ? "Couldn't read this tag. Hold it steady against the back of your phone."
+                : "NFC is unavailable on this device. Use QR scanning instead."
         );
       }
     }

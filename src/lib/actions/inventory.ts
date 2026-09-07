@@ -9,6 +9,7 @@ import { logAudit } from "@/lib/audit";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { uploadAttachment } from "@/lib/storage";
 import { detectUploadType } from "@/lib/fileType";
+import { handleActionError } from "@/lib/userFacingError";
 import {
   REAGENT_SOON_MS,
   EXPORT_CAP,
@@ -330,7 +331,7 @@ export async function logCalibrationAction(
   try {
     attachment = await uploadOptionalFile(formData.get("certificate"), `equipment/${id}/calibration`);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Upload failed." };
+    return handleActionError(e);
   }
 
   const nextDueAt = nextCalibrationDueRaw ? new Date(nextCalibrationDueRaw) : null;
@@ -374,7 +375,7 @@ export async function logMaintenanceAction(
   try {
     attachment = await uploadOptionalFile(formData.get("attachment"), `equipment/${id}/maintenance`);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Upload failed." };
+    return handleActionError(e);
   }
 
   await prisma.equipmentEvent.create({

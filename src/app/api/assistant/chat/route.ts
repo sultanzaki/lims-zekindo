@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
 
         finish();
       } catch (err) {
-        send({ type: "error", message: err instanceof Error ? err.message : "The assistant hit an error." });
+        send({ type: "error", message: "The assistant hit an unexpected error. Please try again." });
         finish();
       }
     },

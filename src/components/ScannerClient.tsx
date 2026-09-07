@@ -47,9 +47,16 @@ export default function ScannerClient() {
       .catch((e: unknown) => {
         if (cancelled) return;
         setStatus("error");
-        setErrorMsg(
-          e instanceof Error ? e.message : "Camera unavailable. Use manual entry below."
-        );
+        const raw = e instanceof Error ? e.message : "";
+        if (/permission|denied|notallowed/i.test(raw)) {
+          setErrorMsg("Camera permission was denied. Allow camera access in your browser settings, then try again.");
+        } else if (/notreadable|inuse|track/i.test(raw)) {
+          setErrorMsg("The camera is in use by another app. Close it and try again.");
+        } else if (/notfound|no camera|no camera/i.test(raw)) {
+          setErrorMsg("No camera was found on this device. Use manual entry below.");
+        } else {
+          setErrorMsg("Camera unavailable. Use manual entry below.");
+        }
       });
 
     return () => {
