@@ -5,8 +5,7 @@ import { canReviewAsSupervisor, canManageInventoryAndCatalog } from "@/lib/roles
 import BottomNav from "@/components/BottomNav";
 import AssistantWidget from "@/components/AssistantWidget";
 import Sidebar from "@/components/Sidebar";
-import DashboardMobileHeader from "@/components/DashboardMobileHeader";
-import DashboardDesktopHeader from "@/components/DashboardDesktopHeader";
+import DashboardMobileHeader, { DashboardSunriseHero } from "@/components/DashboardMobileHeader";
 import Card from "@/components/ui/Card";
 import type { Metadata } from "next";
 
@@ -107,7 +106,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
       <DashboardMobileHeader unreadCount={unread} userName={user.name} />
-      <DashboardDesktopHeader userName={user.name} />
+      <DashboardSunriseHero userName={user.name} />
 
       {/* ============ Desktop ============ */}
       <div className="hidden md:flex md:flex-1 md:flex-col md:px-9 md:pt-7 md:pb-9 md:gap-[22px] md:max-w-[1176px] md:w-full">
