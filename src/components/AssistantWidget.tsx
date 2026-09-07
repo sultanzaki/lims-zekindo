@@ -165,7 +165,7 @@ export default function AssistantWidget() {
           setDisplayItems((prev) => [...prev, { id: newId(), kind: "proposal", proposal, status: "pending" }]);
           scrollToBottom();
         } else if (event.type === "error") {
-          setError(String(event.message ?? "The assistant hit an error."));
+          setError("The assistant hit an unexpected error. Please try again.");
         }
       });
 
@@ -198,7 +198,7 @@ export default function AssistantWidget() {
         // user hit stop — keep whatever streamed in so far, just end the turn
         setMessages(assistantText ? [...nextMessages, { role: "assistant", content: assistantText }] : nextMessages);
       } else {
-        setError(e instanceof Error ? e.message : "Couldn't reach the assistant.");
+        setError("Couldn't reach the assistant. Check your connection and try again.");
       }
     } finally {
       setBusy(false);
@@ -245,7 +245,7 @@ export default function AssistantWidget() {
       }
     } catch (e) {
       setResolvingId(null);
-      setError(e instanceof Error ? e.message : "Couldn't complete that action.");
+      setError("Couldn't complete that action. Please try again.");
     }
   }
 

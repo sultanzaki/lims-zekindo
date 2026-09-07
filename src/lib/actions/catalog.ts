@@ -40,8 +40,12 @@ export async function createSampleTypeAction(
   if (existing.length > 0) return { error: `"${existing[0].name}" already exists.` };
 
   for (const r of rows) {
-    const created = await prisma.sampleTypeCatalog.create({ data: r });
-    await logAudit({ userId: user.id, action: "catalog.sample_type_created", entityType: "SampleTypeCatalog", entityId: created.id, detail: r.name });
+    try {
+      const created = await prisma.sampleTypeCatalog.create({ data: r });
+      await logAudit({ userId: user.id, action: "catalog.sample_type_created", entityType: "SampleTypeCatalog", entityId: created.id, detail: r.name });
+    } catch {
+      return { error: `"${r.name}" could not be added — it may already exist. Refresh and check the list.` };
+    }
   }
 
   revalidatePath("/admin/catalog");

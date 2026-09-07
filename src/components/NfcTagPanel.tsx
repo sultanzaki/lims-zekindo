@@ -134,7 +134,11 @@ export default function NfcTagPanel({
     setMessage(
       e?.name === "NotAllowedError"
         ? "NFC permission was denied. Allow NFC access for this site in your browser settings and try again."
-        : e?.message || "Something went wrong reading the tag."
+        : e?.name === "NotSupportedError"
+          ? "NFC isn't supported on this device or browser. Use QR scanning or manual entry instead."
+          : e?.name === "NotReadableError"
+            ? "Couldn't read this tag. Move it closer and hold steady, then try again."
+            : "Something went wrong reading the tag. Try again."
     );
   }
 
