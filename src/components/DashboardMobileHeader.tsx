@@ -83,7 +83,7 @@ function SkyBackdrop({ part }: { part: PartOfDay }) {
  * wash that shifts subtly with the time of day, dark navy ink, crisp
  * hairline divider — reads as part of the LIMS, not a decorative banner.
  */
-export function DashboardSunriseHero({ userName }: { userName: string }) {
+export function DashboardHeaderDesktop({ userName }: { userName: string }) {
   const snapshot = useSyncExternalStore(subscribeNoop, getSnapshot, getServerSnapshot);
   const [part, greeting, date] = snapshot ? snapshot.split("|") : ["afternoon", "", ""];
   const t = TONES[(part as PartOfDay) ?? "afternoon"];
