@@ -510,3 +510,49 @@ model SampleIdCounter {
   id        String @id
   lastValue Int    @default(144)
 }
+
+// Factory/warehouse chemical stock snapshots imported from the plant's
+// Looker Studio / Odoo "Stock Ending" export (CSV or Excel). One upload row
+// per period; each import is kept as its own immutable snapshot so history
+// can be compared month-to-month. The data is read-only from the LIMS
+// perspective — it is owned and maintained by the plant, not by the lab's
+// reagent/chemical inventory (see Reagent).
+model WarehouseStockUpload {
+  id          String   @id @default(cuid())
+  label       String // e.g. "0303 Stock Ending" or a period label
+  fileName    String
+  rowCount    Int
+  importedBy  String
+  importedAt  DateTime @default(now())
+  // Free-text note the importer can add (source report period, quirks, etc.)
+  notes       String?
+
+  items WarehouseStockItem[]
+
+  @@index([importedAt])
+}
+
+// A single line of an imported warehouse stock snapshot. Mirrors the source
+// export's columns verbatim (no expiry date exists in the source data; lot
+// numbers are opaque strings, often non-date). `location` is the plant's own
+// hierarchical location string (e.g. "JBK/Stock/JBK 1/Raw Material/9A") —
+// intentionally stored as text, NOT mapped to the lab's StorageLocation tree,
+// because these are physically different facilities.
+model WarehouseStockItem {
+  id              String   @id @default(cuid())
+  uploadId        String
+  upload          WarehouseStockUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  location        String
+  productRef      String?
+  productName     String
+  lotNumber       String
+  vendorLotNumber String?
+  vendorPackaging String?
+  unit            String
+  quantity        Float
+
+  @@index([uploadId])
+  // Supports per-product history lookups ("show me all snapshots of this
+  // product reference") across uploads.
+  @@index([productRef])
+}

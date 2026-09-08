@@ -36,9 +36,10 @@ export default async function AdminHubPage() {
             <div className="bg-white border border-border rounded-[18px] shadow-card overflow-hidden">
               <SettingsRow label="Sample & Test Catalog" href="/admin/catalog" />
               <SettingsRow label="Business Units" href="/admin/business-units" />
-              <SettingsRow label="Reagents & Chemicals" href="/inventory/reagents" />
+              <SettingsRow label="Reagents & Chemicals — Product Specialist" href="/inventory/reagents" />
+              <SettingsRow label="Reagents & Chemicals — Warehouse" href="/inventory/warehouse-stock" />
               <SettingsRow label="Equipment" href="/inventory/equipment" />
-              <SettingsRow label="Warehouse" href="/inventory/warehouse" last />
+              <SettingsRow label="Storage Locations" href="/inventory/warehouse" last />
             </div>
           </div>
         )}
