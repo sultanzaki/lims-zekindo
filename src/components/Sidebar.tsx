@@ -169,10 +169,10 @@ function SidebarFolder({
 }) {
   const [open, setOpen] = useState(folder.defaultOpen ?? false);
   const Icon = folder.icon;
-  // Keep the folder expanded while any child route is active so navigation
-  // state survives a page change (and the active child stays visible).
+  // Active styling when a child route is current, but do NOT force the
+  // folder open — the user must be able to collapse it anytime by clicking.
   const childActive = folder.children.some((c) => isItemActive(pathname, c.href));
-  const expanded = open || childActive;
+  const expanded = open;
 
   if (collapsed) {
     // Collapsed sidebar: clicking the icon expands the sidebar so the folder

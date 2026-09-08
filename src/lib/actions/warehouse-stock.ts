@@ -41,16 +41,17 @@ export async function importWarehouseStockAction(input: {
     if (rows.length === 0) return { error: "No rows to import." };
     if (rows.length > 50000) return { error: "Too many rows (max 50,000 per import)." };
 
-    // Server-side re-validation of each row before persisting.
+    // Server-side re-validation of each row before persisting. The source
+    // export regularly contains rows with an empty Lot Number / Unit (e.g.
+    // packaging items like drums/pails, cleaning fluids), so only Location
+    // and Product Name are truly required; empty Lot/Unit are stored as "".
     for (const r of rows) {
       const location = (r.location || "").trim();
       const productName = (r.productName || "").trim();
-      const lotNumber = (r.lotNumber || "").trim();
-      const unit = (r.unit || "").trim();
-      if (!location || !productName || !lotNumber || !unit) {
-        return { error: "Every row needs at least Location, Product Name, Lot Number, and Unit." };
+      if (!location || !productName) {
+        return { error: "Every row needs at least Location and Product Name." };
       }
-      if (!Number.isFinite(r.quantity)) {
+      if (r.quantity !== undefined && r.quantity !== null && !Number.isFinite(Number(r.quantity))) {
         return { error: `Quantity must be a number (row: ${productName}).` };
       }
     }
@@ -63,7 +64,7 @@ export async function importWarehouseStockAction(input: {
       vendorLotNumber: (r.vendorLotNumber || "").trim() || null,
       vendorPackaging: (r.vendorPackaging || "").trim() || null,
       unit: (r.unit || "").trim(),
-      quantity: Number(r.quantity),
+      quantity: Number(r.quantity) || 0,
     }));
 
     const upload = await prisma.$transaction(async (tx) => {
