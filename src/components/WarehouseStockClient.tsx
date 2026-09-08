@@ -26,6 +26,7 @@ export type WarehouseItemRow = {
   location: string;
   productRef: string;
   productName: string;
+  productCode: string;
   lotNumber: string;
   vendorLotNumber: string;
   vendorPackaging: string;
@@ -290,7 +291,9 @@ export default function WarehouseStockClient({
           rows: rows.map((r) => ({
             Location: r.location,
             "Product Reference": r.productRef,
+            // Product Name already resolved server-side to the material name.
             "Product Name": r.productName,
+            "Material Code": r.productCode,
             "Lot Number": r.lotNumber,
             "Vendor Lot Number": r.vendorLotNumber,
             "Vendor Packaging": r.vendorPackaging,
@@ -304,14 +307,9 @@ export default function WarehouseStockClient({
     }
   }
 
-  const areaOptions = useMemo(() => {
-    const areas = new Set<string>();
-    for (const l of locations) {
-      const first = l.split("/")[0]?.trim();
-      if (first) areas.add(first);
-    }
-    return [...areas].sort();
-  }, [locations]);
+  // locations now arrive as pre-computed top-level areas (server-side), so no
+  // further derivation is needed — rename to a plain sorted list for the UI.
+  const areaOptions = useMemo(() => [...locations].sort(), [locations]);
 
   return (
     <div className="flex-1 px-5 md:px-9 pt-4.5 md:pt-7 pb-7 md:pb-9 flex flex-col gap-3.5 md:gap-5 md:max-w-[1400px] md:w-full">
@@ -321,7 +319,7 @@ export default function WarehouseStockClient({
           <div className="text-[20px] font-bold text-text tracking-tight whitespace-nowrap">Warehouse Stock</div>
           <div className="text-[13px] text-muted mt-0.5">
             {stats.rows > 0
-              ? `${stats.rows.toLocaleString()} lot lines · ${stats.locations} locations · ${stats.products} product refs`
+              ? `${stats.rows.toLocaleString()} lot lines · ${stats.locations} areas · ${stats.products} product refs`
               : "Factory chemical stock snapshots from the Stock Ending report"}
           </div>
         </div>
@@ -444,7 +442,7 @@ export default function WarehouseStockClient({
       <div className="hidden md:flex md:gap-2.5">
         <StatChip label="Total lot lines" value={stats.rows.toLocaleString()} />
         <StatChip label="Product refs" value={stats.products.toLocaleString()} />
-        <StatChip label="Locations" value={stats.locations.toLocaleString()} />
+        <StatChip label="Areas" value={stats.locations.toLocaleString()} />
         <StatChip label="Zero stock" value={stats.zeroQty.toLocaleString()} tone={stats.zeroQty > 0 ? "danger" : "default"} />
       </div>
 
@@ -457,7 +455,11 @@ export default function WarehouseStockClient({
             <div className="flex items-start justify-between gap-2.5">
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-text leading-snug">{r.productName}</div>
-                {r.productRef && <div className="text-[11px] text-muted font-mono-data mt-0.5">{r.productRef}</div>}
+                {(r.productCode || r.productRef) && (
+                  <div className="text-[11px] text-muted font-mono-data mt-0.5">
+                    {[r.productCode, r.productRef].filter(Boolean).join(" · ")}
+                  </div>
+                )}
                 <div className="text-xs text-muted mt-1 truncate">{r.location}</div>
                 <div className="text-[11px] text-faint font-mono-data mt-0.5">Lot {r.lotNumber}</div>
               </div>
@@ -493,7 +495,11 @@ export default function WarehouseStockClient({
                     <tr key={r.id} className="border-b border-border-soft last:border-b-0 hover:bg-chip-bg transition-colors">
                       <td className="py-2.5 px-4">
                         <div className="text-[13px] font-semibold text-text">{r.productName}</div>
-                        {r.productRef && <div className="text-[11px] text-muted font-mono-data mt-0.5">{r.productRef}</div>}
+                        {(r.productCode || r.productRef) && (
+                          <div className="text-[11px] text-muted font-mono-data mt-0.5">
+                            {[r.productCode, r.productRef].filter(Boolean).join(" · ")}
+                          </div>
+                        )}
                       </td>
                       <td className="py-2.5 px-3">
                         <div className="text-[12px] text-muted font-mono-data whitespace-nowrap">{r.lotNumber}</div>
