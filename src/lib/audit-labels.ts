@@ -48,6 +48,8 @@ const ACTION_INFO: Record<string, { label: string; category: AuditCategory }> = 
   "warehouse.location_created": { label: "Warehouse location added", category: "create" },
   "warehouse.location_activated": { label: "Warehouse location activated", category: "approve" },
   "warehouse.location_deactivated": { label: "Warehouse location deactivated", category: "remove" },
+  "warehouse_stock.imported": { label: "Warehouse stock snapshot imported", category: "create" },
+  "warehouse_stock.deleted": { label: "Warehouse stock snapshot deleted", category: "remove" },
   "user.created": { label: "User account created", category: "create" },
   "user.password_reset": { label: "Password reset", category: "security" },
   "user.reactivated": { label: "User account reactivated", category: "approve" },

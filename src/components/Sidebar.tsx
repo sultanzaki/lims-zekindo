@@ -45,8 +45,27 @@ type NavItem = {
 
 type NavGroup = {
   label: string;
-  items: NavItem[];
+  items: NavEntry[];
 };
+
+type NavChild = NavItem;
+
+// A parent row that expands to reveal children (e.g. Reagents & Chemicals →
+// Product Specialist / Warehouse). Rendered with the same visual language as
+// plain NavItems so the group reads as one navigation unit.
+type NavFolder = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  children: NavChild[];
+  defaultOpen?: boolean;
+};
+
+type NavEntry = NavItem | NavFolder;
+
+function isFolder(entry: NavEntry): entry is NavFolder {
+  return "children" in entry;
+}
 
 function buildGroups(role: string): NavGroup[] {
   const groups: NavGroup[] = [
@@ -72,9 +91,21 @@ function buildGroups(role: string): NavGroup[] {
       items: [
         { href: "/admin/catalog", label: "Sample & Test Catalog", icon: ClipboardList },
         { href: "/admin/business-units", label: "Business Units", icon: Building2 },
-        { href: "/inventory/reagents", label: "Reagents & Chemicals", icon: Beaker },
+        {
+          key: "reagents-chem",
+          label: "Reagents & Chemicals",
+          icon: Beaker,
+          defaultOpen: true,
+          children: [
+            { href: "/inventory/reagents", label: "Product Specialist", icon: Beaker },
+            { href: "/inventory/warehouse-stock", label: "Warehouse", icon: Warehouse },
+          ],
+        },
         { href: "/inventory/equipment", label: "Equipment", icon: Wrench },
-        { href: "/inventory/warehouse", label: "Warehouse", icon: Warehouse },
+        // The physical lab storage-location tree — renamed from "Warehouse"
+        // so the sidebar's "Warehouse" entry can now mean the plant stock
+        // snapshot page. URL and data model are unchanged.
+        { href: "/inventory/warehouse", label: "Storage Locations", icon: Warehouse },
       ],
     });
   }
@@ -122,6 +153,85 @@ function AccountMenuAction({
       <Icon size={16} className="shrink-0 text-muted" />
       {label}
     </Link>
+  );
+}
+
+function SidebarFolder({
+  folder,
+  pathname,
+  collapsed,
+  onExpand,
+}: {
+  folder: NavFolder;
+  pathname: string;
+  collapsed: boolean;
+  onExpand: () => void;
+}) {
+  const [open, setOpen] = useState(folder.defaultOpen ?? false);
+  const Icon = folder.icon;
+  // Keep the folder expanded while any child route is active so navigation
+  // state survives a page change (and the active child stays visible).
+  const childActive = folder.children.some((c) => isItemActive(pathname, c.href));
+  const expanded = open || childActive;
+
+  if (collapsed) {
+    // Collapsed sidebar: clicking the icon expands the sidebar so the folder
+    // (and its children) become visible — mirroring the rail's expand
+    // behavior for plain items rather than navigating straight to the first
+    // child, which would be surprising.
+    return (
+      <button
+        type="button"
+        onClick={onExpand}
+        title={folder.label}
+        aria-label={folder.label}
+        className="relative flex items-center justify-center w-full px-2.5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors text-muted hover:bg-chip-bg hover:text-text cursor-pointer"
+      >
+        <Icon size={18} strokeWidth={2} className="shrink-0" />
+        {childActive && <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-danger shrink-0" />}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={expanded}
+        className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors cursor-pointer w-full text-left ${
+          childActive ? "text-primary-dark" : "text-muted hover:bg-chip-bg hover:text-text"
+        }`}
+      >
+        <Icon size={18} strokeWidth={2} className="shrink-0" />
+        <span className="flex-1 truncate">{folder.label}</span>
+        <ChevronDown
+          size={15}
+          strokeWidth={2}
+          className={`text-faint transition-transform duration-150 shrink-0 ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+      {expanded && (
+        <div className="flex flex-col gap-0.5 ml-[13px] pl-[18px] border-l border-border-soft mt-0.5">
+          {folder.children.map((child) => {
+            const active = isItemActive(pathname, child.href);
+            const ChildIcon = child.icon;
+            return (
+              <Link
+                key={child.href}
+                href={child.href}
+                className={`relative flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-colors ${
+                  active ? "bg-primary-soft text-primary-dark font-semibold" : "text-muted hover:bg-chip-bg hover:text-text"
+                }`}
+              >
+                <ChildIcon size={16} strokeWidth={2} className="shrink-0" />
+                <span className="flex-1 truncate">{child.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -221,6 +331,9 @@ export default function Sidebar({
             )}
             <div className="flex flex-col gap-0.5">
               {group.items.map((item) => {
+                if (isFolder(item)) {
+                  return <SidebarFolder key={item.key} folder={item} pathname={pathname} collapsed={collapsed} onExpand={() => setCollapsed(false)} />;
+                }
                 const active = isItemActive(pathname, item.href);
                 const Icon = item.icon;
                 return (
