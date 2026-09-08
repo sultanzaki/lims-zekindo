@@ -134,6 +134,19 @@ export default function WarehouseStockClient({
     updateParams({ upload: id || undefined, q: undefined, loc: undefined });
   }
 
+  // Shared open-modal handler used by both desktop toolbar and mobile CTA.
+  function openImportModal() {
+    setImportError("");
+    setImportMessage("");
+    setParseError("");
+    setPreview(null);
+    setFileName("");
+    setLabel("");
+    setNotes("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setUploadOpen(true);
+  }
+
   async function handleDeleteUpload() {
     if (!activeUploadId) return;
     if (!window.confirm("Delete this warehouse stock snapshot and all its rows? This cannot be undone.")) return;
@@ -313,7 +326,7 @@ export default function WarehouseStockClient({
 
   return (
     <div className="flex-1 px-5 md:px-9 pt-4.5 md:pt-7 pb-7 md:pb-9 flex flex-col gap-3.5 md:gap-5 md:max-w-[1400px] md:w-full">
-      {/* Header */}
+      {/* Desktop header + toolbar */}
       <div className="hidden md:flex md:flex-wrap md:items-start md:justify-between md:gap-x-6 md:gap-y-2.5 md:pr-10">
         <div className="shrink-0">
           <div className="text-[20px] font-bold text-text tracking-tight whitespace-nowrap">Warehouse Stock</div>
@@ -334,17 +347,7 @@ export default function WarehouseStockClient({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setImportError("");
-              setImportMessage("");
-              setParseError("");
-              setPreview(null);
-              setFileName("");
-              setLabel("");
-              setNotes("");
-              if (fileInputRef.current) fileInputRef.current.value = "";
-              setUploadOpen(true);
-            }}
+            onClick={openImportModal}
             className="flex items-center gap-1.5 h-[38px] px-4 rounded-[10px] bg-primary text-white text-[13px] font-semibold shadow-glow-primary cursor-pointer"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
@@ -359,60 +362,56 @@ export default function WarehouseStockClient({
 
       {/* Upload history / period selector */}
       {uploads.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-semibold text-muted shrink-0">Period:</span>
-          <select
-            value={activeUploadId}
-            onChange={(e) => selectUpload(e.target.value)}
-            className="h-[34px] px-2.5 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-text cursor-pointer"
-          >
-            {uploads.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.label} — {u.rowCount.toLocaleString()} rows ({formatDate(u.importedAt)})
-              </option>
-            ))}
-          </select>
-          {uploads.length > 0 && (
-            <span className="text-[11px] text-faint hidden md:inline">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-2.5">
+          <div className="flex items-center gap-2 md:gap-2.5 w-full min-w-0">
+            <span className="text-xs font-semibold text-muted shrink-0">Period:</span>
+            <select
+              value={activeUploadId}
+              onChange={(e) => selectUpload(e.target.value)}
+              className="h-[42px] md:h-[34px] flex-1 min-w-0 px-2.5 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-text cursor-pointer"
+            >
+              {uploads.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.label} — {u.rowCount.toLocaleString()} rows ({formatDate(u.importedAt)})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center justify-between md:justify-start gap-3 md:ml-auto">
+            <span className="text-[11px] text-faint md:inline">
               imported by {uploads.find((u) => u.id === activeUploadId)?.importedBy ?? "—"}
             </span>
-          )}
-          {uploads.length > 0 && (
             <button
               type="button"
               onClick={handleDeleteUpload}
               disabled={deleting}
-              className="ml-auto text-[11px] font-semibold text-danger hover:underline cursor-pointer disabled:opacity-60"
+              className="text-[11px] font-semibold text-danger hover:underline cursor-pointer disabled:opacity-60 shrink-0"
             >
-              {deleting ? "Deleting…" : "Delete this snapshot"}
+              {deleting ? "Deleting…" : "Delete snapshot"}
             </button>
-          )}
+          </div>
         </div>
       )}
 
-      {/* Mobile import + title */}
-      <div className="md:hidden flex items-center justify-between gap-2">
-        <div>
-          <div className="text-[18px] font-bold text-text tracking-tight">Warehouse Stock</div>
-          <div className="text-xs text-muted mt-0.5">{stats.rows.toLocaleString()} rows · {activeUploadLabel}</div>
-        </div>
+      {/* Mobile primary action */}
+      <div className="no-print md:hidden">
         <button
           type="button"
-          onClick={() => setUploadOpen(true)}
-          className="flex items-center gap-1.5 h-[38px] px-3.5 rounded-[10px] bg-primary text-white text-[13px] font-semibold cursor-pointer shrink-0"
+          onClick={openImportModal}
+          className="w-full flex items-center justify-center gap-2 h-[46px] rounded-[12px] bg-primary text-white text-[14px] font-semibold shadow-glow-primary cursor-pointer"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="17 8 12 3 7 8" />
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
-          Import
+          Import Snapshot
         </button>
       </div>
 
       {/* Filters */}
-      <div className="no-print flex flex-col md:flex-row gap-2.5">
-        <div className="flex items-center gap-2 h-[38px] px-3 rounded-[10px] bg-white border border-border w-full md:w-[260px]">
+      <div className="no-print flex flex-col gap-2.5 md:flex-row">
+        <div className="flex items-center gap-2 h-[42px] md:h-[38px] px-3 rounded-[10px] bg-white border border-border w-full md:w-[260px]">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#93A6B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-4.35-4.35" />
@@ -427,7 +426,7 @@ export default function WarehouseStockClient({
         <select
           value={loc}
           onChange={(e) => setLoc(e.target.value)}
-          className="h-[38px] px-3 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-[#5B6B74] cursor-pointer md:w-[240px]"
+          className="h-[42px] md:h-[38px] w-full md:w-[240px] px-3 rounded-[10px] bg-white border border-border text-[13px] font-semibold text-[#5B6B74] cursor-pointer"
         >
           <option value="">All areas</option>
           {areaOptions.map((a) => (
@@ -436,6 +435,12 @@ export default function WarehouseStockClient({
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Mobile stat strip */}
+      <div className="grid grid-cols-2 gap-2.5 md:hidden">
+        <StatChip label="Total lines" value={stats.rows.toLocaleString()} />
+        <StatChip label="Zero stock" value={stats.zeroQty.toLocaleString()} tone={stats.zeroQty > 0 ? "danger" : "default"} />
       </div>
 
       {/* Desktop stat strip */}
@@ -451,26 +456,44 @@ export default function WarehouseStockClient({
       {/* Mobile cards */}
       <div className="flex flex-col gap-2.5 md:hidden">
         {items.map((r) => (
-          <div key={r.id} className="bg-white border border-border rounded-2xl shadow-card-sm px-4 py-3">
-            <div className="flex items-start justify-between gap-2.5">
+          <div key={r.id} className="bg-white border border-border rounded-2xl shadow-card-sm px-4 py-3.5">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text leading-snug">{r.productName}</div>
+                <div className="text-[14px] font-semibold text-text leading-snug">{r.productName}</div>
                 {(r.productCode || r.productRef) && (
-                  <div className="text-[11px] text-muted font-mono-data mt-0.5">
+                  <div className="text-[11px] text-muted font-mono-data mt-1">
                     {[r.productCode, r.productRef].filter(Boolean).join(" · ")}
                   </div>
                 )}
-                <div className="text-xs text-muted mt-1 truncate">{r.location}</div>
-                <div className="text-[11px] text-faint font-mono-data mt-0.5">Lot {r.lotNumber}</div>
               </div>
               <div className="text-right shrink-0">
-                <div className="text-sm font-bold font-mono-data">{r.quantity.toLocaleString()}</div>
-                <div className="text-[11px] text-muted">{r.unit}</div>
+                <div className="text-[15px] font-bold font-mono-data leading-none" style={{ color: r.quantity === 0 ? "#B00016" : undefined }}>
+                  {r.quantity.toLocaleString()}
+                </div>
+                <div className="text-[11px] text-muted mt-0.5">{r.unit}</div>
               </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2.5 pt-2.5 border-t border-border-soft">
+              <span className="text-[11px] text-muted font-mono-data truncate max-w-[45%]">{r.lotNumber || "—"}</span>
+              <span className="text-[10px] text-faint shrink-0">Lot</span>
+              {r.vendorPackaging && (
+                <>
+                  <span className="text-[10px] text-faint">·</span>
+                  <span className="text-[11px] text-muted truncate max-w-[40%]">{r.vendorPackaging}</span>
+                </>
+              )}
+            </div>
+            <div className="flex items-start gap-1.5 mt-1.5 text-[11px] text-muted leading-snug">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px text-faint">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <span className="truncate">{r.location}</span>
             </div>
           </div>
         ))}
         {items.length === 0 && <EmptyState>No rows in this snapshot{query || loc ? " match your filters" : ""}.</EmptyState>}
+        <CursorPager {...pageInfo} />
       </div>
 
       {/* Desktop table */}
