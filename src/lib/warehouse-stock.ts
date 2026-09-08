@@ -237,7 +237,10 @@ export type ParseOutcome =
   | { ok: false; error: string };
 
 export function validateParsedRows(rows: WarehouseStockRow[], matchedFields: string[]): ParseOutcome {
-  const missingRequired = ["location", "productName", "lotNumber", "quantity"].filter((f) => !matchedFields.includes(f));
+  // Only Location + Product Name are mandatory *columns*. Lot Number / Unit /
+  // etc. can be absent from the source (packaging items etc.) and are stored
+  // as empty strings when missing per-row.
+  const missingRequired = ["location", "productName"].filter((f) => !matchedFields.includes(f));
   if (missingRequired.length > 0) {
     return {
       ok: false,

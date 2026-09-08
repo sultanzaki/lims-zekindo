@@ -162,7 +162,7 @@ function rowsFromTable(table) {
   return { rows, matchedFields: [...matched] };
 }
 function validateParsedRows(rows, matchedFields) {
-  const missingRequired = ["location", "productName", "lotNumber", "quantity"].filter((f) => !matchedFields.includes(f));
+  const missingRequired = ["location", "productName"].filter((f) => !matchedFields.includes(f));
   if (missingRequired.length > 0) return { ok: false, error: `Missing columns: ${missingRequired.join(", ")}` };
   if (rows.length === 0) return { ok: false, error: "No data rows found" };
   return { ok: true, rows, matchedFields, missingRequired };
@@ -247,6 +247,23 @@ console.log("Real file parse (from user's CSV):");
   } else {
     console.log("  (real file not present, skipping)");
   }
+}
+
+console.log("Rows with empty lot/unit accepted (packaging items):");
+{
+  const table = parseCsv(
+    "Location,Product Reference,Product Name,Lot Number,Vendor Lot Number,Vendor Packaging,Unit,Qty\n" +
+      "SMP/Stock,A0247,H 22 WASHING THINNER,,,,L,600\n" +
+      "JBK/Stock/JBK 1/Raw Material/Open Storage,B0003,IBC TANK 1000L REKONDISI,,,,Unit,227\n" +
+      'JBK/Stock/JBK 1/Raw Material/Floor,D0053,"CATRIDGE FILTER 40"" 10 MICRON",,,,Pcs,500\n'
+  );
+  const { rows, matchedFields } = rowsFromTable(table);
+  const outcome = validateParsedRows(rows, matchedFields);
+  check("rows with empty lot parse", rows.length === 3, `got ${rows.length}`);
+  check("empty lot rows pass validation", outcome.ok === true, outcome.error);
+  check("empty lot stored as ''", rows[0].lotNumber === "", rows[0].lotNumber);
+  check("empty unit row still parsed", rows[1].unit === "Unit", rows[1].unit);
+  check("quoted inch product kept", rows[2].productName.includes("CATRIDGE FILTER"), rows[2].productName);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
