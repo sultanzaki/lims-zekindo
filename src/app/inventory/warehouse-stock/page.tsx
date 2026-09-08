@@ -10,7 +10,7 @@ import WarehouseStockClient from "@/components/WarehouseStockClient";
 import type { Metadata } from "next";
 import type { Prisma } from "@prisma/client";
 
-export const metadata: Metadata = { title: "Warehouse Stock" };
+export const metadata: Metadata = { title: "Plant Stock" };
 
 const PAGE_SIZE = 100;
 const SELECT = {
@@ -137,7 +137,7 @@ export default async function WarehouseStockPage({ searchParams }: PageProps<"/i
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
-      <BackHeader title="Warehouse Stock" backHref="/profile" hideDesktop />
+      <BackHeader title="Plant Stock" backHref="/profile" hideDesktop />
       <WarehouseStockClient
         uploads={uploads.map((u) => ({
           id: u.id,

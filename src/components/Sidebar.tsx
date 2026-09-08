@@ -51,7 +51,7 @@ type NavGroup = {
 type NavChild = NavItem;
 
 // A parent row that expands to reveal children (e.g. Reagents & Chemicals →
-// Product Specialist / Warehouse). Rendered with the same visual language as
+// Lab Inventory / Plant Stock). Rendered with the same visual language as
 // plain NavItems so the group reads as one navigation unit.
 type NavFolder = {
   key: string;
@@ -97,8 +97,11 @@ function buildGroups(role: string): NavGroup[] {
           icon: Beaker,
           defaultOpen: true,
           children: [
-            { href: "/inventory/reagents", label: "Product Specialist", icon: Beaker },
-            { href: "/inventory/warehouse-stock", label: "Warehouse", icon: Warehouse },
+            // Lab Inventory = chemicals the lab (Product Specialist) manages
+            // with stock movements. Plant Stock = factory chemical stock
+            // snapshots from the Stock Ending / Odoo export.
+            { href: "/inventory/reagents", label: "Lab Inventory", icon: Beaker },
+            { href: "/inventory/warehouse-stock", label: "Plant Stock", icon: Warehouse },
           ],
         },
         { href: "/inventory/equipment", label: "Equipment", icon: Wrench },

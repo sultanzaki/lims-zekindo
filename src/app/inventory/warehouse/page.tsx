@@ -12,7 +12,7 @@ import type { WarehouseGraphNode } from "@/components/WarehouseHierarchyGraph";
 import EmptyState from "@/components/ui/EmptyState";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Warehouse" };
+export const metadata: Metadata = { title: "Storage Locations" };
 
 export default async function WarehousePage() {
   const user = await requirePageRole(canManageInventoryAndCatalog);
@@ -48,7 +48,7 @@ export default async function WarehousePage() {
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
-      <BackHeader title="Warehouse" backHref="/profile" hideDesktop />
+      <BackHeader title="Storage Locations" backHref="/profile" hideDesktop />
       <div className="flex-1 px-5 md:px-9 pt-4.5 md:pt-7 pb-7 md:pb-9 flex flex-col gap-3.5 md:gap-5 md:max-w-[1400px] md:w-full">
         <WarehouseToolbar
           totalLocations={nodes.length}

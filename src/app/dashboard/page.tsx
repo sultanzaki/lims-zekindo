@@ -67,7 +67,7 @@ function quickActionsFor(role: string): QuickAction[] {
     { href: "/scan", label: "Scan label", icon: ICON_SCAN },
   ];
   if (canManageInventoryAndCatalog(role)) {
-    actions.push({ href: "/inventory/reagents", label: "Reagents", icon: ICON_REAGENTS });
+    actions.push({ href: "/inventory/reagents", label: "Lab Inventory", icon: ICON_REAGENTS });
     actions.push({ href: "/inventory/equipment", label: "Equipment", icon: ICON_EQUIPMENT });
   } else if (canReviewAsSupervisor(role)) {
     actions.push({ href: "/deviations", label: "Deviations", icon: ICON_DEVIATIONS });

@@ -149,7 +149,7 @@ export default function WarehouseStockClient({
 
   async function handleDeleteUpload() {
     if (!activeUploadId) return;
-    if (!window.confirm("Delete this warehouse stock snapshot and all its rows? This cannot be undone.")) return;
+    if (!window.confirm("Delete this plant stock snapshot and all its rows? This cannot be undone.")) return;
     setDeleting(true);
     setImportError("");
     setImportMessage("");
@@ -298,9 +298,9 @@ export default function WarehouseStockClient({
     try {
       const rows = await exportWarehouseStockAction({ uploadId: activeUploadId, q: query || undefined, loc: loc || undefined });
       if (rows.length === 0) return;
-      await exportToExcel(`warehouse-stock-${(activeUploadLabel || "export").replace(/[^a-z0-9]+/gi, "-") || "export"}.xlsx`, [
+      await exportToExcel(`plant-stock-${(activeUploadLabel || "export").replace(/[^a-z0-9]+/gi, "-") || "export"}.xlsx`, [
         {
-          name: "Warehouse Stock",
+          name: "Plant Stock",
           rows: rows.map((r) => ({
             Location: r.location,
             "Product Reference": r.productRef,
@@ -329,7 +329,7 @@ export default function WarehouseStockClient({
       {/* Desktop header + toolbar */}
       <div className="hidden md:flex md:flex-wrap md:items-start md:justify-between md:gap-x-6 md:gap-y-2.5 md:pr-10">
         <div className="shrink-0">
-          <div className="text-[20px] font-bold text-text tracking-tight whitespace-nowrap">Warehouse Stock</div>
+          <div className="text-[20px] font-bold text-text tracking-tight whitespace-nowrap">Plant Stock</div>
           <div className="text-[13px] text-muted mt-0.5">
             {stats.rows > 0
               ? `${stats.rows.toLocaleString()} lot lines · ${stats.locations} areas · ${stats.products} product refs`
@@ -547,7 +547,7 @@ export default function WarehouseStockClient({
       </div>
 
       {/* Upload modal */}
-      <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title="Import Warehouse Stock Snapshot" maxWidth="560px">
+      <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title="Import Plant Stock Snapshot" maxWidth="560px">
         <div className="flex flex-col gap-3">
           <p className="text-xs text-muted leading-relaxed">
             Upload the plant&apos;s <span className="font-semibold text-text">Stock Ending</span> CSV/Excel export. The file stays a snapshot

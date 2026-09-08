@@ -166,7 +166,7 @@ export default function ReagentsListClient({
       {/* Desktop header + toolbar */}
       <div className="hidden md:flex md:flex-wrap md:items-start md:justify-between md:gap-x-6 md:gap-y-2.5 md:pr-10">
         <div className="shrink-0">
-          <div className="text-[20px] font-bold text-text tracking-tight whitespace-nowrap">Reagents &amp; Chemicals</div>
+          <div className="text-[20px] font-bold text-text tracking-tight whitespace-nowrap">Lab Inventory</div>
           <div className="text-[13px] text-muted mt-0.5">
             {stats.total} items tracked across {locationCount} storage location{locationCount === 1 ? "" : "s"}
           </div>

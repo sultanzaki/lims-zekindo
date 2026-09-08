@@ -18,7 +18,7 @@ import ReagentsListClient from "@/components/ReagentsListClient";
 import type { Metadata } from "next";
 import type { Prisma } from "@prisma/client";
 
-export const metadata: Metadata = { title: "Reagents & Chemicals" };
+export const metadata: Metadata = { title: "Lab Inventory" };
 
 const PAGE_SIZE = 50;
 
@@ -77,7 +77,7 @@ export default async function ReagentsPage({ searchParams }: PageProps<"/invento
   return (
     <div className="min-h-screen flex flex-col bg-page-bg md:pl-[var(--sidebar-w)] transition-[padding-left] duration-200">
       <Sidebar role={user.accessRole} userName={user.name} unreadCount={unread} />
-      <BackHeader title="Reagents & Chemicals" backHref="/profile" hideDesktop />
+      <BackHeader title="Lab Inventory" backHref="/profile" hideDesktop />
       <ReagentsListClient
         reagents={reagentRows}
         locations={locations}

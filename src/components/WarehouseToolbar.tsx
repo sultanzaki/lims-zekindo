@@ -28,7 +28,7 @@ export default function WarehouseToolbar({
       {/* Desktop header + toolbar */}
       <div className="hidden md:flex md:items-start md:justify-between md:gap-6 md:pr-10">
         <div>
-          <div className="text-[20px] font-bold text-text tracking-tight">Warehouse</div>
+          <div className="text-[20px] font-bold text-text tracking-tight">Storage Locations</div>
           <div className="text-[13px] text-muted mt-0.5">
             {totalLocations} locations &middot; {totalItems} items stored
           </div>
