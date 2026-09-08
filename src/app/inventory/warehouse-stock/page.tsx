@@ -3,6 +3,7 @@ import { getUnreadCount } from "@/lib/data";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 import { fetchCursorPage } from "@/lib/pagination";
+import { resolveMaterialName, WAREHOUSE_MATERIAL_NAMES } from "@/lib/warehouse-material-map";
 import Sidebar from "@/components/Sidebar";
 import BackHeader from "@/components/BackHeader";
 import WarehouseStockClient from "@/components/WarehouseStockClient";
@@ -23,6 +24,39 @@ const SELECT = {
   unit: true,
   quantity: true,
 } satisfies Prisma.WarehouseStockItemSelect;
+
+// One raw aggregate for all the header stats + the area filter options.
+// A single scan replaces the previous 5 sequential queries (aggregate,
+// distinct locations, zero-stock count, product-ref groupBy) and returns
+// only top-level areas for the dropdown instead of every full location path.
+async function getSnapshotStats(uploadId: string) {
+  const rows = await prisma.$queryRaw<
+    {
+      total: bigint;
+      products: bigint;
+      locations: bigint;
+      zero_qty: bigint;
+      areas: string[];
+    }[]
+  >`
+    SELECT
+      COUNT(*)::bigint AS total,
+      COUNT(DISTINCT "productRef")::bigint AS products,
+      COUNT(DISTINCT "location")::bigint AS locations,
+      COUNT(*) FILTER (WHERE "quantity" = 0)::bigint AS zero_qty,
+      COALESCE(ARRAY_AGG(DISTINCT SPLIT_PART("location", '/', 1)), '{}') AS areas
+    FROM "WarehouseStockItem"
+    WHERE "uploadId" = ${uploadId}
+  `;
+  const r = rows[0];
+  return {
+    total: Number(r?.total ?? 0),
+    products: Number(r?.products ?? 0),
+    locations: Number(r?.locations ?? 0),
+    zeroQty: Number(r?.zero_qty ?? 0),
+    areas: (r?.areas ?? []).filter(Boolean).sort(),
+  };
+}
 
 export default async function WarehouseStockPage({ searchParams }: PageProps<"/inventory/warehouse-stock">) {
   const user = await requirePageRole(canManageInventoryAndCatalog);
@@ -50,11 +84,13 @@ export default async function WarehouseStockPage({ searchParams }: PageProps<"/i
   let itemRows: Prisma.WarehouseStockItemGetPayload<{ select: typeof SELECT }>[] = [];
   let pageInfo = { hasNext: false, hasPrev: false, nextCursor: null as string | null, prevCursor: null as string | null };
   let stats = { rows: 0, products: 0, locations: 0, zeroQty: 0 };
-  let locations: string[] = [];
+  let areas: string[] = [];
 
   if (activeUploadId) {
     const where: Prisma.WarehouseStockItemWhereInput = { uploadId: activeUploadId };
-    if (loc) where.location = { contains: loc, mode: "insensitive" };
+    // Area filter matches the FIRST path segment exactly (locations look like
+    // "AREA/..."), so selecting "KBI" does not also pull "OH-OS/Stock/KBI …".
+    if (loc) where.location = { startsWith: `${loc}/` };
     if (q) {
       where.OR = [
         { productName: { contains: q, mode: "insensitive" } },
@@ -62,9 +98,21 @@ export default async function WarehouseStockPage({ searchParams }: PageProps<"/i
         { lotNumber: { contains: q, mode: "insensitive" } },
         { vendorLotNumber: { contains: q, mode: "insensitive" } },
       ];
+      // If the query looks like a material display name (e.g. "EDTA", "OLEIC
+      // ACID"), also match rows whose Odoo code maps to it — so searching a
+      // resolved name still finds the coded rows. Cheap because the map is
+      // small and built once per request.
+      const qUpper = q.toUpperCase();
+      const matchingCodes = Object.entries(WAREHOUSE_MATERIAL_NAMES)
+        .filter(([, name]) => name.includes(qUpper))
+        .map(([code]) => code);
+      if (matchingCodes.length > 0) {
+        where.OR.push({ productName: { in: matchingCodes } });
+      }
     }
 
-    const [page, agg, locs] = await Promise.all([
+    // Rows + stats run concurrently (single round-trip each, no serial chain).
+    const [{ rows, pageInfo: pi }, agg] = await Promise.all([
       fetchCursorPage(
         (args) =>
           prisma.warehouseStockItem.findMany({
@@ -75,33 +123,15 @@ export default async function WarehouseStockPage({ searchParams }: PageProps<"/i
           }),
         { after, before, pageSize: PAGE_SIZE }
       ),
-      prisma.warehouseStockItem.aggregate({
-        where: { uploadId: activeUploadId },
-        _count: { _all: true },
-        _sum: { quantity: true },
-      }),
-      prisma.warehouseStockItem.findMany({
-        where: { uploadId: activeUploadId },
-        distinct: ["location"],
-        select: { location: true },
-        orderBy: { location: "asc" },
-      }),
+      // The raw aggregate only counts the active upload; if the user filtered
+      // by area/q, the chip totals still describe the whole snapshot while
+      // rows are the filtered set (same as before).
+      getSnapshotStats(activeUploadId),
     ]);
-    itemRows = page.rows;
-    pageInfo = page.pageInfo;
-    const zeroQty = await prisma.warehouseStockItem.count({ where: { uploadId: activeUploadId, quantity: 0 } });
-    const products = await prisma.warehouseStockItem.groupBy({
-      by: ["productRef"],
-      where: { uploadId: activeUploadId, productRef: { not: null } },
-      _count: { _all: true },
-    });
-    stats = {
-      rows: agg._count._all,
-      products: products.length,
-      locations: locs.length,
-      zeroQty,
-    };
-    locations = locs.map((l) => l.location);
+    itemRows = rows;
+    pageInfo = pi;
+    stats = { rows: agg.total, products: agg.products, locations: agg.locations, zeroQty: agg.zeroQty };
+    areas = agg.areas;
   }
 
   return (
@@ -119,19 +149,27 @@ export default async function WarehouseStockPage({ searchParams }: PageProps<"/i
         }))}
         activeUploadId={activeUploadId}
         activeUploadLabel={activeUpload?.label ?? ""}
-        items={itemRows.map((r) => ({
-          id: r.id,
-          location: r.location,
-          productRef: r.productRef ?? "",
-          productName: r.productName,
-          lotNumber: r.lotNumber,
-          vendorLotNumber: r.vendorLotNumber ?? "",
-          vendorPackaging: r.vendorPackaging ?? "",
-          unit: r.unit,
-          quantity: r.quantity,
-        }))}
+        items={itemRows.map((r) => {
+          const rawName = r.productName;
+          const resolved = resolveMaterialName(rawName);
+          return {
+            id: r.id,
+            location: r.location,
+            productRef: r.productRef ?? "",
+            // Display name: human-readable material name when the Odoo code
+            // is known; otherwise the original (finished goods, packaging).
+            productName: resolved,
+            // Original code kept for the small caption under the name.
+            productCode: resolved !== rawName ? rawName : "",
+            lotNumber: r.lotNumber,
+            vendorLotNumber: r.vendorLotNumber ?? "",
+            vendorPackaging: r.vendorPackaging ?? "",
+            unit: r.unit,
+            quantity: r.quantity,
+          };
+        })}
         stats={stats}
-        locations={locations}
+        locations={areas}
         initialQuery={q}
         initialLocation={loc}
         pageInfo={pageInfo}

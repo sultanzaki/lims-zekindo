@@ -6,6 +6,7 @@ import { logAudit } from "@/lib/audit";
 import { canManageInventoryAndCatalog } from "@/lib/roles";
 import { revalidatePath } from "next/cache";
 import { handleActionError } from "@/lib/userFacingError";
+import { resolveMaterialName, WAREHOUSE_MATERIAL_NAMES } from "@/lib/warehouse-material-map";
 import type { Prisma } from "@prisma/client";
 
 export type WarehouseImportResult = { error?: string } | { ok: true; uploadId: string; rowCount: number };
@@ -124,6 +125,7 @@ export type WarehouseExportRow = {
   location: string;
   productRef: string;
   productName: string;
+  productCode: string;
   lotNumber: string;
   vendorLotNumber: string;
   vendorPackaging: string;
@@ -152,9 +154,18 @@ export async function exportWarehouseStockAction(input: {
       { lotNumber: { contains: q, mode: "insensitive" } },
       { vendorLotNumber: { contains: q, mode: "insensitive" } },
     ];
+    // Match resolved-name searches the same way the list page does.
+    const qUpper = q.toUpperCase();
+    const matchingCodes = Object.entries(WAREHOUSE_MATERIAL_NAMES)
+      .filter(([, name]) => name.includes(qUpper))
+      .map(([code]) => code);
+    if (matchingCodes.length > 0) {
+      where.OR.push({ productName: { in: matchingCodes } });
+    }
   }
   const loc = (input.loc || "").trim();
-  if (loc) where.location = { contains: loc, mode: "insensitive" };
+  // Area filter matches the first path segment exactly (see list page).
+  if (loc) where.location = { startsWith: `${loc}/` };
 
   const rows = await prisma.warehouseStockItem.findMany({
     where,
@@ -172,14 +183,20 @@ export async function exportWarehouseStockAction(input: {
     },
   });
 
-  return rows.map((r) => ({
-    location: r.location,
-    productRef: r.productRef ?? "",
-    productName: r.productName,
-    lotNumber: r.lotNumber,
-    vendorLotNumber: r.vendorLotNumber ?? "",
-    vendorPackaging: r.vendorPackaging ?? "",
-    unit: r.unit,
-    quantity: r.quantity,
-  }));
+  return rows.map((r) => {
+    const resolved = resolveMaterialName(r.productName);
+    return {
+      location: r.location,
+      productRef: r.productRef ?? "",
+      // Export shows the human-readable material name; the original Odoo code
+      // travels as productCode so the Excel keeps a traceable Code column.
+      productName: resolved,
+      productCode: resolved !== r.productName ? r.productName : "",
+      lotNumber: r.lotNumber,
+      vendorLotNumber: r.vendorLotNumber ?? "",
+      vendorPackaging: r.vendorPackaging ?? "",
+      unit: r.unit,
+      quantity: r.quantity,
+    };
+  });
 }
